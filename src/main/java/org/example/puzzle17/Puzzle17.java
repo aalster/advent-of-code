@@ -37,7 +37,7 @@ public class Puzzle17 {
 				
 				if (figuresCount == totalFiguresCount1) {
 					System.out.println("Answer 1: " + (heightCutoff + field.rockHeight));
-					Thread.sleep(1000);
+//					Thread.sleep(1000);
 				}
 				
 				if (figuresCount >= totalFiguresCount2)
@@ -122,8 +122,9 @@ public class Puzzle17 {
 		}
 		
 		void drawField(int rows) {
-			fallingFigure.figure.draw(fallingFigure.position, cells, Cell.FALLING_ROCK);
-			int lastRow = rows > 0 ? cells.size() - 1 - rows : 0;
+			if (fallingFigure != null)
+				fallingFigure.figure.draw(fallingFigure.position, cells, Cell.FALLING_ROCK);
+			int lastRow = rows > 0 ? Math.max(cells.size() - 1 - rows, 0) : 0;
 			for (int y = cells.size() - 1; y >= lastRow; y--) {
 				Cell[] row = cells.get(y);
 				System.out.print("|");
@@ -132,7 +133,8 @@ public class Puzzle17 {
 				System.out.println("|");
 			}
 			System.out.println("+" + "-".repeat(width) + "+");
-			fallingFigure.figure.draw(fallingFigure.position, cells, Cell.EMPTY);
+			if (fallingFigure != null)
+				fallingFigure.figure.draw(fallingFigure.position, cells, Cell.EMPTY);
 		}
 		
 		int height() {
