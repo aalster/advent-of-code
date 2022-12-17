@@ -46,9 +46,10 @@ public class Puzzle17 {
 				figuresCount++;
 				
 				if (preview) {
-					field.drawField();
+					field.drawField(20);
 					Thread.sleep(800);
 				}
+				
 				if (figuresCount % 10000000 == 0) {
 					long now = System.currentTimeMillis();
 					long delay = now - startTime;
@@ -61,13 +62,13 @@ public class Puzzle17 {
 			}
 			field.wind(wind.nextDirection());
 			if (preview) {
-				field.drawField();
+				field.drawField(20);
 				Thread.sleep(500);
 			}
 			field.fall();
 			if (preview) {
 				System.out.println("\n");
-				field.drawField();
+				field.drawField(20);
 				Thread.sleep(500);
 			}
 		}
@@ -85,21 +86,27 @@ public class Puzzle17 {
 		private void wind(int windDirection) {
 			Point next = fallingFigure.position.shift(windDirection, 0);
 			Figure figure = fallingFigure.figure;
-			if (0 <= next.x && next.x + figure.width < width && !figure.intersectsCell(next, cells, Cell.ROCK))
-				fallingFigure.setPosition(next);
+			if (next.x < 0 || width <= next.x + figure.width)
+				return;
+			if (next.y <= rockHeight && figure.intersectsCell(next, cells, Cell.ROCK))
+				return;
+			
+			fallingFigure.setPosition(next);
 		}
 		
 		private void fall() {
 			Point position = fallingFigure.position;
 			Point next = position.shift(0, -1);
 			Figure figure = fallingFigure.figure;
-			if (next.y < 0 || figure.intersectsCell(next, cells, Cell.ROCK)) {
-				figure.draw(position, cells, Cell.ROCK);
-				rockHeight = Math.max(rockHeight, position.y + figure.height + 1);
-				fallingFigure = null;
-			} else {
-				fallingFigure.setPosition(next);
+			if (next.y <= rockHeight) {
+				if (next.y < 0 || figure.intersectsCell(next, cells, Cell.ROCK)) {
+					figure.draw(position, cells, Cell.ROCK);
+					rockHeight = Math.max(rockHeight, position.y + figure.height + 1);
+					fallingFigure = null;
+					return;
+				}
 			}
+			fallingFigure.setPosition(next);
 		}
 		
 		int limitHeight(int thresholdHeight, int limit) {
@@ -114,9 +121,10 @@ public class Puzzle17 {
 			return cutoff;
 		}
 		
-		void drawField() {
+		void drawField(int rows) {
 			fallingFigure.figure.draw(fallingFigure.position, cells, Cell.FALLING_ROCK);
-			for (int y = cells.size() - 1; y >= 0; y--) {
+			int lastRow = rows > 0 ? cells.size() - 1 - rows : 0;
+			for (int y = cells.size() - 1; y >= lastRow; y--) {
 				Cell[] row = cells.get(y);
 				System.out.print("|");
 				for (Cell cell : row)
@@ -206,7 +214,7 @@ public class Puzzle17 {
 	}
 	
 	static class FigureFactory {
-		final Figure[] shapes = new Figure[] {horizontal(), cross(), corner(), vertical(), cube()};
+		static final Figure[] shapes = new Figure[] {horizontal(), cross(), corner(), vertical(), cube()};
 		int currentShape = -1;
 		
 		Figure nextFigure() {
@@ -282,13 +290,19 @@ public class Puzzle17 {
 	@RequiredArgsConstructor
 	static class Wind {
 		final String directions;
-		int step = -1;
+		long step = -1;
 		
 		int nextDirection() {
 			step++;
-			if (step >= directions.length())
-				step = 0;
-			return directions.charAt(step) == '<' ? -1 : 1;
+			return directions.charAt((int) (step % directions.length())) == '<' ? -1 : 1;
+		}
+		
+		String peekNextDirections(int count) {
+			StringBuilder result = new StringBuilder(count);
+			for (int i = 1; i <= count; i++) {
+				result.append(directions.charAt((int) ((step + i) % directions.length())));
+			}
+			return result.toString();
 		}
 	}
 }
