@@ -14,10 +14,10 @@ public class Puzzle17 {
 	
 	static final boolean preview = false;
 	static final int fieldWidth = 7;
-	static final int heightThreshold = 60;
-	static final int heightLimit = 50;
-	static final int totalFiguresCount = 2022;
-//	static final long totalFiguresCount = 1_000_000_000_000L;
+	static final int heightLimit = 1000;
+	static final int heightThreshold = heightLimit + 200;
+	static final int totalFiguresCount1 = 2022;
+	static final long totalFiguresCount2 = 1_000_000_000_000L;
 	
 	public static void main(String[] args) throws Exception {
 		Scanner input = Utils.scanFileNearClass(Puzzle17.class, "example.txt");
@@ -29,12 +29,18 @@ public class Puzzle17 {
 		long heightCutoff = 0;
 		
 		long startTime = System.currentTimeMillis();
+		List<Long> delays = new ArrayList<>();
 		
 		for (long step = 0; ; step++) {
 			if (field.fallingFigure == null) {
 				heightCutoff += field.limitHeight(heightThreshold, heightLimit);
 				
-				if (figuresCount >= totalFiguresCount)
+				if (figuresCount == totalFiguresCount1) {
+					System.out.println("Answer 1: " + (heightCutoff + field.rockHeight));
+					Thread.sleep(1000);
+				}
+				
+				if (figuresCount >= totalFiguresCount2)
 					break;
 				field.addFallingFigure(figureFactory.nextFigure());
 				figuresCount++;
@@ -43,16 +49,17 @@ public class Puzzle17 {
 					field.drawField();
 					Thread.sleep(800);
 				}
+				if (figuresCount % 10000000 == 0) {
+					long now = System.currentTimeMillis();
+					long delay = now - startTime;
+					delays.add(delay);
+					System.out.println("\n\nStep: " + step + ", Figures: " + figuresCount + " - " + (100f * figuresCount / totalFiguresCount2) + "%");
+					System.out.println("Delay: " + delay + ". Average: " + delays.stream().mapToLong(d -> d).average().orElse(0));
+					startTime = now;
+//				    field.drawField();
+				}
 			}
-			int windDirection = wind.nextDirection();
-			if (step % 10000000 == 0) {
-				long now = System.currentTimeMillis();
-				System.out.println("\n\nStep: " + step + ", Figures: " + figuresCount + " - " + (100f * figuresCount / totalFiguresCount) + "%");
-				System.out.println("delay: " + (now - startTime));
-				startTime = now;
-//				field.drawField();
-			}
-			field.wind(windDirection);
+			field.wind(wind.nextDirection());
 			if (preview) {
 				field.drawField();
 				Thread.sleep(500);
@@ -65,7 +72,7 @@ public class Puzzle17 {
 			}
 		}
 //		field.drawField();
-		System.out.println("Answer: " + (heightCutoff + field.rockHeight()));
+		System.out.println("Answer 2: " + (heightCutoff + field.rockHeight));
 	}
 	
 	@AllArgsConstructor
@@ -83,10 +90,12 @@ public class Puzzle17 {
 		}
 		
 		private void fall() {
-			Point next = fallingFigure.position.shift(0, -1);
+			Point position = fallingFigure.position;
+			Point next = position.shift(0, -1);
 			Figure figure = fallingFigure.figure;
 			if (next.y < 0 || figure.intersectsCell(next, cells, Cell.ROCK)) {
-				figure.draw(fallingFigure.position, cells, Cell.ROCK);
+				figure.draw(position, cells, Cell.ROCK);
+				rockHeight = Math.max(rockHeight, position.y + figure.height + 1);
 				fallingFigure = null;
 			} else {
 				fallingFigure.setPosition(next);
@@ -101,6 +110,7 @@ public class Puzzle17 {
 			List<Cell[]> subList = cells.subList(cutoff, height() - 1);
 			cells = new ArrayList<>(thresholdHeight + 10);
 			cells.addAll(subList);
+			rockHeight -= cutoff;
 			return cutoff;
 		}
 		
@@ -134,7 +144,6 @@ public class Puzzle17 {
 		}
 		
 		void addFallingFigure(Figure figure) {
-			int rockHeight = rockHeight();
 			Point position = new Point(2, rockHeight + 3);
 			fallingFigure = new FallingFigure(figure, position);
 			int newHeight = position.y + figure.height;
