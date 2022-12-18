@@ -10,12 +10,16 @@ public record Point(int x, int y) {
 		return Math.abs(x - p.x) + Math.abs(y - p.y);
 	}
 	
-	public Point move(Direction d) {
-		return switch (d) {
-			case LEFT -> new Point(x - 1, y);
-			case RIGHT -> new Point(x + 1, y);
-			case UP -> new Point(x, y - 1);
-			case DOWN -> new Point(x, y + 1);
+	public Point move(Direction direction) {
+		return move(direction, 1);
+	}
+	
+	public Point move(Direction direction, int distance) {
+		return switch (direction) {
+			case LEFT -> new Point(x - distance, y);
+			case RIGHT -> new Point(x + distance, y);
+			case UP -> new Point(x, y - distance);
+			case DOWN -> new Point(x, y + distance);
 		};
 	}
 	
