@@ -1,6 +1,6 @@
 package org.advent.year2022.day16;
 
-import org.advent.Utils;
+import org.advent.common.Utils;
 
 import java.util.LinkedHashMap;
 import java.util.List;

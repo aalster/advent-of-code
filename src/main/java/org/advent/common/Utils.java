@@ -1,4 +1,4 @@
-package org.advent;
+package org.advent.common;
 
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
@@ -26,11 +26,5 @@ public class Utils {
 	@SneakyThrows
 	public static Scanner scanFileNearClass(Class<?> type, String path) {
 		return new Scanner(readFileNearClass(type, path));
-	}
-	
-	public static <T> List<T> listOf(List<T> list, T element) {
-		List<T> result = new ArrayList<>(list);
-		result.add(element);
-		return result;
 	}
 }

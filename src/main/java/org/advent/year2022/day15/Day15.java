@@ -1,6 +1,7 @@
 package org.advent.year2022.day15;
 
-import org.advent.Utils;
+import org.advent.common.Point;
+import org.advent.common.Utils;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -75,15 +76,15 @@ public class Day15 {
 	static long solve2PerimeterLogic(Data data, int targetMaxX, int targetMaxY) {
 		Set<Point> unreachablePoints = data.sensors().parallelStream()
 				.flatMap(s -> s.unreachablePerimeter().stream())
-				.filter(p -> 0 <= p.x && p.x <= targetMaxX)
-				.filter(p -> 0 <= p.y && p.y <= targetMaxY)
+				.filter(p -> 0 <= p.x() && p.x() <= targetMaxX)
+				.filter(p -> 0 <= p.y() && p.y() <= targetMaxY)
 				.filter(p -> data.sensors().stream().noneMatch(s -> s.covers(p)))
 				.filter(p -> !data.beacons().contains(p))
 				.collect(Collectors.toSet());
 		System.out.println(unreachablePoints);
 		if (!unreachablePoints.isEmpty()) {
 			Point point = unreachablePoints.iterator().next();
-			return (long) point.x * target2MaxX + point.y;
+			return (long) point.x() * target2MaxX + point.y();
 		}
 		return 0;
 	}
@@ -150,39 +151,33 @@ public class Day15 {
 			this(location, closestBeacon, location.distanceTo(closestBeacon));
 		}
 		int distanceToRow(int y) {
-			return Math.abs(location.y - y);
+			return Math.abs(location.y() - y);
 		}
 		boolean covers(Point p) {
 			return location.distanceTo(p) <= distanceToBeacon();
 		}
 		Range rowCoverRange(int y) {
 			int delta = distanceToBeacon() - distanceToRow(y);
-			return delta <= 0 ? null : new Range(location.x - delta, location.x + delta);
+			return delta <= 0 ? null : new Range(location.x() - delta, location.x() + delta);
 		}
 		List<Point> unreachablePerimeter() {
-			int fromX = location.x;
-			int toX = location.x + distanceToBeacon + 1;
-			int fromY = location.y - distanceToBeacon - 1;
-			int toY = location.y;
+			int fromX = location.x();
+			int toX = location.x() + distanceToBeacon + 1;
+			int fromY = location.y() - distanceToBeacon - 1;
+			int toY = location.y();
 			int x = fromX;
 			int y = fromY;
 			List<Point> points = new ArrayList<>();
 			while (x <= toX && y <= toY) {
 				points.add(new Point(x, y));
-				points.add(new Point(2 * location.x - x, y));
-				points.add(new Point(x, 2 * location.y - y));
-				points.add(new Point(2 * location.x - x, 2 * location.y - y));
+				points.add(new Point(2 * location.x() - x, y));
+				points.add(new Point(x, 2 * location.y() - y));
+				points.add(new Point(2 * location.x() - x, 2 * location.y() - y));
 				x++;
 				y++;
 			}
 			System.out.println("perimeter: " + points.size());
 			return points;
-		}
-	}
-	
-	record Point(int x, int y) {
-		int distanceTo(Point p) {
-			return Math.abs(x - p.x) + Math.abs(y - p.y);
 		}
 	}
 }

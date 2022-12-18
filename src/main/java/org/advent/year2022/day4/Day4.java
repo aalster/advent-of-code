@@ -1,6 +1,6 @@
 package org.advent.year2022.day4;
 
-import org.advent.Utils;
+import org.advent.common.Utils;
 
 import java.util.Scanner;
 

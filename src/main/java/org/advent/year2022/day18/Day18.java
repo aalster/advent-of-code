@@ -1,8 +1,9 @@
 package org.advent.year2022.day18;
 
-import org.advent.Utils;
+import org.advent.common.IntPair;
+import org.advent.common.Point3D;
+import org.advent.common.Utils;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Scanner;
@@ -39,17 +40,17 @@ public class Day18 {
 		Set<Point3D> innerPoints = IntStream.range(minX + 1, maxX)
 				.boxed()
 				.flatMap(x -> IntStream.range(minY + 1, maxY).mapToObj(y -> new IntPair(x, y)))
-				.flatMap(pair -> IntStream.range(minZ + 1, maxZ).mapToObj(z -> new Point3D(pair.left, pair.right, z)))
+				.flatMap(pair -> IntStream.range(minZ + 1, maxZ).mapToObj(z -> new Point3D(pair.left(), pair.right(), z)))
 				.filter(pair -> !grid.contains(pair))
 				.collect(Collectors.toCollection(HashSet::new));
 		
 		Set<Point3D> waterPoints = Stream.of(
 						getIntPairStream(minY, maxY, minZ, maxZ)
-								.flatMap(pair -> Stream.of(new Point3D(minX, pair.left, pair.right), new Point3D(maxX, pair.left, pair.right))),
+								.flatMap(pair -> Stream.of(new Point3D(minX, pair.left(), pair.right()), new Point3D(maxX, pair.left(), pair.right()))),
 						getIntPairStream(minX, maxX, minZ, maxZ)
-								.flatMap(pair -> Stream.of(new Point3D(pair.left, minY, pair.right), new Point3D(pair.left, maxY, pair.right))),
+								.flatMap(pair -> Stream.of(new Point3D(pair.left(), minY, pair.right()), new Point3D(pair.left(), maxY, pair.right()))),
 						getIntPairStream(minX, maxX, minY, maxY)
-								.flatMap(pair -> Stream.of(new Point3D(pair.left, pair.right, minZ), new Point3D(pair.left, pair.right, maxZ))))
+								.flatMap(pair -> Stream.of(new Point3D(pair.left(), pair.right(), minZ), new Point3D(pair.left(), pair.right(), maxZ))))
 				.flatMap(s -> s)
 				.filter(p -> !grid.contains(p))
 				.collect(Collectors.toCollection(HashSet::new));
@@ -78,22 +79,22 @@ public class Day18 {
 		
 		int xSides = countSidesForDirection(grid,
 				getIntPairStream(minY, maxY, minZ, maxZ),
-				pair -> new Point3D(minX, pair.left, pair.right),
-				cursor -> cursor.x <= maxX + 1,
+				pair -> new Point3D(minX, pair.left(), pair.right()),
+				cursor -> cursor.x() <= maxX + 1,
 				cursor -> cursor.shift(1, 0, 0)
 		);
 		
 		int ySides = countSidesForDirection(grid,
 				getIntPairStream(minX, maxX, minZ, maxZ),
-				pair -> new Point3D(pair.left, minY, pair.right),
-				cursor -> cursor.y <= maxY + 1,
+				pair -> new Point3D(pair.left(), minY, pair.right()),
+				cursor -> cursor.y() <= maxY + 1,
 				cursor -> cursor.shift(0, 1, 0)
 		);
 		
 		int zSides = countSidesForDirection(grid,
 				getIntPairStream(minX, maxX, minY, maxY),
-				pair -> new Point3D(pair.left, pair.right, minZ),
-				cursor -> cursor.z <= maxZ + 1,
+				pair -> new Point3D(pair.left(), pair.right(), minZ),
+				cursor -> cursor.z() <= maxZ + 1,
 				cursor -> cursor.shift(0, 0, 1)
 		);
 		
@@ -124,27 +125,6 @@ public class Day18 {
 				.flatMap(right -> IntStream.rangeClosed(minLeft, maxLeft).mapToObj(left -> new IntPair(left, right)));
 	}
 	
-	record IntPair(int left, int right) {
-	}
-	
-	record Point3D(int x, int y, int z) {
-		
-		Point3D shift(int dx, int dy, int dz) {
-			return new Point3D(x + dx, y + dy, z + dz);
-		}
-		
-		boolean touches(Point3D p) {
-			return
-					(p.x == x && p.y == y && Math.abs(p.z - z) == 1) ||
-					(p.x == x && p.z == z && Math.abs(p.y - y) == 1) ||
-					(p.z == z && p.y == y && Math.abs(p.x - x) == 1);
-		}
-		
-		static Point3D parse(String value) {
-			int[] c = Arrays.stream(value.split(",")).mapToInt(Integer::parseInt).toArray();
-			return new Point3D(c[0], c[1], c[2]);
-		}
-	}
 	
 	record Grid3D(Set<Point3D> cells) {
 		Grid3D() {

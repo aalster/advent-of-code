@@ -3,7 +3,8 @@ package org.advent.year2022.day17;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.advent.Utils;
+import org.advent.common.Point;
+import org.advent.common.Utils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -138,9 +139,9 @@ public class Day17 {
 		private void wind(int windDirection) {
 			Point next = fallingFigure.position.shift(windDirection, 0);
 			Figure figure = fallingFigure.figure;
-			if (next.x < 0 || width <= next.x + figure.width)
+			if (next.x() < 0 || width <= next.x() + figure.width)
 				return;
-			if (next.y <= rockHeight && figure.intersectsCell(next, cells, Cell.ROCK))
+			if (next.y() <= rockHeight && figure.intersectsCell(next, cells, Cell.ROCK))
 				return;
 			
 			fallingFigure.setPosition(next);
@@ -150,10 +151,10 @@ public class Day17 {
 			Point position = fallingFigure.position;
 			Point next = position.shift(0, -1);
 			Figure figure = fallingFigure.figure;
-			if (next.y <= rockHeight) {
-				if (next.y < 0 || figure.intersectsCell(next, cells, Cell.ROCK)) {
+			if (next.y() <= rockHeight) {
+				if (next.y() < 0 || figure.intersectsCell(next, cells, Cell.ROCK)) {
 					figure.draw(position, cells, Cell.ROCK);
-					rockHeight = Math.max(rockHeight, position.y + figure.height + 1);
+					rockHeight = Math.max(rockHeight, position.y() + figure.height + 1);
 					fallingFigure = null;
 					return;
 				}
@@ -208,7 +209,7 @@ public class Day17 {
 		void addFallingFigure(Figure figure) {
 			Point position = new Point(2, rockHeight + 3);
 			fallingFigure = new FallingFigure(figure, position);
-			int newHeight = position.y + figure.height;
+			int newHeight = position.y() + figure.height;
 			while (height() <= newHeight)
 				cells.add(createEmptyRow(width));
 		}
@@ -248,12 +249,12 @@ public class Day17 {
 		
 		void draw(Point position, List<Cell[]> cells, Cell c) {
 			for (Point point : relationalPoints)
-				cells.get(position.y + point.y)[position.x + point.x] = c;
+				cells.get(position.y() + point.y())[position.x() + point.x()] = c;
 		}
 		
 		boolean intersectsCell(Point position, List<Cell[]> cells, Cell c) {
 			for (Point point : relationalPoints)
-				if (cells.get(position.y + point.y)[position.x + point.x] == c)
+				if (cells.get(position.y() + point.y())[position.x() + point.x()] == c)
 					return true;
 			return false;
 		}
@@ -321,13 +322,6 @@ public class Day17 {
 					new Point(0, 1),
 					new Point(1, 1)
 			));
-		}
-	}
-	
-	record Point(int x, int y) {
-		
-		Point shift(int dx, int dy) {
-			return new Point(x + dx, y + dy);
 		}
 	}
 	

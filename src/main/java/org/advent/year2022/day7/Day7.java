@@ -3,7 +3,7 @@ package org.advent.year2022.day7;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
-import org.advent.Utils;
+import org.advent.common.Utils;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

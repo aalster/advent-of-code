@@ -1,6 +1,8 @@
 package org.advent.year2022.day9;
 
-import org.advent.Utils;
+import org.advent.common.Direction;
+import org.advent.common.Point;
+import org.advent.common.Utils;
 
 import java.util.Arrays;
 import java.util.IntSummaryStatistics;
@@ -46,31 +48,6 @@ public class Day9 {
 		}
 	}
 	
-	enum Direction {
-		R, L, U, D
-	}
-	
-	record Point(int x, int y) {
-		Point move(Direction d) {
-			return switch (d) {
-				case L -> new Point(x - 1, y);
-				case R -> new Point(x + 1, y);
-				case U -> new Point(x, y - 1);
-				case D -> new Point(x, y + 1);
-			};
-		}
-		
-		Point moveTo(Point p) {
-			if (near(p))
-				return this;
-			return new Point(x + Integer.compare(p.x, x), y + Integer.compare(p.y, y));
-		}
-		
-		boolean near(Point p) {
-			return Math.abs(p.x - x) <= 1 && Math.abs(p.y - y) <= 1;
-		}
-	}
-	
 	static class Rope {
 		private final Point[] knots;
 		
@@ -82,11 +59,17 @@ public class Day9 {
 		void move(Direction d) {
 			knots[0] = knots[0].move(d);
 			for (int i = 1; i < knots.length; i++)
-				knots[i] = knots[i].moveTo(knots[i - 1]);
+				knots[i] = moveTo(knots[i], knots[i - 1]);
 		}
 		
 		Point tail() {
 			return knots[knots.length - 1];
 		}
+	}
+	
+	static Point moveTo(Point p, Point target) {
+		if (Math.abs(target.x() - p.x()) <= 1 && Math.abs(target.y() - p.y()) <= 1)
+			return p;
+		return new Point(p.x() + Integer.compare(target.x(), p.x()), p.y() + Integer.compare(target.y(), p.y()));
 	}
 }

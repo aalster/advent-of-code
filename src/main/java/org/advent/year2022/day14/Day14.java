@@ -1,7 +1,8 @@
 package org.advent.year2022.day14;
 
 import lombok.RequiredArgsConstructor;
-import org.advent.Utils;
+import org.advent.common.Point;
+import org.advent.common.Utils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -164,19 +165,6 @@ public class Day14 {
 		
 		static Path parse(String value) {
 			return new Path(Arrays.stream(value.split(" -> ")).map(Point::parse).toList());
-		}
-	}
-	
-	record Point(int x, int y) {
-		Point shift(int dx, int dy) {
-			return new Point(x + dx, y + dy);
-		}
-		
-		static Point parse(String value) {
-			String[] split = value.split(",");
-			int x = Integer.parseInt(split[0]);
-			int y = Integer.parseInt(split[1]);
-			return new Point(x, y);
 		}
 	}
 }
