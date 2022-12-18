@@ -5,10 +5,14 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.example.Utils;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class Puzzle17 {
 	
@@ -20,10 +24,13 @@ public class Puzzle17 {
 	static final long totalFiguresCount2 = 1_000_000_000_000L;
 	
 	public static void main(String[] args) throws Exception {
-		Scanner input = Utils.scanFileNearClass(Puzzle17.class, "example.txt");
+		Scanner input = Utils.scanFileNearClass(Puzzle17.class, "input.txt");
 		Wind wind = new Wind(input.nextLine());
 		Field field = Field.create(fieldWidth);
 		FigureFactory figureFactory = new FigureFactory();
+		
+		List<WindLoopStats> loopStats = new ArrayList<>();
+		int currentLoop = 0;
 		
 		long figuresCount = 0;
 		long heightCutoff = 0;
@@ -32,6 +39,48 @@ public class Puzzle17 {
 		List<Long> delays = new ArrayList<>();
 		
 		for (long step = 0; ; step++) {
+			
+			if (currentLoop < wind.loop()) {
+				loopStats.add(new WindLoopStats(heightCutoff + field.rockHeight, figuresCount, wind.step, figureFactory.currentShape));
+				currentLoop = wind.loop();
+				
+				if (loopStats.size() == 20) {
+					for (WindLoopStats stats : loopStats)
+						System.out.println(stats);
+					
+					WindLoopStats firstLoopStats = loopStats.get(0);
+					
+					Set<Long> otherLoopsDelta = new HashSet<>();
+					for (int i = 1; i < loopStats.size() - 1; i++)
+						otherLoopsDelta.add(loopStats.get(i + 1).rockHeight - loopStats.get(i).rockHeight);
+					if (otherLoopsDelta.size() != 1)
+						throw new RuntimeException("Prediction failed: " + otherLoopsDelta);
+					
+					WindLoopStats second = loopStats.get(1);
+					WindLoopStats third = loopStats.get(2);
+					WindLoopStats loop = new WindLoopStats(
+							third.rockHeight - second.rockHeight,
+							third.figureCount - second.figureCount,
+							third.windStep - second.windStep,
+							third.figureStep - second.figureStep
+					);
+					
+					while (figuresCount + loop.figureStep + 1000 <= totalFiguresCount2) {
+						figuresCount += loop.figureCount;
+						heightCutoff += loop.rockHeight;
+						wind.step += loop.windStep;
+						figureFactory.currentShape += loop.figureStep;
+					}
+				}
+			}
+			
+			
+//			if (wind.step % wind.directions.length() == 0) {
+//				System.out.println("Interesting figures: " + figuresCount + ", Height: " + (heightCutoff + field.rockHeight));
+//				field.drawField(20);
+//				Thread.sleep(1000);
+//			}
+			
 			if (field.fallingFigure == null) {
 				heightCutoff += field.limitHeight(heightThreshold, heightLimit);
 				
@@ -45,10 +94,10 @@ public class Puzzle17 {
 				field.addFallingFigure(figureFactory.nextFigure());
 				figuresCount++;
 				
-				if (preview) {
-					field.drawField(20);
-					Thread.sleep(800);
-				}
+//				if (preview) {
+//					field.drawField(20);
+//					Thread.sleep(800);
+//				}
 				
 				if (figuresCount % 10000000 == 0) {
 					long now = System.currentTimeMillis();
@@ -62,6 +111,7 @@ public class Puzzle17 {
 			}
 			field.wind(wind.nextDirection());
 			if (preview) {
+				System.out.println("\n");
 				field.drawField(20);
 				Thread.sleep(500);
 			}
@@ -74,6 +124,10 @@ public class Puzzle17 {
 		}
 //		field.drawField();
 		System.out.println("Answer 2: " + (heightCutoff + field.rockHeight));
+	}
+	
+	record WindLoopStats(long rockHeight, long figureCount, long windStep, long figureStep) {
+	
 	}
 	
 	@AllArgsConstructor
@@ -217,11 +271,11 @@ public class Puzzle17 {
 	
 	static class FigureFactory {
 		static final Figure[] shapes = new Figure[] {horizontal(), cross(), corner(), vertical(), cube()};
-		int currentShape = -1;
+		long currentShape = -1;
 		
 		Figure nextFigure() {
 			currentShape++;
-			return shapes[currentShape % shapes.length];
+			return shapes[(int) (currentShape % shapes.length)];
 		}
 		
 		static Figure horizontal() {
@@ -305,6 +359,10 @@ public class Puzzle17 {
 				result.append(directions.charAt((int) ((step + i) % directions.length())));
 			}
 			return result.toString();
+		}
+		
+		int loop() {
+			return (int) (step / directions.length());
 		}
 	}
 }
