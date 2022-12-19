@@ -16,7 +16,7 @@ import java.util.stream.Stream;
 
 public class Day19 {
 	
-	static final int time = 24;
+	static final int time = 17;
 	
 	public static void main(String[] args) {
 		Scanner input = Utils.scanFileNearClass(Day19.class, "example.txt");
@@ -30,7 +30,13 @@ public class Day19 {
 	}
 	
 	private static int part1(List<Blueprints> blueprintsList) {
-		return blueprintsList.stream().mapToInt(b -> runSimulation(b) * b.id()).sum();
+		int sum = 0;
+		for (Blueprints blueprints : blueprintsList) {
+			int simulationResult = runSimulation(blueprints);
+			System.out.println("Simulation result for " + blueprints.id() + ": " + simulationResult);
+			sum += simulationResult * blueprints.id();
+		}
+		return sum;
 	}
 	
 	private static int runSimulation(Blueprints blueprints) {
@@ -40,7 +46,11 @@ public class Day19 {
 			
 			for (Simulation simulation : simulations)
 				simulation.gatherResources();
-			simulations = simulations.stream().flatMap(s -> s.buildIfPossible(blueprints)).toList();
+			simulations = simulations.stream()
+					.flatMap(s -> s.buildIfPossible(blueprints))
+//					.sorted(Comparator.comparing(s -> - Integer.compare(s.robots.get(Resource.CLAY), s.robots.get(Resource.ORE))))
+//					.limit(500_000)
+					.toList();
 			
 			System.out.println("\nStep " + step + ". Time: " + (System.currentTimeMillis() - start) + ". Simulations: " + simulations.size());
 		}
@@ -108,14 +118,6 @@ public class Day19 {
 			Resource targetRobot,
 			List<Resource> buildingRobots
 	) {
-	
-//		Map<Resource, Integer> robots = new HashMap<>(Arrays.stream(Resource.values()).collect(Collectors.toMap(r -> r, r -> 0)));
-//		Map<Resource, Integer> resources = new HashMap<>(Arrays.stream(Resource.values()).collect(Collectors.toMap(r -> r, r -> 0)));
-//		Resource targetRobot;
-		
-		void addRobot(Resource resource) {
-			robots.compute(resource, (r, n) -> n == null ? 1 : n + 1);
-		}
 		
 		void gatherResources() {
 			robots.forEach((robot, count) -> resources.compute(robot, (r, n) -> n + count));
@@ -124,6 +126,7 @@ public class Day19 {
 		Stream<Simulation> buildIfPossible(Blueprints blueprints) {
 			for (Resource built : buildingRobots)
 				robots.compute(built, (r, n) -> n + 1);
+			buildingRobots.clear();
 			
 			Map<Resource, Integer> price = blueprints.priceFor(targetRobot);
 			if (!price.entrySet().stream().allMatch(e -> e.getValue() <= resources.get(e.getKey())))
@@ -145,7 +148,7 @@ public class Day19 {
 					new HashMap<>(new HashMap<>(Arrays.stream(Resource.values()).collect(Collectors.toMap(r -> r, r -> 0)))),
 					Resource.ORE,
 					new ArrayList<>());
-			initial.addRobot(Resource.ORE);
+			initial.robots.put(Resource.ORE, 1);
 			return initial;
 		}
 	}
