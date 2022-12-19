@@ -14,7 +14,9 @@ import java.util.stream.Stream;
 
 public class Day19 {
 	
-	static final int time = 20;
+	static final boolean debug = false;
+	static final int time = 24;
+//	static final Random random = new Random();
 	
 	public static void main(String[] args) {
 		Scanner input = Utils.scanFileNearClass(Day19.class, "example.txt");
@@ -30,29 +32,62 @@ public class Day19 {
 	private static int part1(List<Blueprints> blueprintsList) {
 		int sum = 0;
 		for (Blueprints blueprints : blueprintsList) {
-			int simulationResult = runSimulation(blueprints);
+			int simulationResult = runSimulationRecursive(blueprints);
 			System.out.println("Simulation result for " + blueprints.id() + ": " + simulationResult);
 			sum += simulationResult * blueprints.id();
 		}
 		return sum;
 	}
 	
-	private static int runSimulation(Blueprints blueprints) {
-		List<Simulation> simulations = List.of(Simulation.initial());
-		for (int step = 0; step < time; step++) {
-			long start = System.currentTimeMillis();
-			
-			for (Simulation simulation : simulations)
-				simulation.gatherResources();
-			simulations = simulations.stream()
-					.flatMap(s -> s.buildIfPossible(blueprints))
-//					.sorted(Comparator.comparing(s -> - Integer.compare(s.robots.get(Resource.CLAY), s.robots.get(Resource.ORE))))
-//					.limit(500_000)
-					.toList();
-			
-			System.out.println("\nStep " + step + ". Time: " + (System.currentTimeMillis() - start) + ". Simulations: " + simulations.size());
+//	private static int runSimulation(Blueprints blueprints) {
+//		List<Simulation> simulations = Simulation.initial(blueprints);
+//		for (int step = 0; step < time; step++) {
+//			long start = System.currentTimeMillis();
+//
+//			for (Simulation simulation : simulations)
+//				simulation.gatherResources();
+//			simulations = simulations.stream()
+//					.flatMap(s -> s.buildIfPossible(blueprints))
+////					.sorted(Comparator.comparing(s -> - Integer.compare(s.robots.get(Resource.CLAY), s.robots.get(Resource.ORE))))
+////					.limit(500_000)
+//					.toList();
+//
+//			System.out.println("\nStep " + step + ". Time: " + (System.currentTimeMillis() - start) + ". Simulations: " + simulations.size());
+//		}
+//		return simulations.stream().mapToInt(s -> s.resources().get(Resources.GEODE)).max().orElse(0);
+//	}
+	
+	private static int runSimulationRecursive(Blueprints blueprints) {
+		int max = 0;
+		for (Simulation simulation : Simulation.initial(blueprints)) {
+			int simulationResult = simulateRecursive(0, simulation, blueprints);
+			if (max < simulationResult)
+				max = simulationResult;
 		}
-		return simulations.stream().mapToInt(s -> s.resources().get(Resources.GEODE)).max().orElse(0);
+		return max;
+	}
+	
+	static int simulateRecursive(int currentTime, Simulation simulation, Blueprints blueprints) {
+		if (currentTime >= time)
+			return simulation.resources().get(Resources.GEODE);
+		
+		if (debug) {
+			System.out.println("\n== Minute " + (currentTime + 1) + " ==");
+		}
+		
+		int max = 0;
+		
+		List<Simulation> nextSimulations = simulation.buildIfPossible(blueprints)
+//				.sorted((s1, s2) -> random.nextInt(2) - 1).limit(1)
+				.toList();
+		
+		for (Simulation next : nextSimulations) {
+			next.gatherResources();
+			int result = simulateRecursive(currentTime + 1, next, blueprints);
+			if (max < result)
+				max = result;
+		}
+		return max;
 	}
 	
 	private static int part2(List<Blueprints> blueprintsList) {
@@ -118,11 +153,37 @@ public class Day19 {
 				default -> throw new IllegalArgumentException();
 			};
 		}
+		
+		static String resourceName(int resource) {
+			return switch (resource) {
+				case ORE -> "ore";
+				case CLAY -> "clay";
+				case OBSIDIAN -> "obsidian";
+				case GEODE -> "geode";
+				default -> throw new IllegalArgumentException();
+			};
+		}
 	}
+	
+	static List<Integer> debugSteps = new ArrayList<>(List.of(
+			Resources.CLAY,
+			Resources.CLAY,
+			Resources.CLAY,
+			Resources.OBSIDIAN,
+			Resources.CLAY,
+			Resources.OBSIDIAN,
+			Resources.GEODE,
+			Resources.GEODE,
+			Resources.GEODE,
+			Resources.GEODE,
+			Resources.GEODE
+	));
 	
 	record Blueprints(int id, Resources[] prices) {
 		
 		IntStream availableRobots(Resources currentRobots) {
+			if (debug)
+				return IntStream.of(debugSteps.remove(0));
 			return IntStream.range(0, Resources.COUNT)
 					.filter(robot -> hasRobotsForBlueprint(currentRobots, prices[robot]));
 		}
@@ -185,16 +246,42 @@ public class Day19 {
 		
 		void gatherResources() {
 			resources.addAll(robots);
+			if (debug) {
+				for (int i = 0; i < robots.values.length; i++) {
+					int robotsCount = robots.values[i];
+					String name = Resources.resourceName(i);
+					if (robotsCount > 0)
+						System.out.println(robotsCount + " " + name + "-collecting " +
+								(robotsCount > 1 ? "robots collect " : "robot collects ") +
+								robotsCount + " " + name + "; you now have " + resources.values[i] + " " + name + ".");
+				}
+			}
 		}
 		
 		Stream<Simulation> buildIfPossible(Blueprints blueprints) {
-			if (building[0] >= 0)
+			if (building[0] >= 0) {
 				robots.add(building[0]);
+				if (debug) {
+					String name = Resources.resourceName(building[0]);
+					System.out.println("The new " + name + "-collecting robot is ready; you now have " + robots.get(building[0]) + " of them.");
+				}
+			}
 			building[0] = -1;
 			
 			Resources price = blueprints.priceFor(targetRobot);
 			if (!resources.containsAll(price))
 				return Stream.of(this);
+			
+			if (debug) {
+				String priceString = "";
+				for (int i = 0; i < price.values.length; i++) {
+					int count = price.values[i];
+					if (count > 0)
+						priceString += " and " + count + " " + Resources.resourceName(i);
+				}
+				priceString = priceString.substring(5);
+				System.out.println("Spend " + priceString + " to start building a " + Resources.resourceName(targetRobot) + "-collecting robot.");
+			}
 			
 			resources.removeAll(price);
 			building[0] = targetRobot;
@@ -206,10 +293,18 @@ public class Day19 {
 			return new Simulation(robots.copy(), resources.copy(), targetRobot, new int[] {building[0]});
 		}
 		
-		static Simulation initial() {
-			Simulation initial = new Simulation(new Resources(), new Resources(), Resources.ORE, new int[] {-1});
+		@Override
+		public String toString() {
+			return "Robots: " + Arrays.toString(robots.values) +
+					", resources: " + Arrays.toString(resources.values) +
+					", target: " + targetRobot +
+					(building[0] >= 0 ? (", building: " + building[0]) : "");
+		}
+		
+		static List<Simulation> initial(Blueprints blueprints) {
+			Simulation initial = new Simulation(new Resources(), new Resources(), -1, new int[] {-1});
 			initial.robots.add(Resources.ORE, 1);
-			return initial;
+			return blueprints.availableRobots(initial.robots).mapToObj(initial::copyForTarget).toList();
 		}
 	}
 }
