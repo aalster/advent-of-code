@@ -19,7 +19,7 @@ public class Day19 {
 //	static final Random random = new Random();
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day19.class, "example.txt");
+		Scanner input = Utils.scanFileNearClass(Day19.class, "input.txt");
 		List<Blueprints> blueprintsList = new ArrayList<>();
 		while (input.hasNext()) {
 			blueprintsList.add(Blueprints.parse(input.nextLine()));
@@ -30,13 +30,13 @@ public class Day19 {
 	}
 	
 	private static int part1(List<Blueprints> blueprintsList) {
-		int sum = 0;
-		for (Blueprints blueprints : blueprintsList) {
-			int simulationResult = runSimulationRecursive(blueprints);
-			System.out.println("Simulation result for " + blueprints.id() + ": " + simulationResult);
-			sum += simulationResult * blueprints.id();
-		}
-		return sum;
+		return blueprintsList.parallelStream()
+				.mapToInt(b -> {
+					int simulationResult = runSimulationRecursive(b);
+					System.out.println("Simulation result for " + b.id() + ": " + simulationResult);
+					return b.id() * simulationResult;
+				})
+				.sum();
 	}
 	
 //	private static int runSimulation(Blueprints blueprints) {
