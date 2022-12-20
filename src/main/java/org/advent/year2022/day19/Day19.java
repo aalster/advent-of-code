@@ -15,7 +15,10 @@ import java.util.stream.Stream;
 public class Day19 {
 	
 	static final boolean debug = false;
-	static final int time = 24;
+	static final boolean part2Optimizations = true;
+	static final int time1 = 24;
+	static final int time2 = 32;
+	static final int part2Limit = 3;
 //	static final Random random = new Random();
 	
 	public static void main(String[] args) {
@@ -25,18 +28,29 @@ public class Day19 {
 			blueprintsList.add(Blueprints.parse(input.nextLine()));
 		}
 		
-		System.out.println("Answer 1: " + part1(blueprintsList));
-		System.out.println("Answer 2: " + part2(blueprintsList));
+		// wrong with part2Optimizations
+//		System.out.println("Answer 1: " + part1(blueprintsList, time1));
+		System.out.println("Answer 2: " + part2(blueprintsList.subList(0, Math.min(part2Limit, blueprintsList.size())), time2));
 	}
 	
-	private static int part1(List<Blueprints> blueprintsList) {
-		return blueprintsList.parallelStream()
+	private static int part1(List<Blueprints> blueprintsList, int time) {
+		return (debug ? blueprintsList.stream() : blueprintsList.parallelStream())
 				.mapToInt(b -> {
-					int simulationResult = runSimulationRecursive(b);
+					int simulationResult = runSimulationRecursive(b, time);
 					System.out.println("Simulation result for " + b.id() + ": " + simulationResult);
 					return b.id() * simulationResult;
 				})
 				.sum();
+	}
+	
+	private static int part2(List<Blueprints> blueprintsList, int time) {
+		return (debug ? blueprintsList.stream() : blueprintsList.parallelStream())
+				.mapToInt(b -> {
+					int simulationResult = runSimulationRecursive(b, time);
+					System.out.println("Simulation result for " + b.id() + ": " + simulationResult);
+					return simulationResult;
+				})
+				.reduce(1, (l, r) -> l * r);
 	}
 	
 //	private static int runSimulation(Blueprints blueprints) {
@@ -57,41 +71,37 @@ public class Day19 {
 //		return simulations.stream().mapToInt(s -> s.resources().get(Resources.GEODE)).max().orElse(0);
 //	}
 	
-	private static int runSimulationRecursive(Blueprints blueprints) {
+	private static int runSimulationRecursive(Blueprints blueprints, int time) {
 		int max = 0;
-		for (Simulation simulation : Simulation.initial(blueprints)) {
-			int simulationResult = simulateRecursive(0, simulation, blueprints);
+		for (Simulation simulation : Simulation.initial(blueprints, time)) {
+			int simulationResult = simulateRecursive(time, simulation, blueprints);
 			if (max < simulationResult)
 				max = simulationResult;
 		}
 		return max;
 	}
 	
-	static int simulateRecursive(int currentTime, Simulation simulation, Blueprints blueprints) {
-		if (currentTime >= time)
+	static int simulateRecursive(int remainingTime, Simulation simulation, Blueprints blueprints) {
+		if (remainingTime <= 0)
 			return simulation.resources().get(Resources.GEODE);
 		
 		if (debug) {
-			System.out.println("\n== Minute " + (currentTime + 1) + " ==");
+			System.out.println("\n== Minute " + (remainingTime) + " ==");
 		}
 		
 		int max = 0;
 		
-		List<Simulation> nextSimulations = simulation.buildIfPossible(blueprints)
+		List<Simulation> nextSimulations = simulation.buildIfPossible(blueprints, remainingTime)
 //				.sorted((s1, s2) -> random.nextInt(2) - 1).limit(1)
 				.toList();
 		
 		for (Simulation next : nextSimulations) {
 			next.gatherResources();
-			int result = simulateRecursive(currentTime + 1, next, blueprints);
+			int result = simulateRecursive(remainingTime - 1, next, blueprints);
 			if (max < result)
 				max = result;
 		}
 		return max;
-	}
-	
-	private static int part2(List<Blueprints> blueprintsList) {
-		return 0;
 	}
 	
 	static class Resources {
@@ -181,11 +191,16 @@ public class Day19 {
 	
 	record Blueprints(int id, Resources[] prices) {
 		
-		IntStream availableRobots(Resources currentRobots) {
+		IntStream availableRobots(Resources currentRobots, int remainingTime) {
 			if (debug)
 				return IntStream.of(debugSteps.remove(0));
-			return IntStream.range(0, Resources.COUNT)
-					.filter(robot -> hasRobotsForBlueprint(currentRobots, prices[robot]));
+			int start = Resources.ORE;
+			int end = Resources.GEODE;
+			if (part2Optimizations) {
+				start = remainingTime > 27 ? Resources.ORE : Resources.CLAY;
+				end = remainingTime < 16 ? Resources.GEODE : Resources.OBSIDIAN;
+			}
+			return IntStream.rangeClosed(start, end).filter(robot -> hasRobotsForBlueprint(currentRobots, prices[robot]));
 		}
 		
 		static boolean hasRobotsForBlueprint(Resources currentRobots, Resources price) {
@@ -258,7 +273,7 @@ public class Day19 {
 			}
 		}
 		
-		Stream<Simulation> buildIfPossible(Blueprints blueprints) {
+		Stream<Simulation> buildIfPossible(Blueprints blueprints, int remainingTime) {
 			if (building[0] >= 0) {
 				robots.add(building[0]);
 				if (debug) {
@@ -286,7 +301,7 @@ public class Day19 {
 			resources.removeAll(price);
 			building[0] = targetRobot;
 			
-			return blueprints.availableRobots(robots).mapToObj(this::copyForTarget);
+			return blueprints.availableRobots(robots, remainingTime).mapToObj(this::copyForTarget);
 		}
 		
 		Simulation copyForTarget(int targetRobot) {
@@ -301,10 +316,10 @@ public class Day19 {
 					(building[0] >= 0 ? (", building: " + building[0]) : "");
 		}
 		
-		static List<Simulation> initial(Blueprints blueprints) {
+		static List<Simulation> initial(Blueprints blueprints, int remainingTime) {
 			Simulation initial = new Simulation(new Resources(), new Resources(), -1, new int[] {-1});
 			initial.robots.add(Resources.ORE, 1);
-			return blueprints.availableRobots(initial.robots).mapToObj(initial::copyForTarget).toList();
+			return blueprints.availableRobots(initial.robots, remainingTime).mapToObj(initial::copyForTarget).toList();
 		}
 	}
 }
