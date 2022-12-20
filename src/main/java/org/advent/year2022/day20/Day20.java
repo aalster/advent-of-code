@@ -12,20 +12,22 @@ public class Day20 {
 	
 	public static void main(String[] args) {
 		Scanner input = Utils.scanFileNearClass(Day20.class, "input.txt");
-		List<Integer> lines = new ArrayList<>(5000);
+		List<Long> lines = new ArrayList<>(5000);
 		while (input.hasNext()) {
-			lines.add(Integer.valueOf(input.nextLine()));
+			lines.add(Long.valueOf(input.nextLine()));
 		}
-		int[] numbers = lines.stream().mapToInt(i -> i).toArray();
+		long[] numbers = lines.stream().mapToLong(i -> i).toArray();
 		
-//		numbers = new int[] {0, 12, 0, 0, 0};
+		System.out.println("Answer 1: " + mix(numbers, 1));
 		
-		System.out.println("Answer 1: " + part1(numbers));
-		System.out.println("Answer 2: " + part2());
+		for (int i = 0; i < numbers.length; i++)
+			numbers[i] *= 811589153;
+		System.out.println("Answer 2: " + mix(numbers, 10));
 	}
 	
-	private static int part1(int[] numbers) {
+	private static long mix(long[] numbers, int times) {
 		int length = numbers.length;
+		int lengthMinusOne = length - 1;
 		int[] newIndexes = new int[length];
 		for (int i = 0; i < length; i++)
 			newIndexes[i] = i;
@@ -36,41 +38,47 @@ public class Day20 {
 			System.out.println(Arrays.toString(numbers));
 		}
 		
-		for (int i = 0; i < length; i++) {
-			int shift = numbers[i];
-			if (shift == 0)
-				continue;
+		while (times > 0) {
+			times--;
 			
-			int from = newIndexes[i];
-			int to = from + shift;
-			while (to <= 0)
-				to = to + length - 1;
-			while (to >= length)
-				to = to - length + 1;
-			if (debug) {
-				System.out.println();
-				System.out.println(shift + " moves from " + from + " to " + to + ":");
-			}
-			
-			if (from < to) {
-				for (int newIndex = 0; newIndex < length; newIndex++)
-					if (from < newIndexes[newIndex] && newIndexes[newIndex] <= to)
-						newIndexes[newIndex]--;
-			} else {
-				for (int newIndex = 0; newIndex < length; newIndex++)
-					if (to <= newIndexes[newIndex] && newIndexes[newIndex] < from)
-						newIndexes[newIndex]++;
-			}
-			newIndexes[i] = to;
-			if (debug) {
-				System.out.println(Arrays.toString(newIndexes));
-				System.out.println(Arrays.toString(getNewArray(numbers, newIndexes)));
+			for (int i = 0; i < length; i++) {
+				long shift = numbers[i];
+				if (shift == 0)
+					continue;
+				
+				int from = newIndexes[i];
+				long toLong = from + shift;
+				if (toLong <= 0)
+					toLong = toLong % lengthMinusOne + lengthMinusOne;
+				else if (toLong >= length)
+					toLong = toLong % lengthMinusOne;
+				int to = (int) toLong;
+				
+				if (debug) {
+					System.out.println();
+					System.out.println(shift + " moves from " + from + " to " + to + ":");
+				}
+				
+				if (from < to) {
+					for (int newIndex = 0; newIndex < length; newIndex++)
+						if (from < newIndexes[newIndex] && newIndexes[newIndex] <= to)
+							newIndexes[newIndex]--;
+				} else {
+					for (int newIndex = 0; newIndex < length; newIndex++)
+						if (to <= newIndexes[newIndex] && newIndexes[newIndex] < from)
+							newIndexes[newIndex]++;
+				}
+				newIndexes[i] = to;
+				if (debug) {
+					System.out.println(Arrays.toString(newIndexes));
+					System.out.println(Arrays.toString(getNewArray(numbers, newIndexes)));
+				}
 			}
 		}
 		
-		int[] newArray = getNewArray(numbers, newIndexes);
+		long[] newArray = getNewArray(numbers, newIndexes);
 		for (int i = 0; i < newArray.length; i++) {
-			int n = newArray[i];
+			long n = newArray[i];
 			if (n == 0) {
 				int a = (i + 1000) % length;
 				int b = (i + 2000) % length;
@@ -82,14 +90,10 @@ public class Day20 {
 		throw new RuntimeException("Zero not found");
 	}
 	
-	private static int[] getNewArray(int[] numbers, int[] newIndexes) {
-		int[] result = new int[numbers.length];
+	private static long[] getNewArray(long[] numbers, int[] newIndexes) {
+		long[] result = new long[numbers.length];
 		for (int i = 0; i < newIndexes.length; i++)
 			result[newIndexes[i]] = numbers[i];
 		return result;
-	}
-	
-	private static int part2() {
-		return 0;
 	}
 }
