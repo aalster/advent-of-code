@@ -16,14 +16,14 @@ public class Day0 {
 		}
 		
 		System.out.println("Answer 1: " + part1(lines));
-		System.out.println("Answer 2: " + part2(lines));
+		System.out.println("Answer 2: " + part2());
 	}
 	
 	private static int part1(List<String> data) {
 		return 0;
 	}
 	
-	private static int part2(List<String> data) {
+	private static int part2() {
 		return 0;
 	}
 }
