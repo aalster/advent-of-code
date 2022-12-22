@@ -1,6 +1,7 @@
 package org.advent.common;
 
 public record Point(int x, int y) {
+	public static final Point ZERO = new Point(0, 0);
 	
 	public Point shift(int dx, int dy) {
 		return new Point(x + dx, y + dy);
@@ -8,6 +9,12 @@ public record Point(int x, int y) {
 	
 	public int distanceTo(Point p) {
 		return Math.abs(x - p.x) + Math.abs(y - p.y);
+	}
+	
+	public boolean inRect(Point from, Point toExclusive) {
+		if (toExclusive.x < from.x || toExclusive.y < from.y)
+			throw new IllegalArgumentException("to lower than from");
+		return from.x <= x && x < toExclusive.x && from.y <= y && y < toExclusive.y;
 	}
 	
 	public Point move(Direction direction) {
