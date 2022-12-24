@@ -40,4 +40,14 @@ public enum Direction {
 		}
 		throw new IllegalArgumentException("Supports only LEFT/RIGHT");
 	}
+	
+	public static Direction parseSymbol(char symbol) {
+		return switch (symbol) {
+			case '>' -> RIGHT;
+			case '<' -> LEFT;
+			case '^' -> UP;
+			case 'v', 'V' -> DOWN;
+			default -> throw new IllegalArgumentException("" + symbol);
+		};
+	}
 }

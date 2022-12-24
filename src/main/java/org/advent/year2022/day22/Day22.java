@@ -1,6 +1,7 @@
 package org.advent.year2022.day22;
 
 import org.advent.common.Direction;
+import org.advent.common.FieldBounds;
 import org.advent.common.Pair;
 import org.advent.common.Point;
 import org.advent.common.Utils;
@@ -45,8 +46,7 @@ public class Day22 {
 	}
 	
 	private static int part1(Set<Point> field, Set<Point> walls, List<Object> actions) {
-		FieldBounds bounds = new FieldBounds();
-		bounds.fill(field);
+		FieldBounds bounds = FieldBounds.ofField(field);
 		Point position = bounds.rowMin(0);
 		Direction direction = Direction.RIGHT;
 		
@@ -57,15 +57,7 @@ public class Day22 {
 			}
 			if (action instanceof Integer steps) {
 				for (int step = 0; step < steps; step++) {
-					Point next = position.move(direction);
-					if (!field.contains(next)) {
-						next = switch (direction) {
-							case RIGHT -> bounds.rowMin(next.y());
-							case LEFT -> bounds.rowMax(next.y());
-							case DOWN -> bounds.colMin(next.x());
-							case UP -> bounds.colMax(next.x());
-						};
-					}
+					Point next = bounds.moveWrappingAround(position, direction);
 					if (walls.contains(next))
 						break;
 					position = next;
@@ -152,49 +144,6 @@ public class Day22 {
 			case LEFT -> 2;
 			case UP -> 3;
 		};
-	}
-	
-	record FieldBounds(Map<Integer, Pair<Point, Point>> rows, Map<Integer, Pair<Point, Point>> cols) {
-		
-		FieldBounds() {
-			this(new HashMap<>(), new HashMap<>());
-		}
-		
-		Point rowMin(int row) {
-			return rows.get(row).left();
-		}
-		
-		Point rowMax(int row) {
-			return rows.get(row).right();
-		}
-		
-		Point colMin(int col) {
-			return cols.get(col).left();
-		}
-		
-		Point colMax(int col) {
-			return cols.get(col).right();
-		}
-		
-		void fill(Set<Point> field) {
-			for (Point point : field) {
-				Pair<Point, Point> rowPair = rows.get(point.y());
-				if (rowPair == null)
-					rows.put(point.y(), new Pair<>(point, point));
-				else if (point.x() < rowPair.left().x())
-					rows.put(point.y(), new Pair<>(point, rowPair.right()));
-				else if (rowPair.right().x() < point.x())
-					rows.put(point.y(), new Pair<>(rowPair.left(), point));
-				
-				Pair<Point, Point> colPair = cols.get(point.x());
-				if (colPair == null)
-					cols.put(point.x(), new Pair<>(point, point));
-				else if (point.y() < colPair.left().y())
-					cols.put(point.x(), new Pair<>(point, colPair.right()));
-				else if (colPair.right().y() < point.y())
-					cols.put(point.x(), new Pair<>(colPair.left(), point));
-			}
-		}
 	}
 	
 	enum FaceType {
