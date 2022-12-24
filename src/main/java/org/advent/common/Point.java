@@ -7,6 +7,10 @@ public record Point(int x, int y) {
 		return new Point(x + dx, y + dy);
 	}
 	
+	public Point shift(Point p) {
+		return new Point(x + p.x, y + p.y);
+	}
+	
 	public int distanceTo(Point p) {
 		return Math.abs(x - p.x) + Math.abs(y - p.y);
 	}
