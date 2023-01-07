@@ -1,5 +1,8 @@
 package org.advent.common;
 
+import java.util.Objects;
+import java.util.stream.Stream;
+
 public record Point(int x, int y) {
 	public static final Point ZERO = new Point(0, 0);
 	
@@ -13,6 +16,12 @@ public record Point(int x, int y) {
 	
 	public int distanceTo(Point p) {
 		return Math.abs(x - p.x) + Math.abs(y - p.y);
+	}
+	
+	public Point directionVectorTo(Point p) {
+		DirectionExt vertical = p.y == y ? null : p.y < y ? DirectionExt.N : DirectionExt.S;
+		DirectionExt horizontal = p.x == x ? null : p.x < x ? DirectionExt.W : DirectionExt.E;
+		return Stream.of(horizontal, vertical).filter(Objects::nonNull).map(DirectionExt::getPoint).reduce(new Point(0, 0), Point::shift);
 	}
 	
 	public boolean inRect(Point from, Point toExclusive) {
