@@ -1,5 +1,7 @@
 package org.advent.common;
 
+import java.util.stream.Stream;
+
 public enum Direction {
 	RIGHT, DOWN, LEFT, UP;
 	
@@ -39,6 +41,10 @@ public enum Direction {
 			};
 		}
 		throw new IllegalArgumentException("Supports only LEFT/RIGHT");
+	}
+	
+	public static Stream<Direction> stream() {
+		return Stream.of(Direction.values());
 	}
 	
 	public static Direction parseSymbol(char symbol) {

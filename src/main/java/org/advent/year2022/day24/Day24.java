@@ -5,7 +5,6 @@ import org.advent.common.FieldBounds;
 import org.advent.common.Point;
 import org.advent.common.Utils;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
@@ -19,7 +18,7 @@ public class Day24 {
 	public static void main(String[] args) {
 		Scanner input = Utils.scanFileNearClass(Day24.class, "input.txt");
 		Set<Point> field = new HashSet<>();
-		Map<Direction, Set<Point>> blizzards = Arrays.stream(Direction.values()).collect(Collectors.toMap(d -> d, d -> new HashSet<>()));
+		Map<Direction, Set<Point>> blizzards = Direction.stream().collect(Collectors.toMap(d -> d, d -> new HashSet<>()));
 		int y = 0;
 		while (input.hasNext()) {
 			char[] charArray = input.nextLine().toCharArray();
@@ -62,7 +61,7 @@ public class Day24 {
 	
 	record State(int steps, Map<Direction, Set<Point>> blizzards, Set<Point> branches) {
 		State next(FieldBounds bounds) {
-			Map<Direction, Set<Point>> nextBlizzards = Arrays.stream(Direction.values()).collect(Collectors.toMap(
+			Map<Direction, Set<Point>> nextBlizzards = Direction.stream().collect(Collectors.toMap(
 					direction -> direction,
 					direction -> blizzards.get(direction).stream().map(b -> bounds.moveWrappingAround(b, direction)).collect(Collectors.toSet())
 			));
@@ -70,7 +69,7 @@ public class Day24 {
 			Set<Point> allBlizzards = nextBlizzards.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
 			
 			Set<Point> nextBranches = branches.stream()
-					.flatMap(p -> Stream.concat(Stream.of(p), Arrays.stream(Direction.values()).map(p::move)))
+					.flatMap(p -> Stream.concat(Stream.of(p), Direction.stream().map(p::move)))
 					.filter(bounds::contains)
 					.filter(p -> !allBlizzards.contains(p))
 					.collect(Collectors.toSet());
