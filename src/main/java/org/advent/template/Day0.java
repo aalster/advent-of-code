@@ -19,11 +19,11 @@ public class Day0 {
 		System.out.println("Answer 2: " + part2());
 	}
 	
-	private static int part1(List<String> data) {
+	private static long part1(List<String> data) {
 		return 0;
 	}
 	
-	private static int part2() {
+	private static long part2() {
 		return 0;
 	}
 }
