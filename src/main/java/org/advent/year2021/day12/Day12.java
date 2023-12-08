@@ -4,12 +4,11 @@ import org.advent.common.Utils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -24,11 +23,25 @@ public class Day12 {
 		Graph graph = Graph.parse(lines);
 		
 		System.out.println("Answer 1: " + part1(graph));
-		System.out.println("Answer 2: " + part2());
+		System.out.println("Answer 2: " + part2(graph));
 	}
 	
 	private static long part1(Graph graph) {
-		List<Path> paths = List.of(Path.init());
+		List<Path> paths = List.of(Path.init(graph.paths().keySet(), ""));
+		return findPath(graph, paths).size();
+	}
+	
+	private static long part2(Graph graph) {
+		List<Path> paths = graph.paths().keySet().stream()
+				.filter(StringUtils::isAllLowerCase)
+				.filter(cave -> !cave.equals("start") && !cave.equals("end"))
+				.map(cave -> Path.init(graph.paths().keySet(), cave))
+				.toList();
+		List<Path> finished = findPath(graph, paths);
+		return finished.stream().map(Path::path).distinct().count();
+	}
+	
+	private static List<Path> findPath(Graph graph, List<Path> paths) {
 		List<Path> finished = new ArrayList<>();
 		while (!paths.isEmpty()) {
 			paths = paths.stream().flatMap(p -> p.step(graph)).toList();
@@ -38,27 +51,27 @@ public class Day12 {
 				finished.addAll(currentFinished);
 			paths = split.getOrDefault(false, List.of());
 		}
-		return finished.size();
+		return finished;
 	}
 	
-	private static long part2() {
-		return 0;
-	}
-	
-	private record Path(List<String> path, Set<String> visitedSmall) {
+	private record Path(List<String> path, Map<String, Integer> visitLimit) {
 		
 		public Stream<Path> step(Graph graph) {
 			return graph.paths().get(path.getLast()).stream()
-					.filter(next -> !visitedSmall.contains(next))
+					.filter(next -> visitLimit.get(next) > 0)
 					.map(this::go);
 		}
 		
 		private Path go(String next) {
-			return new Path(concat(path, next), StringUtils.isAllLowerCase(next) ? concat(visitedSmall, next) : visitedSmall);
+			Map<String, Integer> nextVisited = new HashMap<>(visitLimit);
+			nextVisited.computeIfPresent(next, (k, v) -> v - 1);
+			return new Path(concat(path, next), nextVisited);
 		}
 		
-		static Path init() {
-			return new Path(new ArrayList<>(), new HashSet<>()).go("start");
+		static Path init(Collection<String> allCaves, String visitingTwice) {
+			Map<String, Integer> visitLimit = allCaves.stream().collect(Collectors.toMap(cave -> cave,
+					cave -> visitingTwice.equals(cave) ? 2 : (StringUtils.isAllLowerCase(cave) ? 1 : Integer.MAX_VALUE)));
+			return new Path(new ArrayList<>(), visitLimit).go("start");
 		}
 	}
 	
@@ -80,11 +93,5 @@ public class Day12 {
 		list = new ArrayList<>(list);
 		list.add(item);
 		return list;
-	}
-	
-	private static <T> Set<T> concat(Set<T> set, T item) {
-		set = new HashSet<>(set);
-		set.add(item);
-		return set;
 	}
 }
