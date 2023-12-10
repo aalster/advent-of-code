@@ -1,9 +1,21 @@
 package org.advent.common;
 
+import lombok.RequiredArgsConstructor;
+
 import java.util.stream.Stream;
 
+@RequiredArgsConstructor
 public enum Direction {
-	RIGHT, DOWN, LEFT, UP;
+	RIGHT(new Point(1, 0)),
+	DOWN(new Point(0, 1)),
+	LEFT(new Point(-1, 0)),
+	UP(new Point(0, -1));
+	
+	private final Point p;
+	
+	public Point shift(Point point) {
+		return point.shift(p);
+	}
 	
 	public Direction reverse() {
 		return switch (this) {
