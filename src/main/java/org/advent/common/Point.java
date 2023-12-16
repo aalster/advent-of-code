@@ -1,5 +1,6 @@
 package org.advent.common;
 
+import java.util.Collection;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -12,6 +13,10 @@ public record Point(int x, int y) {
 	
 	public Point shift(Point p) {
 		return new Point(x + p.x, y + p.y);
+	}
+	
+	public Point shift(Direction direction) {
+		return direction.shift(this);
 	}
 	
 	public int distanceTo(Point p) {
@@ -48,5 +53,21 @@ public record Point(int x, int y) {
 		int x = Integer.parseInt(split[0]);
 		int y = Integer.parseInt(split[1]);
 		return new Point(x, y);
+	}
+	
+	public static int minX(Collection<Point> points) {
+		return points.stream().mapToInt(Point::x).min().orElseThrow();
+	}
+	
+	public static int maxX(Collection<Point> points) {
+		return points.stream().mapToInt(Point::x).max().orElseThrow();
+	}
+	
+	public static int minY(Collection<Point> points) {
+		return points.stream().mapToInt(Point::y).min().orElseThrow();
+	}
+	
+	public static int maxY(Collection<Point> points) {
+		return points.stream().mapToInt(Point::y).max().orElseThrow();
 	}
 }

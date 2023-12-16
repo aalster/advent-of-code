@@ -6,11 +6,12 @@ import java.util.stream.Stream;
 
 @RequiredArgsConstructor
 public enum Direction {
-	RIGHT(new Point(1, 0)),
-	DOWN(new Point(0, 1)),
-	LEFT(new Point(-1, 0)),
-	UP(new Point(0, -1));
+	UP(0, new Point(0, -1)),
+	RIGHT(1, new Point(1, 0)),
+	DOWN(2, new Point(0, 1)),
+	LEFT(3, new Point(-1, 0));
 	
+	private final int index;
 	private final Point p;
 	
 	public Point shift(Point point) {
@@ -18,12 +19,19 @@ public enum Direction {
 	}
 	
 	public Direction reverse() {
+		return rotate(DOWN);
+	}
+	
+	public Direction mirror() {
 		return switch (this) {
-			case UP -> DOWN;
-			case DOWN -> UP;
 			case LEFT -> RIGHT;
 			case RIGHT -> LEFT;
+			default -> this;
 		};
+	}
+	
+	public Direction rotate(Direction direction) {
+		return values()[(index + direction.index) % 4];
 	}
 	
 	public String presentation() {
@@ -33,26 +41,6 @@ public enum Direction {
 			case RIGHT -> ">";
 			case DOWN -> "v";
 		};
-	}
-	
-	public Direction rotate(Direction direction) {
-		if (direction == RIGHT) {
-			return switch (this) {
-				case RIGHT -> DOWN;
-				case DOWN -> LEFT;
-				case LEFT -> UP;
-				case UP -> RIGHT;
-			};
-		}
-		if (direction == LEFT) {
-			return switch (this) {
-				case RIGHT -> UP;
-				case DOWN -> RIGHT;
-				case LEFT -> DOWN;
-				case UP -> LEFT;
-			};
-		}
-		throw new IllegalArgumentException("Supports only LEFT/RIGHT");
 	}
 	
 	public static Stream<Direction> stream() {

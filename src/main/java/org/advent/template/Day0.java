@@ -19,7 +19,7 @@ public class Day0 {
 		System.out.println("Answer 2: " + part2());
 	}
 	
-	private static long part1(List<String> data) {
+	private static long part1(List<String> lines) {
 		return 0;
 	}
 	
