@@ -48,6 +48,10 @@ public record Point(int x, int y) {
 		};
 	}
 	
+	public int manhattanDistance(Point p) {
+		return Math.abs(p.x - x) + Math.abs(p.y - y);
+	}
+	
 	public static Point parse(String value) {
 		String[] split = value.split(",");
 		int x = Integer.parseInt(split[0]);
