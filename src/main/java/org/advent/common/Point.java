@@ -1,7 +1,9 @@
 package org.advent.common;
 
 import java.util.Collection;
+import java.util.IntSummaryStatistics;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public record Point(int x, int y) {
@@ -73,5 +75,15 @@ public record Point(int x, int y) {
 	
 	public static int maxY(Collection<Point> points) {
 		return points.stream().mapToInt(Point::y).max().orElseThrow();
+	}
+	
+	public static void printField(Set<Point> field, char filled, char empty) {
+		IntSummaryStatistics xStats = field.stream().mapToInt(Point::x).summaryStatistics();
+		IntSummaryStatistics yStats = field.stream().mapToInt(Point::y).summaryStatistics();
+		for (int y = yStats.getMin(); y <= yStats.getMax(); y++) {
+			for (int x = xStats.getMin(); x <= xStats.getMax(); x++)
+				System.out.print(field.contains(new Point(x, y)) ? filled : empty);
+			System.out.println();
+		}
 	}
 }
