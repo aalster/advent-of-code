@@ -15,7 +15,7 @@ import java.util.stream.Stream;
 public class Day17 {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day17.class, "example.txt");
+		Scanner input = Utils.scanFileNearClass(Day17.class, "input.txt");
 		Map<Point, Integer> field = new HashMap<>();
 		int y = 0;
 		while (input.hasNext()) {
@@ -50,6 +50,8 @@ public class Day17 {
 							.map(s -> Pair.of(s, e.getValue() + field.getOrDefault(s.position(), 0))))
 					.filter(p -> bounds.containsInclusive(p.left().position()))
 					.filter(p -> {
+						if (p.left().stepsForward() < minForwardSteps)
+							return true;
 						Integer minHeat = minHeats.get(p.left());
 						if (minHeat != null && minHeat < p.right())
 							return false;
@@ -57,10 +59,6 @@ public class Day17 {
 						return true;
 					})
 					.collect(Collectors.toMap(Pair::left, Pair::right, Math::min));
-//			currentSteps.entrySet().stream()
-//					.filter(e -> e.getKey().position().equals(end))
-//					.findAny()
-//					.ifPresent(e -> System.out.println("Found min: " + e.getValue()));
 		}
 		return minHeats.entrySet().stream()
 				.filter(e -> e.getKey().position().equals(end))
@@ -73,10 +71,10 @@ public class Day17 {
 		Stream<Step> next(int minForwardSteps, int maxForwardSteps) {
 			Stream<Direction> directions = stepsForward < minForwardSteps
 					? Stream.of(direction)
-					: stepsForward < maxForwardSteps - 1
+					: stepsForward < maxForwardSteps
 					? Stream.of(direction, direction.rotate(Direction.LEFT), direction.rotate(Direction.RIGHT))
 					: Stream.of(direction.rotate(Direction.LEFT), direction.rotate(Direction.RIGHT));
-			return directions.map(d -> new Step(position.shift(d), d, d == direction ? stepsForward + 1 : 0));
+			return directions.map(d -> new Step(position.shift(d), d, d == direction ? stepsForward + 1 : 1));
 		}
 	}
 }

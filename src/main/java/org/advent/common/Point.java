@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.IntSummaryStatistics;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 public record Point(int x, int y) {
@@ -83,6 +84,16 @@ public record Point(int x, int y) {
 		for (int y = yStats.getMin(); y <= yStats.getMax(); y++) {
 			for (int x = xStats.getMin(); x <= xStats.getMax(); x++)
 				System.out.print(field.contains(new Point(x, y)) ? filled : empty);
+			System.out.println();
+		}
+	}
+	
+	public static void printField(Set<Point> field, Function<Point, Character> symbol) {
+		IntSummaryStatistics xStats = field.stream().mapToInt(Point::x).summaryStatistics();
+		IntSummaryStatistics yStats = field.stream().mapToInt(Point::y).summaryStatistics();
+		for (int y = yStats.getMin(); y <= yStats.getMax(); y++) {
+			for (int x = xStats.getMin(); x <= xStats.getMax(); x++)
+				System.out.print(symbol.apply(new Point(x, y)));
 			System.out.println();
 		}
 	}

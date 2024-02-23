@@ -1,13 +1,12 @@
 package org.advent.year2023.day11;
 
+import org.advent.common.BigPoint;
 import org.advent.common.Direction;
 import org.advent.common.Pair;
 import org.advent.common.Utils;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
@@ -81,24 +80,4 @@ public class Day11 {
 		return galaxies;
 	}
 	
-	private record BigPoint(BigInteger x, BigInteger y) {
-		
-		public BigPoint shift(Direction d, BigInteger amount) {
-			return new BigPoint(
-					d == Direction.LEFT ? x.subtract(amount) : d == Direction.RIGHT ? x.add(amount) : x,
-					d == Direction.UP ? y.subtract(amount) : d == Direction.DOWN ? y.add(amount) : y);
-		}
-		
-		public BigInteger manhattanDistance(BigPoint p) {
-			return p.x.subtract(x).abs().add(p.y.subtract(y).abs());
-		}
-		
-		public static BigInteger maxX(Collection<BigPoint> points) {
-			return points.stream().map(BigPoint::x).max(Comparator.naturalOrder()).orElseThrow();
-		}
-		
-		public static BigInteger maxY(Collection<BigPoint> points) {
-			return points.stream().map(BigPoint::y).max(Comparator.naturalOrder()).orElseThrow();
-		}
-	}
 }
