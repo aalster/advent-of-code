@@ -46,16 +46,13 @@ public class Day4 {
 				"byr", number(range(1920, 2002)),
 				"iyr", number(range(2010, 2020)),
 				"eyr", number(range(2020, 2030)),
-				"hgt", suffix(Map.of(
-						"cm", number(range(150, 193)),
-						"in", number(range(59, 76))
-				)),
+				"hgt", any(
+						suffix("cm", number(range(150, 193))),
+						suffix("in", number(range(59, 76)))
+				),
 				"hcl", all(
 						length(7),
-						prefix(Map.of("#", chars(any(
-								range('0', '9'),
-								range('a', 'f')
-						))))
+						prefix("#", chars(any(range('0', '9'), range('a', 'f'))))
 				),
 				"ecl", values("amb", "blu", "brn", "gry", "grn", "hzl", "oth"),
 				"pid", all(
@@ -105,22 +102,12 @@ public class Day4 {
 		};
 	}
 	
-	static Validation<String> suffix(Map<String, Validation<String>> validations) {
-		return value -> {
-			for (Map.Entry<String, Validation<String>> entry : validations.entrySet())
-				if (value.endsWith(entry.getKey()))
-					return entry.getValue().isValid(StringUtils.removeEnd(value, entry.getKey()));
-			return false;
-		};
+	static Validation<String> suffix(String suffix, Validation<String> validation) {
+		return value -> value.endsWith(suffix) && validation.isValid(StringUtils.removeEnd(value, suffix));
 	}
 	
-	static Validation<String> prefix(Map<String, Validation<String>> validations) {
-		return value -> {
-			for (Map.Entry<String, Validation<String>> entry : validations.entrySet())
-				if (value.startsWith(entry.getKey()))
-					return entry.getValue().isValid(StringUtils.removeStart(value, entry.getKey()));
-			return false;
-		};
+	static Validation<String> prefix(String prefix, Validation<String> validation) {
+		return value -> value.startsWith(prefix) && validation.isValid(StringUtils.removeStart(value, prefix));
 	}
 	
 	static Validation<Integer> range(int min, int max) {
