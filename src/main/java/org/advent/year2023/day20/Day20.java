@@ -2,9 +2,11 @@ package org.advent.year2023.day20;
 
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import org.advent.common.NumbersAdventUtils;
 import org.advent.common.Utils;
 import org.apache.commons.lang3.StringUtils;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -63,7 +65,18 @@ public class Day20 {
 		return lowPulses * highPulses;
 	}
 	
-	private static long part2(Map<String, Module> modules) {
+	private static BigInteger part2(Map<String, Module> modules) {
+		ConjunctionModule endConjunction = modules.values().stream()
+				.filter(m -> m instanceof ConjunctionModule)
+				.filter(m -> m.getDestinations().contains("rx"))
+				.findFirst()
+				.map(m -> (ConjunctionModule) m)
+				.orElseThrow();
+		
+		Map<String, Long> endConjunctionInputRepeats = new HashMap<>(modules.values().stream()
+				.filter(m -> m.getDestinations().contains(endConjunction.getName()))
+				.collect(Collectors.toMap(Module::getName, m -> 0L)));
+		
 		long n = 0;
 		while (true) {
 			n++;
@@ -72,10 +85,21 @@ public class Day20 {
 				pulses = pulses.stream()
 						.flatMap(p -> modules.getOrDefault(p.destination(), OutputModule.INSTANCE).nextPulses(p))
 						.toList();
-				if (pulses.stream().anyMatch(p -> !p.high() && p.destination().equals("rx")))
-					return n;
+				
+//				if (pulses.stream().anyMatch(p -> !p.high() && p.destination().equals("rx")))
+//					return n;
+				
+				for (Map.Entry<String, Boolean> e : endConjunction.lastSignals.entrySet()) {
+					if (e.getValue() && endConjunctionInputRepeats.get(e.getKey()) == 0) {
+						endConjunctionInputRepeats.put(e.getKey(), n);
+						if (endConjunctionInputRepeats.values().stream().allMatch(r -> r > 0)) {
+							return NumbersAdventUtils.lcmBig(endConjunctionInputRepeats.values());
+						}
+					}
+				}
 			}
-			if (n % 1000 == 0)
+			
+			if (n % 100_000 == 0)
 				System.out.println(n);
 		}
 	}

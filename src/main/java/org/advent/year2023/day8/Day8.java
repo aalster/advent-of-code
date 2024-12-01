@@ -1,6 +1,7 @@
 package org.advent.year2023.day8;
 
 import lombok.Data;
+import org.advent.common.NumbersAdventUtils;
 import org.advent.common.Pair;
 import org.advent.common.Utils;
 
@@ -45,7 +46,7 @@ public class Day8 {
 				.filter(s -> s.endsWith("A"))
 				.mapToInt(s -> countSteps(instructions, directions, s, str -> str.endsWith("Z")))
 				.toArray();
-		return lcm(counts);
+		return NumbersAdventUtils.lcm(counts);
 	}
 	
 	private static int countSteps(int[] instructions, Map<String, Pair<String, String>> directions, String start, Predicate<String> endChecker) {
@@ -58,39 +59,6 @@ public class Day8 {
 			current = iterator.next() == 0 ? pair.left() : pair.right();
 		}
 		return steps;
-	}
-	
-	private static long lcm(int[] element_array) {
-		long lcm_of_array_elements = 1;
-		int divisor = 2;
-		
-		while (true) {
-			int counter = 0;
-			boolean divisible = false;
-			
-			for (int i = 0; i < element_array.length; i++) {
-				if (element_array[i] == 0)
-					return 0;
-				else if (element_array[i] < 0)
-					element_array[i] = element_array[i] * (-1);
-				
-				if (element_array[i] == 1)
-					counter++;
-				
-				if (element_array[i] % divisor == 0) {
-					divisible = true;
-					element_array[i] = element_array[i] / divisor;
-				}
-			}
-			
-			if (divisible)
-				lcm_of_array_elements = lcm_of_array_elements * divisor;
-			else
-				divisor++;
-			
-			if (counter == element_array.length)
-				return lcm_of_array_elements;
-		}
 	}
 	
 	@Data
