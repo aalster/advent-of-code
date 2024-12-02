@@ -2,9 +2,7 @@ package org.advent.year2022.day20;
 
 import org.advent.common.Utils;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Scanner;
 
 public class Day20 {
@@ -12,17 +10,20 @@ public class Day20 {
 	
 	public static void main(String[] args) {
 		Scanner input = Utils.scanFileNearClass(Day20.class, "input.txt");
-		List<Long> lines = new ArrayList<>(5000);
-		while (input.hasNext()) {
-			lines.add(Long.valueOf(input.nextLine()));
-		}
-		long[] numbers = lines.stream().mapToLong(i -> i).toArray();
+		long[] numbers = Utils.readLines(input).stream().mapToLong(Long::valueOf).toArray();
 		
-		System.out.println("Answer 1: " + mix(numbers, 1));
-		
+		System.out.println("Answer 1: " + part1(numbers));
+		System.out.println("Answer 2: " + part2(numbers));
+	}
+	
+	private static long part1(long[] numbers) {
+		return mix(numbers, 1);
+	}
+	
+	private static long part2(long[] numbers) {
 		for (int i = 0; i < numbers.length; i++)
 			numbers[i] *= 811589153;
-		System.out.println("Answer 2: " + mix(numbers, 10));
+		return mix(numbers, 10);
 	}
 	
 	private static long mix(long[] numbers, int times) {

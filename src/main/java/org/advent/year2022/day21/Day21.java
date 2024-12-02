@@ -3,7 +3,6 @@ package org.advent.year2022.day21;
 import org.advent.common.Utils;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,10 +14,7 @@ public class Day21 {
 	
 	public static void main(String[] args) {
 		Scanner input = Utils.scanFileNearClass(Day21.class, "input.txt");
-		List<String> lines = new ArrayList<>();
-		while (input.hasNext()) {
-			lines.add(input.nextLine());
-		}
+		List<String> lines = Utils.readLines(input);
 		
 		System.out.println("Answer 1: " + part1(lines));
 		System.out.println("Answer 2: " + part2(lines));

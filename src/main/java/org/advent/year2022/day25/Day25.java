@@ -3,20 +3,15 @@ package org.advent.year2022.day25;
 import org.advent.common.Utils;
 import org.apache.commons.lang3.ArrayUtils;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
 public class Day25 {
-	
 	static final char[] symbols = {'=', '-', '0', '1', '2'};
 	
 	public static void main(String[] args) {
 		Scanner input = Utils.scanFileNearClass(Day25.class, "input.txt");
-		List<String> lines = new ArrayList<>();
-		while (input.hasNext()) {
-			lines.add(input.nextLine());
-		}
+		List<String> lines = Utils.readLines(input);
 		
 		System.out.println("Answer: " + toSnafu(lines.stream().mapToLong(Day25::fromSnafu).sum()));
 	}
