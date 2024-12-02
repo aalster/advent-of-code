@@ -5,6 +5,8 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 public class Utils {
@@ -24,5 +26,12 @@ public class Utils {
 	@SneakyThrows
 	public static Scanner scanFileNearClass(Class<?> type, String path) {
 		return new Scanner(readFileNearClass(type, path));
+	}
+	
+	public static List<String> readLines(Scanner input) {
+		List<String> lines = new ArrayList<>();
+		while (input.hasNext())
+			lines.add(input.nextLine());
+		return lines;
 	}
 }

@@ -16,10 +16,7 @@ public class Day12 {
 	
 	public static void main(String[] args) {
 		Scanner input = Utils.scanFileNearClass(Day12.class, "input.txt");
-		List<String> lines = new ArrayList<>();
-		while (input.hasNext()) {
-			lines.add(input.nextLine());
-		}
+		List<String> lines = Utils.readLines(input);
 		Graph graph = Graph.parse(lines);
 		
 		System.out.println("Answer 1: " + part1(graph));

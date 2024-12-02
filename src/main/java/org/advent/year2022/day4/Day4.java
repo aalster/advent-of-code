@@ -1,18 +1,31 @@
 package org.advent.year2022.day4;
 
+import org.advent.common.Pair;
 import org.advent.common.Utils;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 public class Day4 {
 	
-	public static void main1(String[] args) {
+	public static void main(String[] args) {
 		Scanner input = Utils.scanFileNearClass(Day4.class,"input.txt");
-		int result = 0;
+		List<Pair<Section, Section>> sections = new ArrayList<>();
 		while (input.hasNext()) {
 			String[] pairs = input.nextLine().split(",");
-			Section first = Section.parse(pairs[0]);
-			Section second = Section.parse(pairs[1]);
+			sections.add(new Pair<>(Section.parse(pairs[0]), Section.parse(pairs[1])));
+		}
+		
+		System.out.println("Answer 1: " + part1(sections));
+		System.out.println("Answer 2: " + part2(sections));
+	}
+	
+	private static long part1(List<Pair<Section, Section>> sections) {
+		int result = 0;
+		for (Pair<Section, Section> pair : sections) {
+			Section first = pair.left();
+			Section second = pair.right();
 			
 			if (first.start() == second.start()) {
 				result++;
@@ -26,21 +39,19 @@ public class Day4 {
 					result++;
 			}
 		}
-		System.out.println(result);
+		return result;
 	}
 	
-	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day4.class,"input.txt");
+	private static long part2(List<Pair<Section, Section>> sections) {
 		int result = 0;
-		while (input.hasNext()) {
-			String[] pairs = input.nextLine().split(",");
-			Section first = Section.parse(pairs[0]);
-			Section second = Section.parse(pairs[1]);
+		for (Pair<Section, Section> pair : sections) {
+			Section first = pair.left();
+			Section second = pair.right();
 			
 			if (first.start() <= second.end() && second.start() <= first.end())
 				result++;
 		}
-		System.out.println(result);
+		return result;
 	}
 	
 	record Section(int start, int end) {

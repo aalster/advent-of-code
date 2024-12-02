@@ -2,32 +2,39 @@ package org.advent.year2022.day2;
 
 import org.advent.common.Utils;
 
+import java.util.List;
 import java.util.Scanner;
 
 public class Day2 {
 	
-	public static void main1(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day2.class,"input.txt");
-		int score = 0;
-		while (input.hasNext()) {
-			String[] line = input.nextLine().split(" ");
-			Shape opponent = Shape.parse(line[0]);
-			Shape me = Shape.parse(line[1]);
-			score += me.roundOutcome(opponent).score() + me.score();
-		}
-		System.out.println(score);
-	}
-	
 	public static void main(String[] args) {
 		Scanner input = Utils.scanFileNearClass(Day2.class,"input.txt");
-		int score = 0;
-		while (input.hasNext()) {
-			String[] line = input.nextLine().split(" ");
-			Shape opponent = Shape.parse(line[0]);
-			Outcome outcome = Outcome.parse(line[1]);
+		List<String> lines = Utils.readLines(input);
+		
+		System.out.println("Answer 1: " + part1(lines));
+		System.out.println("Answer 2: " + part2(lines));
+	}
+	
+	public static long part1(List<String> lines) {
+		long score = 0;
+		for (String line : lines) {
+			String[] split = line.split(" ");
+			Shape opponent = Shape.parse(split[0]);
+			Shape me = Shape.parse(split[1]);
+			score += me.roundOutcome(opponent).score() + me.score();
+		}
+		return score;
+	}
+	
+	public static long part2(List<String> lines) {
+		long score = 0;
+		for (String line : lines) {
+			String[] split = line.split(" ");
+			Shape opponent = Shape.parse(split[0]);
+			Outcome outcome = Outcome.parse(split[1]);
 			score += outcome.score() + outcome.against(opponent).score();
 		}
-		System.out.println(score);
+		return score;
 	}
 	
 	enum Shape {

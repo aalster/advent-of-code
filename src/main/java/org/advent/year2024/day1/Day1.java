@@ -1,4 +1,4 @@
-package org.advent.year2024.template;
+package org.advent.year2024.day1;
 
 import org.advent.common.Utils;
 

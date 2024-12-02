@@ -13,25 +13,18 @@ public class Day16 {
 	
 	public static void main(String[] args) {
 		Scanner input = Utils.scanFileNearClass(Day16.class, "input.txt");
-		List<String> lines = new ArrayList<>();
-		while (input.hasNext()) {
-			lines.add(input.nextLine());
-		}
+		List<String> lines = Utils.readLines(input);
 		
 		System.out.println("Answer 1: " + lines.stream().map(Day16::part1).map(String::valueOf).collect(Collectors.joining(", ")));
 		System.out.println("Answer 2: " + lines.stream().map(Day16::part2).map(String::valueOf).collect(Collectors.joining(", ")));
 	}
 	
 	private static long part1(String line) {
-		BitsReader reader = new BitsReader(line);
-		Packet packet = Packet.read(reader);
-		return packet.versionsSum();
+		return Packet.read(new BitsReader(line)).versionsSum();
 	}
 	
 	private static long part2(String line) {
-		BitsReader reader = new BitsReader(line);
-		Packet packet = Packet.read(reader);
-		return packet.value();
+		return Packet.read(new BitsReader(line)).value();
 	}
 	
 	@RequiredArgsConstructor

@@ -16,7 +16,7 @@ public class Day2 {
 		List<Pair<Direction, Integer>> movements = new ArrayList<>();
 		while (input.hasNext()) {
 			String[] split = input.nextLine().split(" ");
-			movements.add(new Pair(parseDirection(split[0]), Integer.parseInt(split[1])));
+			movements.add(new Pair<>(parseDirection(split[0]), Integer.parseInt(split[1])));
 		}
 		
 		System.out.println("Answer 1: " + part1(movements));

@@ -4,7 +4,6 @@ import org.advent.common.DirectionExt;
 import org.advent.common.Point;
 import org.advent.common.Utils;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -17,10 +16,7 @@ public class Day11 {
 	
 	public static void main(String[] args) {
 		Scanner input = Utils.scanFileNearClass(Day11.class, "input.txt");
-		List<String> lines = new ArrayList<>();
-		while (input.hasNext()) {
-			lines.add(input.nextLine());
-		}
+		List<String> lines = Utils.readLines(input);
 		
 		System.out.println("Answer 1: " + part1(lines));
 		System.out.println("Answer 2: " + part2(lines));
@@ -28,15 +24,10 @@ public class Day11 {
 	
 	private static long part1(List<String> lines) {
 		Field field = Field.parse(lines);
-//		System.out.println("\nBefore any steps:");
-//		field.print();
 		
 		long flashes = 0;
 		for (int i = 0; i < 100; i++) {
 			flashes += field.step();
-			
-//			System.out.println("\nAfter step " + (i + 1w) + ":");
-//			field.print();
 		}
 		return flashes;
 	}
@@ -69,15 +60,6 @@ public class Day11 {
 			}
 			flashedOnCurrentStep.forEach(p -> field.put(p, 0));
 			return flashedOnCurrentStep.size();
-		}
-		
-		private void print() {
-			for (int y = 0; y < height; y++) {
-				for (int x = 0; x < width; x++) {
-					System.out.print(field.get(new Point(x, y)));
-				}
-				System.out.println();
-			}
 		}
 		
 		static Field parse(List<String> lines) {

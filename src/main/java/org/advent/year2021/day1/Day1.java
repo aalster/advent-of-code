@@ -33,7 +33,7 @@ public class Day1 {
 		int increases = 0;
 		int previousDepth = 0;
 		for (int i = 0; i < depths.size() - 2; i++) {
-			Integer depth = depths.get(i) + depths.get(i + 1) + depths.get(i + 2);
+			int depth = depths.get(i) + depths.get(i + 1) + depths.get(i + 2);
 			if (previousDepth < depth)
 				increases++;
 			previousDepth = depth;

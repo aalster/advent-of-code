@@ -3,7 +3,6 @@ package org.advent.year2021.day8;
 import org.advent.common.Utils;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -16,10 +15,7 @@ public class Day8 {
 	
 	public static void main(String[] args) {
 		Scanner input = Utils.scanFileNearClass(Day8.class, "input.txt");
-		List<String> lines = new ArrayList<>();
-		while (input.hasNext()) {
-			lines.add(input.nextLine());
-		}
+		List<String> lines = Utils.readLines(input);
 		
 		System.out.println("Answer 1: " + part1(lines));
 		System.out.println("Answer 2: " + part2(lines));
@@ -43,10 +39,10 @@ public class Day8 {
 					.collect(Collectors.groupingBy(d -> d.signals().size()));
 			List<String> outputNumbers = List.of(split[1].split(" "));
 			
-			Digit one = digits.get(2).get(0).known(1);
-			Digit four = digits.get(4).get(0).known(4);
-			Digit seven = digits.get(3).get(0).known(7);
-			Digit eight = digits.get(7).get(0).known(8);
+			Digit one = digits.get(2).getFirst().known(1);
+			Digit four = digits.get(4).getFirst().known(4);
+			Digit seven = digits.get(3).getFirst().known(7);
+			Digit eight = digits.get(7).getFirst().known(8);
 			
 			Digit six = digits.get(6).stream().filter(d -> d.signalsExcept(seven).size() == 4).findAny().orElseThrow().known(6);
 			Digit nine = digits.get(6).stream().filter(d -> d.signalsExcept(four).size() == 2).findAny().orElseThrow().known(9);
@@ -57,8 +53,6 @@ public class Day8 {
 			Digit two = digits.get(5).stream().filter(d -> d.signalsExcept(nine).size() == 1).findAny().orElseThrow().known(2);
 			
 			List<Digit> allDigits = List.of(zero, one, two, three, four, five, six, seven, eight, nine);
-			
-//			allDigits.forEach(System.out::println);
 			
 			int output = 0;
 			for (String outputNumber : outputNumbers) {
@@ -74,7 +68,6 @@ public class Day8 {
 				output = output * 10 + unknown.digit();
 			}
 			
-//			System.out.println(outputNumbers + " -> " + output);
 			result += output;
 		}
 		return result;

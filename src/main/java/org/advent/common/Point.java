@@ -1,7 +1,11 @@
 package org.advent.common;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.IntSummaryStatistics;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
@@ -78,6 +82,18 @@ public record Point(int x, int y) {
 		return points.stream().mapToInt(Point::y).max().orElseThrow();
 	}
 	
+	public static Point minBound(Collection<Point> points) {
+		return new Point(minX(points), minY(points));
+	}
+	
+	public static Point maxBound(Collection<Point> points) {
+		return new Point(maxX(points), maxY(points));
+	}
+	
+	public static Rect bounds(Collection<Point> points) {
+		return new Rect(minBound(points), maxBound(points));
+	}
+	
 	public static void printField(Set<Point> field, char filled, char empty) {
 		IntSummaryStatistics xStats = field.stream().mapToInt(Point::x).summaryStatistics();
 		IntSummaryStatistics yStats = field.stream().mapToInt(Point::y).summaryStatistics();
@@ -96,5 +112,19 @@ public record Point(int x, int y) {
 				System.out.print(symbol.apply(new Point(x, y)));
 			System.out.println();
 		}
+	}
+	
+	public static Map<Character, List<Point>> readField(List<String> lines) {
+		Map<Character, List<Point>> field = new HashMap<>();
+		int y = 0;
+		for (String line : lines) {
+			int x = 0;
+			for (char c : line.toCharArray()) {
+				field.computeIfAbsent(c, k -> new ArrayList<>()).add(new Point(x, y));
+				x++;
+			}
+			y++;
+		}
+		return field;
 	}
 }

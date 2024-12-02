@@ -64,9 +64,7 @@ public class Day15 {
 		while (!paths.isEmpty())
 			paths = paths.stream().flatMap(p -> p.nextPaths(field, shortestPaths)).toList();
 		
-		Point end = new Point(
-				field.keySet().stream().mapToInt(Point::x).max().orElse(0),
-				field.keySet().stream().mapToInt(Point::y).max().orElse(0));
+		Point end = Point.maxBound(field.keySet());
 		return shortestPaths.getOrDefault(end, -1L);
 	}
 	
