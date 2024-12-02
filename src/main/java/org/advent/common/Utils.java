@@ -7,13 +7,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Scanner;
 
 public class Utils {
 	
 	@SneakyThrows
 	public static String readFileNearClass(Class<?> type, String path) {
-		String targetClassPackage = type.getResource("").getPath();
+		String targetClassPackage = Objects.requireNonNull(type.getResource("")).getPath();
 		
 		String winPathFixRegex = "^/[a-zA-Z]:/.+$"; // Фиксит пути типа '/C:/some/path'
 		if (targetClassPackage.matches(winPathFixRegex))

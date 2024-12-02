@@ -1,11 +1,12 @@
 package org.advent.year2022.day12;
 
 import lombok.Data;
-import org.apache.commons.lang3.StringUtils;
 import org.advent.common.Utils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Scanner;
 import java.util.stream.Stream;
 
@@ -19,10 +20,14 @@ public class Day12 {
 			rows.add(Cell.parseRow(y, input.nextLine()));
 			y++;
 		}
+		Cell[][] cells = rows.toArray(Cell[][]::new);
 		
-		Grid grid = new Grid(rows.toArray(Cell[][]::new));
-		grid.printLevels();
-		grid.print();
+		System.out.println("Answer 1: " + part1(cells));
+		System.out.println("Answer 2: " + part2(cells));
+	}
+	
+	private static int part1(Cell[][] cells) {
+		Grid grid = new Grid(Cell.copy(cells), false);
 		
 		Cell start = grid.findStart();
 		int step = 0;
@@ -34,45 +39,43 @@ public class Day12 {
 			currentCells = grid.nextStep(step, currentCells);
 			if (currentCells.isEmpty())
 				throw new RuntimeException("No path!");
-			System.out.println("\nStep: " + step);
-			grid.print();
 		}
-		System.out.println("Steps to end: " + end.getSteps());
+		return end.getSteps();
 	}
 	
-	record Grid(Cell[][] cells) {
+	private static int part2(Cell[][] cells) {
+		Grid grid = new Grid(Cell.copy(cells), true);
+		
+		List<Cell> lowest = grid.findLowest();
+		Cell end = grid.findEnd();
+		int step = 0;
+		end.setSteps(step);
+		List<Cell> currentCells = List.of(end);
+		while (lowest.stream().allMatch(c -> c.getSteps() < 0)) {
+			step++;
+			currentCells = grid.nextStep(step, currentCells);
+			if (currentCells.isEmpty())
+				throw new RuntimeException("No path!");
+		}
+		return lowest.stream().filter(c -> c.getSteps() >= 0).findAny().orElseThrow().getSteps();
+	}
+	
+	record Grid(Cell[][] cells, boolean backwards) {
 		Cell findStart() {
-			for (Cell[] row : cells)
-				for (Cell cell : row)
-					if (cell.getLevel() == 'S')
-						return cell;
-			throw new RuntimeException("Start not found");
+			return cellStream().filter(c -> c.getLevel() == 'S').findAny().orElseThrow();
 		}
 		
 		Cell findEnd() {
-			for (Cell[] row : cells)
-				for (Cell cell : row)
-					if (cell.getLevel() == 'E')
-						return cell;
-			throw new RuntimeException("End not found");
+			return cellStream().filter(c -> c.getLevel() == 'E').findAny().orElseThrow();
 		}
 		
-		void printLevels() {
-			for (Cell[] row : cells) {
-				for (Cell cell : row)
-					System.out.print(cell.level);
-				System.out.println();
-			}
+		List<Cell> findLowest() {
+			return cellStream().filter(c -> c.levelValue() == 'a').toList();
 		}
 		
-		void print() {
-			System.out.println("┼──────".repeat(width()) + "┼");
-			for (Cell[] row : cells) {
-				for (Cell cell : row)
-					System.out.print("│" + StringUtils.leftPad((cell.steps >= 0 ? cell.steps + " " : "") + cell.level, 6));
-				System.out.println("│");
-				System.out.println("┼──────".repeat(row.length) + "┼");
-			}
+		private Stream<Cell> cellStream() {
+			return Arrays.stream(cells)
+					.flatMap(Arrays::stream);
 		}
 		
 		Cell get(int x, int y) {
@@ -92,18 +95,15 @@ public class Day12 {
 		}
 		
 		Stream<Cell> availableSteps(Cell cell) {
-			List<Cell> cells = new ArrayList<>(4);
-			if (0 < cell.x)
-				cells.add(get(cell.x - 1, cell.y));
-			if (cell.x < width() - 1)
-				cells.add(get(cell.x + 1, cell.y));
-			if (0 < cell.y)
-				cells.add(get(cell.x, cell.y - 1));
-			if (cell.y < height() - 1)
-				cells.add(get(cell.x, cell.y + 1));
-			return cells.stream()
+			return Stream.of(
+							0 < cell.x ? get(cell.x - 1, cell.y) : null,
+							cell.x < width() - 1 ? get(cell.x + 1, cell.y) : null,
+							0 < cell.y ? get(cell.x, cell.y - 1) : null,
+							cell.y < height() - 1 ? get(cell.x, cell.y + 1) : null
+					)
+					.filter(Objects::nonNull)
 					.filter(c -> c.steps < 0)
-					.filter(c -> c.reachableFrom(cell));
+					.filter(c -> backwards ? cell.reachableFrom(c) : c.reachableFrom(cell));
 		}
 	}
 	
@@ -124,6 +124,16 @@ public class Day12 {
 		
 		boolean reachableFrom(Cell cell) {
 			return levelValue() - cell.levelValue() <= 1;
+		}
+		
+		Cell copy() {
+			return new Cell(x, y, level);
+		}
+		
+		static Cell[][] copy(Cell[][] cells) {
+			return Stream.of(cells)
+					.map(row -> Stream.of(row).map(Cell::copy).toArray(Cell[]::new))
+					.toArray(Cell[][]::new);
 		}
 		
 		static Cell[] parseRow(int y, String row) {

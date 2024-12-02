@@ -13,7 +13,6 @@ import java.util.Scanner;
 import java.util.stream.Stream;
 
 public class Day14 {
-	static final boolean partTwo = true;
 	
 	public static void main(String[] args) throws Exception {
 		Scanner input = Utils.scanFileNearClass(Day14.class, "input.txt");
@@ -21,6 +20,11 @@ public class Day14 {
 		while (input.hasNext())
 			rockPaths.add(Path.parse(input.nextLine()));
 		
+		System.out.println("Answer 1: " + solve(rockPaths, false));
+		System.out.println("Answer 2: " + solve(rockPaths, true));
+	}
+	
+	private static long solve(List<Path> rockPaths, boolean addRockLine) {
 		Point sandSource = new Point(500, 0);
 		
 		IntSummaryStatistics xStats = Stream.concat(Stream.of(sandSource), rockPaths.stream().flatMap(p -> p.points().stream()))
@@ -37,24 +41,15 @@ public class Day14 {
 		for (Path rockPath : rockPaths)
 			field.fillPath(rockPath, Cell.ROCK);
 		
-		if (partTwo)
+		if (addRockLine)
 			field.fillLine(new Point(0, field.height() - 1), new Point(field.width() - 1, field.height() - 1), Cell.ROCK);
 		
-		long step = 0;
 		boolean voidReached = false;
 		while (!voidReached) {
 			Point sand = sandSource.shift(0, 0);
 			if (field.get(sand) == Cell.SAND)
 				break;
 			while (true) {
-				step++;
-//				field.put(sand, Cell.FALLING_SAND);
-//				if (step % 100 == 0) {
-//					System.out.println(field);
-//					Thread.sleep(70);
-//				}
-//				field.put(sand, Cell.EMPTY);
-				
 				if (sand.y() >= field.height() - 1) {
 					voidReached = true;
 					break;
@@ -67,10 +62,7 @@ public class Day14 {
 				sand = nextSand;
 			}
 		}
-		System.out.println(field);
-		if (voidReached)
-			System.out.println("VOID!");
-		System.out.println("Answer " + (partTwo ? 2 : 1) + ": " + field.count(Cell.SAND));
+		return field.count(Cell.SAND);
 	}
 	
 	record Field(Cell[][] cells) {

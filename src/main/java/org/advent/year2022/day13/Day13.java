@@ -13,37 +13,39 @@ import java.util.stream.Collectors;
 
 public class Day13 {
 	
-	public static void main1(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day13.class, "input.txt");
-		
-		int result = 0;
-		int pair = 1;
-		while (input.hasNext()) {
-			Element left = Element.parse(input.nextLine());
-			Element right = Element.parse(input.nextLine());
-			int compare = left.compareTo(right);
-			System.out.println(pair + ": " + compare);
-			if (compare <= 0)
-				result += pair;
-			
-			if (input.hasNext())
-				input.nextLine();
-			pair++;
-		}
-		System.out.println("Answer 1: " + result);
-	}
-	
 	public static void main(String[] args) {
 		Scanner input = Utils.scanFileNearClass(Day13.class, "input.txt");
-		
 		List<Element> elements = new ArrayList<>();
 		while (input.hasNext()) {
 			String line = input.nextLine();
 			if (!line.isEmpty())
 				elements.add(Element.parse(line));
 		}
+		
+		System.out.println("Answer 1: " + part1(elements));
+		System.out.println("Answer 2: " + part2(elements));
+	}
+	
+	private static int part1(List<Element> elements) {
+		int result = 0;
+		int pair = 1;
+		Iterator<Element> iterator = elements.iterator();
+		while (iterator.hasNext()) {
+			Element left = iterator.next();
+			Element right = iterator.next();
+			int compare = left.compareTo(right);
+			
+			if (compare <= 0)
+				result += pair;
+			pair++;
+		}
+		return result;
+	}
+	
+	private static int part2(List<Element> elements) {
 		Set<Element> dividers = Set.of(divider(2), divider(6));
 		
+		elements = new ArrayList<>(elements);
 		elements.addAll(dividers);
 		elements.sort(Comparator.naturalOrder());
 		
@@ -54,7 +56,7 @@ public class Day13 {
 				result *= pair;
 			pair++;
 		}
-		System.out.println("Answer 2: " + result);
+		return result;
 	}
 	
 	static ListElement divider(int value) {
@@ -73,8 +75,8 @@ public class Day13 {
 	record NumberElement(int value) implements Element {
 			@Override
 			public int compareTo(Element other) {
-				if (other instanceof NumberElement otherNumber)
-					return Integer.compare(value, otherNumber.value);
+				if (other instanceof NumberElement(int v))
+					return Integer.compare(value, v);
 				if (other instanceof ListElement otherList)
 					return - otherList.compareTo(new ListElement(List.of(this)));
 				throw new RuntimeException("Unknown type: " + other.getClass());
@@ -94,9 +96,9 @@ public class Day13 {
 		
 		@Override
 		public int compareTo(Element other) {
-			if (other instanceof ListElement otherList) {
+			if (other instanceof ListElement(List<Element> c)) {
 				Iterator<Element> left = children.iterator();
-				Iterator<Element> right = otherList.children.iterator();
+				Iterator<Element> right = c.iterator();
 				while (true) {
 					if (!left.hasNext())
 						return right.hasNext() ? -1 : 0;
@@ -140,8 +142,7 @@ public class Day13 {
 				}
 			}
 			parts.add(value.substring(start));
-			List<Element> children = parts.stream().map(Element::parse).collect(Collectors.toList());
-			return new ListElement(children);
+			return new ListElement(parts.stream().map(Element::parse).toList());
 		}
 	}
 }

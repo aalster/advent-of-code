@@ -26,9 +26,8 @@ record PathService(Map<String, Integer> paths) {
 	
 	public static PathService computeAllPaths(Map<String, Valve> valves) {
 		Map<String, Integer> paths = new HashMap<>();
-		for (Valve valve : valves.values()) {
+		for (Valve valve : valves.values())
 			putPathsRecursive(paths, valves, valve, valve.availableValves(valves), 1);
-		}
 		return new PathService(paths);
 	}
 	

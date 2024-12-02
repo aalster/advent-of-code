@@ -1,6 +1,6 @@
 package org.advent.year2022.day16;
 
-import lombok.RequiredArgsConstructor;
+import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -14,21 +14,19 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-@RequiredArgsConstructor
-public class GameEngine {
+@Data
+class GameEngine {
 	private final Map<String, Valve> allValves;
 	private final PathService pathService;
 	private final Valve start;
-	private List<GameState> states;
 	
-	public int maxPressure(int workersCount, int time) {
+	int maxPressure(int workersCount, int time) {
 		Map<Integer, Worker> workers = IntStream.range(0, workersCount)
 				.mapToObj(id -> new Worker(id, start, null, 0))
 				.collect(Collectors.toMap(Worker::getId, w -> w));
-		states = List.of(new GameState(new HashSet<>(), workers, 0));
+		List<GameState> states = List.of(new GameState(new HashSet<>(), workers, 0));
 		
 		while (time > 0) {
-			System.out.println(time + ": " + states.size());
 			int timeRemaining = time;
 			states = states.stream()
 					.flatMap(state -> step(state, timeRemaining))
@@ -37,17 +35,16 @@ public class GameEngine {
 					.toList();
 			time--;
 		}
-		System.out.println("states: " + states.size());
+		
 		GameState result = states.stream().max(Comparator.comparing(GameState::getReleasedPressure)).orElse(null);
 		if (result == null)
 			return 0;
-		System.out.println(result);
 		return result.getReleasedPressure();
 	}
 	
 	private Stream<GameState> step(GameState state, int remainingTime) {
 		if (state.getWorkers().isEmpty()) {
-			state.incPressure(remainingTime);
+			state.incPressure();
 			return Stream.of(state);
 		}
 		
@@ -55,13 +52,13 @@ public class GameEngine {
 		if (workerWithNoTarget != null)
 			return nextStates(workerWithNoTarget, state, remainingTime).stream().flatMap(s -> step(s, remainingTime));
 		
-		state.incPressure(remainingTime);
+		state.incPressure();
 		for (Worker worker : state.getWorkers().values()) {
 			if (worker.getRemainingDistance() > 0) {
 				worker.setRemainingDistance(worker.getRemainingDistance() - 1);
 				continue;
 			}
-			state.openValve(worker.getTarget(), worker.getId());
+			state.openValve(worker.getTarget());
 			worker.setPosition(worker.getTarget());
 			worker.setTarget(null);
 		}
@@ -98,7 +95,7 @@ public class GameEngine {
 		return nextStates;
 	}
 	
-	public List<Valve> nextTargets(GameState state, Valve from, int remainingTime) {
+	List<Valve> nextTargets(GameState state, Valve from, int remainingTime) {
 		Set<Valve> currentTargets = state.getWorkers().values().stream()
 				.map(Worker::getTarget)
 				.filter(Objects::nonNull)

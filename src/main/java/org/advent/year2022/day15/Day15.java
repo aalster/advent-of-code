@@ -25,15 +25,13 @@ public class Day15 {
 	public static void main(String[] args) {
 		Data example = Data.parse(Utils.scanFileNearClass(Day15.class, "example.txt"));
 		Data input = Data.parse(Utils.scanFileNearClass(Day15.class, "input.txt"));
-		System.out.println("Example 1: " + solve1(example, example1Y));
-		System.out.println("Answer 1: " + solve1(input, target1Y));
-		printField(example, example2MaxX, example2MaxY);
-		System.out.println("Example 2: " + solve2(example, example2MaxX, example2MaxY));
-//		System.out.println("Answer 2: " + solve2(input, target2MaxX, target2MaxY));
-		System.out.println("Answer 2: " + solve2PerimeterLogic(input, target2MaxX, target2MaxY));
+		System.out.println("Example 1: " + part1(example, example1Y));
+		System.out.println("Example 2: " + part2(example, example2MaxX, example2MaxY));
+		System.out.println("Answer 1: " + part1(input, target1Y));
+		System.out.println("Answer 2: " + part2(input, target2MaxX, target2MaxY));
 	}
 	
-	static long solve1(Data data, int targetY) {
+	static long part1(Data data, int targetY) {
 		RangeList rangeList = new RangeList(data.sensors().stream()
 				.map(s -> s.rowCoverRange(targetY))
 				.filter(Objects::nonNull)
@@ -50,30 +48,7 @@ public class Day15 {
 				.count();
 	}
 	
-	static long solve2(Data data, int targetMaxX, int targetMaxY) {
-		for (int y = 0; y <= targetMaxY; y++) {
-			if (y % 100 == 0)
-				System.out.println("row " + y);
-			for (int x = 0; x <= targetMaxX; x++) {
-				Point p = new Point(x, y);
-				if (data.beacons().contains(p))
-					continue;
-				
-				boolean covers = false;
-				for (Sensor sensor : data.sensors()) {
-					if (sensor.covers(p)) {
-						covers = true;
-						break;
-					}
-				}
-				if (!covers)
-					return (long) x * target2MaxX + y;
-			}
-		}
-		return 0;
-	}
-	
-	static long solve2PerimeterLogic(Data data, int targetMaxX, int targetMaxY) {
+	static long part2(Data data, int targetMaxX, int targetMaxY) {
 		Set<Point> unreachablePoints = data.sensors().parallelStream()
 				.flatMap(s -> s.unreachablePerimeter().stream())
 				.filter(p -> 0 <= p.x() && p.x() <= targetMaxX)
@@ -81,30 +56,11 @@ public class Day15 {
 				.filter(p -> data.sensors().stream().noneMatch(s -> s.covers(p)))
 				.filter(p -> !data.beacons().contains(p))
 				.collect(Collectors.toSet());
-		System.out.println(unreachablePoints);
 		if (!unreachablePoints.isEmpty()) {
 			Point point = unreachablePoints.iterator().next();
 			return (long) point.x() * target2MaxX + point.y();
 		}
 		return 0;
-	}
-	
-	static void printField(Data data, int maxX, int maxY) {
-		for (int y = 0; y <= maxY; y++) {
-			for (int x = 0; x <= maxX; x++) {
-				Point p = new Point(x, y);
-				if (data.beacons().contains(p)) {
-					System.out.print('B');
-					continue;
-				}
-				if (data.sensors().stream().map(Sensor::location).anyMatch(p::equals)) {
-					System.out.print('S');
-					continue;
-				}
-				System.out.print(data.sensors().stream().anyMatch(s -> s.covers(p)) ? '#' : ' ');
-			}
-			System.out.println();
-		}
 	}
 	
 	record Data(List<Sensor> sensors, Set<Point> beacons) {
@@ -176,7 +132,6 @@ public class Day15 {
 				x++;
 				y++;
 			}
-			System.out.println("perimeter: " + points.size());
 			return points;
 		}
 	}

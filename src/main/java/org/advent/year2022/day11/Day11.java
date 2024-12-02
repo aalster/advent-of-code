@@ -1,7 +1,7 @@
 package org.advent.year2022.day11;
 
-import org.apache.commons.lang3.StringUtils;
 import org.advent.common.Utils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,20 +10,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.Set;
 import java.util.function.LongBinaryOperator;
 import java.util.function.LongUnaryOperator;
 import java.util.regex.MatchResult;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class Day11 {
-//	static final int rounds = 20;
-//	static final int divisor = 3;
-	static final int rounds = 10000;
-	static final int divisor = 1;
-	static int testsMultiple = 1;
-	static final Set<Integer> checks = Set.of(1, 20, 1000, 2000);
 	
 	public static void main(String[] args) {
 		Scanner input = Utils.scanFileNearClass(Day11.class, "input.txt");
@@ -34,45 +28,47 @@ public class Day11 {
 				  Test: divisible by (\\d+)
 				    If true: throw to monkey (\\d+)
 				    If false: throw to monkey (\\d+)""");
-		Map<Integer, Monkey> monkeys = input.findAll(pattern).map(Monkey::parse).collect(Collectors.toMap(Monkey::id, m -> m));
-		Map<Integer, Integer> stats = new HashMap<>();
-		Game game = new Game(monkeys);
-		System.out.println(game);
-		testsMultiple = game.testsMultiple();
 		
-		for (int round = 0; round < rounds; round++) {
-			if (checks.contains(round)) {
-				System.out.println("Round: " + round);
-				System.out.println(game);
-				printStats(stats);
-			}
-			game.round(stats);
+		Matcher matcher = pattern.matcher(String.join("\n", Utils.readLines(input)));
+		Map<Integer, Monkey> monkeys = new HashMap<>();
+		while (matcher.find()) {
+			Monkey monkey = Monkey.parse(matcher.toMatchResult());
+			monkeys.put(monkey.id(), monkey);
 		}
-		printStats(stats);
-		System.out.println("Answer 1: " + stats.values().stream()
+		
+		System.out.println("Answer 1: " + solve(monkeys, 20, 3));
+		System.out.println("Answer 2: " + solve(monkeys, 10000, 1));
+	}
+	
+	private static long solve(Map<Integer, Monkey> monkeys, int rounds, int divisor) {
+		Map<Integer, Integer> stats = new HashMap<>();
+		Game game = new Game(copyMonkeys(monkeys), divisor);
+		int testsMultiple = game.testsMultiple();
+		
+		for (int round = 0; round < rounds; round++)
+			game.round(stats, testsMultiple);
+		
+		return stats.values().stream()
 				.sorted(Comparator.<Integer>naturalOrder().reversed())
 				.limit(2)
 				.mapToLong(Integer::longValue)
 				.reduce((left, right) -> left * right)
-				.orElse(0));
+				.orElse(0);
 	}
 	
-	private static void printStats(Map<Integer, Integer> stats) {
-		System.out.println(stats.entrySet().stream()
-				.sorted(Map.Entry.comparingByKey())
-				.map(entry -> "Monkey %d inspected items %d times.".formatted(entry.getKey(), entry.getValue()))
-				.collect(Collectors.joining("\n")));
+	private static Map<Integer, Monkey> copyMonkeys(Map<Integer, Monkey> monkeys) {
+		return monkeys.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().copy()));
 	}
 	
-	record Game(Map<Integer, Monkey> monkeys) {
-		void round(Map<Integer, Integer> stats) {
+	record Game(Map<Integer, Monkey> monkeys, int divisor) {
+		void round(Map<Integer, Integer> stats, int testsMultiple) {
 			for (int i = 0; i < monkeys.size(); i++)
-				turn(monkeys.get(i), stats);
+				turn(monkeys.get(i), stats, testsMultiple);
 		}
 		
-		void turn(Monkey monkey, Map<Integer, Integer> stats) {
+		void turn(Monkey monkey, Map<Integer, Integer> stats, int testsMultiple) {
 			while (!monkey.items().isEmpty()) {
-				long item = monkey.items().remove(0);
+				long item = monkey.items().removeFirst();
 				item = monkey.operation().applyAsLong(item) / divisor % testsMultiple;
 				monkeys.get(monkey.target(item)).items().add(item);
 				stats.compute(monkey.id(), (id, count) -> count == null ? 1 : count + 1);
@@ -99,6 +95,10 @@ public class Day11 {
 	) {
 		int target(long item) {
 			return item % test == 0 ? successTarget : failureTarget;
+		}
+		
+		Monkey copy() {
+			return new Monkey(id, new ArrayList<>(items), operation, test, successTarget, failureTarget);
 		}
 		
 		static Monkey parse(MatchResult matchResult) {

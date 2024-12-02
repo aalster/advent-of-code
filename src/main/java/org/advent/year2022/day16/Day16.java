@@ -3,7 +3,6 @@ package org.advent.year2022.day16;
 import org.advent.common.Utils;
 
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Matcher;
@@ -17,25 +16,20 @@ public class Day16 {
 		Map<String, Valve> valves = new LinkedHashMap<>();
 		while (input.hasNext()) {
 			Matcher matcher = pattern.matcher(input.nextLine());
-			if (!matcher.find())
-				continue;
-			String name = matcher.group(1);
-			int rate = Integer.parseInt(matcher.group(2));
-			List<String> availableValves = List.of(matcher.group(3).split(", "));
-			valves.put(name, new Valve(name, rate, availableValves));
+			if (matcher.find()) {
+				Valve valve = Valve.parse(matcher);
+				valves.put(valve.name(), valve);
+			}
 		}
 		
 		PathService pathService = PathService.computeAllPaths(valves);
-		for (Map.Entry<String, Integer> entry : pathService.paths().entrySet())
-			System.out.println(entry.getKey() + ": " + entry.getValue());
-		
+
+		System.out.println("Answer 1: " + solve(valves, pathService, 30, 1));
+		System.out.println("Answer 2: " + solve(valves, pathService, 26, 2));
+	}
+	
+	private static int solve(Map<String, Valve> valves, PathService pathService, int time, int workers) {
 		Valve start = valves.get("AA");
-//		int time = 30;
-//		int workers = 1;
-		int time = 26;
-		int workers = 2;
-		
-		GameEngine gameEngine = new GameEngine(valves, pathService, start);
-		System.out.println(gameEngine.maxPressure(workers, time));
+		return new GameEngine(valves, pathService, start).maxPressure(workers, time);
 	}
 }

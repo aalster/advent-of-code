@@ -14,8 +14,4 @@ public class Worker {
 	public Worker cloneWorker() {
 		return new Worker(id, position, target, remainingDistance);
 	}
-	
-	public void setTarget(Valve target) {
-		this.target = target;
-	}
 }

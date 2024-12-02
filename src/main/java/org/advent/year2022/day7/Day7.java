@@ -2,8 +2,8 @@ package org.advent.year2022.day7;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.apache.commons.lang3.StringUtils;
 import org.advent.common.Utils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -19,39 +19,36 @@ public class Day7 {
 		File current = File.createRoot();
 		while (input.hasNext()) {
 			String line = input.nextLine();
-			if (line.startsWith("$ cd ")) {
+			if (line.startsWith("$ cd "))
 				current = current.cd(StringUtils.removeStart(line, "$ cd "));
-			} else if (line.startsWith("$ ls")) {
-				continue;
-			} else {
+			else if (!line.startsWith("$ ls"))
 				current.addContent(line);
-			}
 		}
 		
 		File root = current.root();
-		root.printTree();
 		root.countSize();
 		
-		List<File> largeFiles = new ArrayList<>();
-		filterFiles(root, size -> size <= 100000, largeFiles);
+		System.out.println("Answer 1: " + part1(root));
 		
-		System.out.println(largeFiles);
-		System.out.println("Answer 1: " + largeFiles.stream().mapToInt(File::getSize).sum());
-		
+		int minFileSize = part2(root);
+		System.out.println("Answer 2: " + minFileSize);
+	}
+	
+	private static int part1(File root) {
+		return filterFiles(root, size -> size <= 100000).stream().mapToInt(File::getSize).sum();
+	}
+	
+	private static int part2(File root) {
 		int space = 70000000;
 		int requiredSpace = 30000000;
 		int deletionSize = requiredSpace - space + root.getSize();
-		System.out.println("root size: " + root.getSize());
-		System.out.println("deletionSize: " + deletionSize);
-		
-		List<File> deletionCandidates = new ArrayList<>();
-		filterFiles(root, size -> size >= deletionSize, deletionCandidates);
-		
-		int minFileSize = deletionCandidates.stream()
-				.mapToInt(File::getSize)
-				.min()
-				.orElse(0);
-		System.out.println("Answer 2: " + minFileSize);
+		return filterFiles(root, size -> size >= deletionSize).stream().mapToInt(File::getSize).min().orElse(0);
+	}
+	
+	static List<File> filterFiles(File root, IntPredicate filter) {
+		List<File> largeFiles = new ArrayList<>();
+		filterFiles(root, filter, largeFiles);
+		return largeFiles;
 	}
 	
 	static void filterFiles(File current, IntPredicate filter, List<File> largeFiles) {
@@ -100,20 +97,7 @@ public class Day7 {
 		}
 		
 		File root() {
-			File current = this;
-			while (current.parent != null)
-				current = current.parent;
-			return current;
-		}
-		
-		void printTree() {
-			printTree(0);
-		}
-		
-		private void printTree(int indent) {
-			System.out.println(" ".repeat(indent * 2) + "- " + this);
-			for (File file : nested.values())
-				file.printTree(indent + 1);
+			return parent != null ? parent.root() : this;
 		}
 		
 		@Override

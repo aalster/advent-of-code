@@ -13,17 +13,12 @@ public class GameState {
 	private final Map<Integer, Worker> workers;
 	private int releasedPressure;
 	
-//	private final List<String> history;
-	
-	public void incPressure(int remainingTime) {
-//		history.add("\nTime: " + remainingTime);
+	void incPressure() {
 		int sum = openValves.stream().mapToInt(Valve::rate).sum();
-//		history.add("Pressure: " + releasedPressure + " + " + sum + " = " + (releasedPressure + sum));
 		releasedPressure += sum;
 	}
 	
-	public void openValve(Valve valve, int workerId) {
+	void openValve(Valve valve) {
 		openValves.add(valve);
-//		history.add("Valve opened: " + valve + " by " + workerId);
 	}
 }

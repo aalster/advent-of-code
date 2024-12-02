@@ -12,14 +12,15 @@ public class Day6 {
 	
 	public static void main(String[] args) {
 		Scanner input = Utils.scanFileNearClass(Day6.class,"input.txt");
-//		int size = 4;
-		int size = 14;
-		while (input.hasNext()) {
-			System.out.println(start(input.nextLine(), size));
-		}
+		List<String> lines = Utils.readLines(input);
+		
+		for (String line : lines)
+			System.out.println("Answer 1: " + solve(line, 4));
+		for (String line : lines)
+			System.out.println("Answer 2: " + solve(line, 14));
 	}
 	
-	private static int start(String line, int size) {
+	private static int solve(String line, int size) {
 		if (line.length() < size)
 			return 0;
 		
@@ -31,7 +32,7 @@ public class Day6 {
 		for (int i = size; i < line.length(); i++) {
 			int c = line.charAt(i);
 			chars.add(c);
-			chars.remove(0);
+			chars.removeFirst();
 			if (different.apply(chars))
 				return i + 1;
 		}

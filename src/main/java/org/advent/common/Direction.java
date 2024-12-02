@@ -56,4 +56,14 @@ public enum Direction {
 			default -> throw new IllegalArgumentException("" + symbol);
 		};
 	}
+	
+	public static Direction parseLetter(char symbol) {
+		return switch (symbol) {
+			case 'R' -> RIGHT;
+			case 'L' -> LEFT;
+			case 'U' -> UP;
+			case 'D' -> DOWN;
+			default -> throw new IllegalArgumentException("" + symbol);
+		};
+	}
 }

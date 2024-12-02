@@ -15,12 +15,19 @@ public class Day8 {
 		while (input.hasNext())
 			grid.addRow(input.nextLine().chars().map(c -> c - '0').boxed().toList());
 		
+		System.out.println("Answer 1: " + part1(grid));
+		System.out.println("Answer 2: " + part2(grid));
+	}
+	
+	private static int part1(Grid grid) {
 		int count = 0;
 		for (int row = 0; row < grid.rows(); row++)
 			for (int column = 0; column < grid.columns(); column++)
 				count += grid.visible(column, row) ? 1 : 0;
-		System.out.println("Answer 1: " + count);
-		
+		return count;
+	}
+	
+	private static int part2(Grid grid) {
 		int maxDistance = 0;
 		for (int row = 0; row < grid.rows(); row++) {
 			for (int column = 0; column < grid.columns(); column++) {
@@ -29,7 +36,7 @@ public class Day8 {
 					maxDistance = distance;
 			}
 		}
-		System.out.println("Answer 2: " + maxDistance);
+		return maxDistance;
 	}
 	
 	static class Grid {
@@ -44,7 +51,7 @@ public class Day8 {
 		}
 		
 		int columns() {
-			return heights.get(0).size();
+			return heights.getFirst().size();
 		}
 		
 		boolean visible(final int column, final int row) {
