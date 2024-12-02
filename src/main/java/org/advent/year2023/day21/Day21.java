@@ -5,14 +5,13 @@ import org.advent.common.Point;
 import org.advent.common.Rect;
 import org.advent.common.Utils;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class Day21 {
 	record TestCase(String file, int steps1, int steps2) {}
@@ -31,30 +30,35 @@ public class Day21 {
 	}
 	
 	private static long part1(List<Point> rocks, Point start, int steps) {
-		List<Point> visited = allVisitedPoints(rocks, start, steps);
+		List<PointVisit> visits = allVisitedPoints(rocks, start);
 		int remainder = (steps + start.x() + start.y()) % 2;
-		return visited.stream().filter(p -> (p.x() + p.y()) % 2 == remainder).count();
+		return visits.stream()
+				.filter(v -> v.steps() <= steps)
+				.filter(v -> (v.p().x() + v.p().y()) % 2 == remainder).count();
 	}
 	
-	private static List<Point> allVisitedPoints(List<Point> rocks, Point start, int steps) {
+	private static List<PointVisit> allVisitedPoints(List<Point> rocks, Point start) {
 		Rect bounds = new Rect(Point.minBound(rocks).shift(-1, -1), Point.maxBound(rocks).shift(1, 1));
-		List<Point> visited = new ArrayList<>();
+		Set<Point> visited = new HashSet<>();
 		Set<Point> current = Set.of(start);
-		for (int i = 0; i < steps; i++) {
+		List<PointVisit> visits = new ArrayList<>();
+		int steps = 1;
+		while (!current.isEmpty()) {
 			current = current.stream()
 					.flatMap(p -> Direction.stream().map(p::move))
 					.filter(bounds::containsInclusive)
 					.filter(p -> !rocks.contains(p))
 					.filter(p -> !visited.contains(p))
 					.collect(Collectors.toSet());
-			if (current.isEmpty())
-				break;
 			visited.addAll(current);
+			int _steps = steps;
+			current.stream().map(p -> new PointVisit(p, _steps)).forEach(visits::add);
+			steps++;
 		}
-		return visited;
+		return visits;
 	}
 	
-	private static BigInteger part2(List<Point> rocks, Point start, int steps) {
+	private static long part2(List<Point> rocks, Point start, int steps) {
 		Point pointMin = Point.minBound(rocks).shift(-1, -1);
 		Point pointMax = Point.maxBound(rocks).shift(1, 1);
 		
@@ -83,27 +87,21 @@ public class Day21 {
 			throw new RuntimeException("Works only for 1 layer of perimeter field");
 		System.out.println("Width: " + width + ", full fields radius: " + fullFieldsRadius + ", remaining steps: " + remainingSteps);
 		
-		List<Point> fullPoints = allVisitedPoints(rocks, start, Integer.MAX_VALUE);
+		List<PointVisit> visits = allVisitedPoints(rocks, start);
+		
+		long fullEvenCount = visits.stream().filter(v -> v.steps() % 2 == 0).count();
+		long fullOddCount = visits.stream().filter(v -> v.steps() % 2 == 1).count();
 		// для крайних четных полей нужно считать углы поля, но вместо этого можно отнять от всего поля центральную часть
-		List<Point> cornerPoints = allVisitedPoints(rocks, start, remainingSteps);
+		long cornerEvenCount = visits.stream().filter(v -> v.steps() > remainingSteps && v.steps() % 2 == 0).count();
+		long cornerOddCount = visits.stream().filter(v -> v.steps() > remainingSteps && v.steps() % 2 == 1).count();
 		
-		BigInteger fullEvenCount = BigInteger.valueOf(fullPoints.stream().filter(p -> (p.x() + p.y()) % 2 == 0).count());
-		BigInteger fullOddCount = BigInteger.valueOf(fullPoints.stream().filter(p -> (p.x() + p.y()) % 2 == 1).count());
-		
-		BigInteger cornerEvenCount = fullEvenCount.subtract(BigInteger.valueOf(cornerPoints.stream().filter(p -> (p.x() + p.y()) % 2 == 0).count()));
-		BigInteger cornerOddCount = fullOddCount.subtract(BigInteger.valueOf(cornerPoints.stream().filter(p -> (p.x() + p.y()) % 2 == 1).count()));
-		
-		return Stream.of(
-						BigInteger.valueOf(fullFieldsRadius + 1).pow(2).multiply(fullOddCount), // полные и неполные нечетные
-						BigInteger.valueOf(fullFieldsRadius).pow(2).multiply(fullEvenCount), // полные четные
-						fullEvenCount.add(BigInteger.ONE).multiply(cornerOddCount).negate(), // вычитаем лишние углы у крайних нечетных
-						fullEvenCount.multiply(cornerEvenCount)) // добавляем углы крайних четных
-				.reduce(BigInteger.ZERO, BigInteger::add);
+		return
+				(fullFieldsRadius + 1) * (fullFieldsRadius + 1) * fullOddCount // полные и неполные нечетные
+				+ fullFieldsRadius * fullFieldsRadius * fullEvenCount // полные четные
+				- (fullFieldsRadius + 1) * cornerOddCount // вычитаем лишние углы у крайних нечетных
+				+ fullFieldsRadius * cornerEvenCount; // добавляем углы крайних четных
 	}
 	
 	record PointVisit(Point p, int steps) {
-	
 	}
 }
-//636350476889926
-//636350478298223
