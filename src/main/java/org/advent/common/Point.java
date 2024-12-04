@@ -127,4 +127,18 @@ public record Point(int x, int y) {
 		}
 		return field;
 	}
+	
+	public static Map<Point, Character> readFieldMap(List<String> lines) {
+		Map<Point, Character> field = new HashMap<>();
+		int y = 0;
+		for (String line : lines) {
+			int x = 0;
+			for (char c : line.toCharArray()) {
+				field.put(new Point(x, y), c);
+				x++;
+			}
+			y++;
+		}
+		return field;
+	}
 }
