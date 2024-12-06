@@ -104,7 +104,7 @@ public record Point(int x, int y) {
 		}
 	}
 	
-	public static void printField(Set<Point> field, Function<Point, Character> symbol) {
+	public static void printField(Collection<Point> field, Function<Point, Character> symbol) {
 		IntSummaryStatistics xStats = field.stream().mapToInt(Point::x).summaryStatistics();
 		IntSummaryStatistics yStats = field.stream().mapToInt(Point::y).summaryStatistics();
 		for (int y = yStats.getMin(); y <= yStats.getMax(); y++) {
