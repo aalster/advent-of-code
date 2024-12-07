@@ -3,81 +3,98 @@ package org.advent.year2021.day17;
 import org.advent.common.Point;
 import org.advent.common.Utils;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 
 public class Day17 {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day17.class, "example.txt");
-		Area area = Area.parse(input.nextLine().split(": ")[1]);
+		Scanner input = Utils.scanFileNearClass(Day17.class, "input.txt");
+		Target target = Target.parse(input.nextLine().replace("target area: ", ""));
 		
-		System.out.println("Answer 1: " + part1(area));
-		System.out.println("Answer 2: " + part2());
+		System.out.println("Answer 1: " + part1(target));
+		System.out.println("Answer 2: " + part2(target));
 	}
 	
-	private static long part1(Area area) {
-		int totalMaxY = Integer.MIN_VALUE;
-		for (int initialXV = 1; initialXV < area.x2() + 1; initialXV++) {
-			int steps = stepsForX(initialXV, area.x1(), area.x2());
-			if (steps <= 0)
-				continue;
-			
-			int maxY = maxY(steps, area.y1(), area.y2());
-			if (maxY == Integer.MIN_VALUE)
-				continue;
-			
-			if (totalMaxY < maxY)
-				totalMaxY = maxY;
+	private static int part1(Target target) {
+		if (target.maxY > 0)
+			throw new RuntimeException("Not working for positive target y");
+		
+		for (int y = target.minY; y <= target.maxY; y++) {
+			int vy = - y - 1;
+			for (int vx = target.maxX; vx > 0; vx--)
+				if (target.landed(vx, vy))
+					return vy * (vy + 1) / 2;
 		}
-		return totalMaxY;
-	}
-	
-	private static long part2() {
 		return 0;
 	}
 	
-	private static int stepsForX(int initialXVelocity, int destFrom, int destTo) {
-		int v = initialXVelocity;
-		int x = 0;
-		int step = 1;
-		while (v > 0) {
-			x += v;
-			if (destFrom <= x && x <= destTo)
-				return step;
-			step++;
-			v--;
-		}
-		return -1;
-	}
-	
-	private static int maxY(int steps, int destFrom, int destTo) {
-		int maxY = Integer.MIN_VALUE;
-		for (int initialYVelocity = -1000; initialYVelocity < 1000; initialYVelocity++) {
-			int v = initialYVelocity;
+	private static int part2(Target target) {
+		if (target.maxY > 0)
+			throw new RuntimeException("Not working for positive target y");
+		
+		Map<Integer, List<Integer>> vyByTime = new HashMap<>();
+		
+		for (int vy = target.minY; vy <= -target.minY; vy++) {
+			int t = 0;
 			int y = 0;
-			int step = 1;
-			while (step <= steps) {
-				y += v;
-				if (destFrom <= y && y <= destTo) {
-				
-				}
-				v++;
-				step++;
+			int currentVy = vy;
+			while (y >= target.minY) {
+				t++;
+				y += currentVy;
+				currentVy--;
+				if (target.minY <= y && y <= target.maxY)
+					vyByTime.computeIfAbsent(t, k -> new ArrayList<>()).add(vy);
 			}
 		}
-		return maxY;
-	}
-	
-	private record Area(int x1, int x2, int y1, int y2) {
-		boolean contains(Point point) {
-			return x1 <= point.x() && point.x() <= x2 && y1 <= point.y() && point.y() <= y2;
+		
+		int maxT = vyByTime.keySet().stream().mapToInt(t -> t).max().orElseThrow();
+		
+		Map<Integer, List<Integer>> vxByTime = new HashMap<>();
+		for (int vx = 1; vx <= target.maxX; vx++) {
+			int t = 0;
+			int x = 0;
+			int currentVx = vx;
+			while (x <= target.maxX && t <= maxT) {
+				t++;
+				x += currentVx;
+				if (currentVx > 0)
+					currentVx--;
+				if (target.minX <= x && x <= target.maxX)
+					vxByTime.computeIfAbsent(t, k -> new ArrayList<>()).add(vx);
+			}
 		}
 		
-		static Area parse(String value) {
-			String[] split = value.split(", ");
-			String[] x = split[0].split("=")[1].split("\\.\\.");
-			String[] y = split[1].split("=")[1].split("\\.\\.");
-			return new Area(Integer.parseInt(x[0]), Integer.parseInt(x[1]), Integer.parseInt(y[0]), Integer.parseInt(y[1]));
+		Set<Point> velocities = new HashSet<>();
+		for (Map.Entry<Integer, List<Integer>> entry : vyByTime.entrySet())
+			for (int vx : vxByTime.getOrDefault(entry.getKey(), List.of()))
+				for (int vy : entry.getValue())
+					velocities.add(new Point(vx, vy));
+		
+		return velocities.size();
+	}
+	
+	record Target(int minX, int maxX, int minY, int maxY) {
+		
+		boolean landed(int vx, int vy) {
+			int y = -vy + 1;
+			int x = vx * (vx + 1) / 2;
+			int t = vy * 2 + 1;
+			if (t < vx)
+				x -= t * (t + 1) / 2;
+			return minX <= x && x <= maxX && minY <= y && y <= maxY;
+		}
+		
+		static Target parse(String line) {
+			line = line.replace("x=", "").replace("y=", "").replace("..", ", ");
+			int[] array = Arrays.stream(line.split(", ")).mapToInt(Integer::parseInt).toArray();
+			return new Target(array[0], array[1], array[2], array[3]);
 		}
 	}
 }
