@@ -26,6 +26,10 @@ public record Point(int x, int y) {
 		return direction.shift(this);
 	}
 	
+	public Point subtract(Point p) {
+		return new Point(x - p.x, y - p.y);
+	}
+	
 	public int distanceTo(Point p) {
 		return Math.abs(x - p.x) + Math.abs(y - p.y);
 	}
@@ -53,10 +57,6 @@ public record Point(int x, int y) {
 			case UP -> new Point(x, y - distance);
 			case DOWN -> new Point(x, y + distance);
 		};
-	}
-	
-	public int manhattanDistance(Point p) {
-		return Math.abs(p.x - x) + Math.abs(p.y - y);
 	}
 	
 	public static Point parse(String value) {

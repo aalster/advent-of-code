@@ -1,6 +1,7 @@
 package org.advent.year2021.day19;
 
 import org.advent.common.Point3D;
+import org.advent.common.Region3D;
 import org.advent.common.Utils;
 
 import java.util.ArrayList;
@@ -129,37 +130,6 @@ public class Day19 {
 				beacons.add(Point3D.parse(line));
 			}
 			return new ScannerReport(number, new Point3D(0, 0, 0), beacons);
-		}
-	}
-	
-	record Region3D(Point3D from, Point3D to) {
-		Region3D {
-			if (to.x() < from.x() || to.y() < from.y() || to.z() < from.z())
-				throw new RuntimeException("Region bounds not sorted");
-		}
-		
-		Region3D intersection(Region3D other) {
-			return new Region3D(
-					new Point3D(
-							Math.max(from.x(), other.from().x()),
-							Math.max(from.y(), other.from().y()),
-							Math.max(from.z(), other.from().z())),
-					new Point3D(
-							Math.min(to.x(), other.to().x()),
-							Math.min(to.y(), other.to().y()),
-							Math.min(to.z(), other.to().z())));
-		}
-		
-		boolean containsInclusive(Point3D point) {
-			return from.x() <= point.x() && point.x() <= to.x()
-					&& from.y() <= point.y() && point.y() <= to.y()
-					&& from.z() <= point.z() && point.z() <= to.z();
-		}
-		
-		static Region3D fromCenter(Point3D center, int radius) {
-			return new Region3D(
-					new Point3D(center.x() - radius, center.y() - radius, center.z() - radius),
-					new Point3D(center.x() + radius, center.y() + radius, center.z() + radius));
 		}
 	}
 	
