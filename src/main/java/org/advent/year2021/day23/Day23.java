@@ -56,6 +56,7 @@ public class Day23 {
 				continue;
 			}
 			states.addAll(nextStates);
+//			System.out.println(states.size() + " - " + minEnergy);
 		}
 		return minEnergy;
 	}
@@ -68,7 +69,7 @@ public class Day23 {
 		
 		List<State> nextStates(Field field) {
 			List<Map.Entry<Point, Character>> candidates = amphipods.entrySet().stream()
-					.filter(e -> canMove(field, e.getKey(), e.getValue()))
+					.filter(e -> field.canMove(e.getKey(), e.getValue(), amphipods))
 					.toList();
 			
 			for (Map.Entry<Point, Character> candidate : candidates) {
@@ -90,10 +91,6 @@ public class Day23 {
 			nextAmphipods.put(pathToHome.right(), type);
 			int nextEnergy = energy + pathToHome.left() * field.energyCosts.get(type);
 			return new State(nextAmphipods, nextEnergy);
-		}
-		
-		private boolean canMove(Field field, Point position, Character type) {
-			return !field.settled(position, type, amphipods) && !amphipods.containsKey(position.shift(Direction.UP));
 		}
 		
 		boolean allAtHome(Field field) {
@@ -164,13 +161,14 @@ public class Day23 {
 		
 		Pair<Integer, Point> pathToHome(Point position, Character type, Map<Point, Character> amphipods) {
 			Point home = homes.get(type);
-			Character homeAmphipod = amphipods.get(home);
-			if (homeAmphipod != null) {
+			
+			while (true) {
+				Character homeAmphipod = amphipods.get(home);
+				if (homeAmphipod == null)
+					break;
 				if (homeAmphipod != type)
 					return null;
 				home = home.shift(Direction.UP);
-				if (amphipods.containsKey(home))
-					return null;
 			}
 			
 			int steps = 0;
@@ -199,8 +197,25 @@ public class Day23 {
 		
 		boolean settled(Point position, Character type, Map<Point, Character> amphipods) {
 			Point home = homes.get(type);
-			return home.x() == position.x() &&
-					(home.y() == position.y() || (home.y() - 1 == position.y() && amphipods.get(home) == type));
+			if (home.x() != position.x())
+				return false;
+			while (position.y() < home.y()) {
+				position = position.shift(Direction.DOWN);
+				if (amphipods.get(position) != type)
+					return false;
+			}
+			return true;
+		}
+		
+		private boolean canMove(Point position, Character type, Map<Point, Character> amphipods) {
+			if (settled(position, type, amphipods))
+				return false;
+			while (position.y() > hallwayY + 1) {
+				position = position.shift(Direction.UP);
+				if (amphipods.containsKey(position))
+					return false;
+			}
+			return true;
 		}
 		
 		static Field fromEmptyPoints(Set<Point> allEmpty) {
