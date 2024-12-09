@@ -21,27 +21,20 @@ public class Day23 {
 	
 	public static void main(String[] args) {
 		Scanner input = Utils.scanFileNearClass(Day23.class, "input.txt");
-		Map<Character, List<Point>> points = Point.readField(Utils.readLines(input));
+		List<String> lines = Utils.readLines(input);
+		Pair<Field, State> part1 = parse(lines);
 		
-		Map<Point, Character> amphipods = new HashMap<>();
-		for (Map.Entry<Character, List<Point>> entry : points.entrySet()) {
-			Character type = entry.getKey();
-			if ('A' <= type && type <= 'Z')
-				for (Point point : entry.getValue())
-					amphipods.put(point, type);
-		}
-		Set<Point> allEmpty = new HashSet<>(points.get('.'));
-		allEmpty.addAll(amphipods.keySet());
-		Field field = Field.fromEmptyPoints(allEmpty);
-		State state = State.init(amphipods, field);
+		List<String> lines2 = new ArrayList<>(lines);
+		lines2.add(3, "  #D#C#B#A#");
+		lines2.add(4, "  #D#B#A#C#");
+		Pair<Field, State> part2 = parse(lines2);
 		
-		long start = System.currentTimeMillis();
-		System.out.println("Answer 1: " + part1(field, state));
-		System.out.println("Answer 2: " + part2());
-		System.out.println(System.currentTimeMillis() - start + " ms");
+		
+		System.out.println("Answer 1: " + solve(part1.left(), part1.right()));
+		System.out.println("Answer 2: " + solve(part2.left(), part2.right()));
 	}
 	
-	private static long part1(Field field, State initialState) {
+	private static long solve(Field field, State initialState) {
 		SequencedSet<State> states = new LinkedHashSet<>(List.of(initialState));
 		int minEnergy = Integer.MAX_VALUE;
 		while (!states.isEmpty()) {
@@ -56,13 +49,25 @@ public class Day23 {
 				continue;
 			}
 			states.addAll(nextStates);
-//			System.out.println(states.size() + " - " + minEnergy);
 		}
 		return minEnergy;
 	}
 	
-	private static long part2() {
-		return 0;
+	static Pair<Field, State> parse(List<String> lines) {
+		Map<Character, List<Point>> points = Point.readField(lines);
+		
+		Map<Point, Character> amphipods = new HashMap<>();
+		for (Map.Entry<Character, List<Point>> entry : points.entrySet()) {
+			Character type = entry.getKey();
+			if ('A' <= type && type <= 'Z')
+				for (Point point : entry.getValue())
+					amphipods.put(point, type);
+		}
+		Set<Point> allEmpty = new HashSet<>(points.get('.'));
+		allEmpty.addAll(amphipods.keySet());
+		Field field = Field.fromEmptyPoints(allEmpty);
+		State state = State.init(amphipods, field);
+		return Pair.of(field, state);
 	}
 	
 	record State(Map<Point, Character> amphipods, Set<Point> settled, int energy) {
@@ -103,18 +108,6 @@ public class Day23 {
 		
 		boolean allAtHome() {
 			return settled.size() == amphipods.size();
-		}
-		
-		void print(Field field) {
-			System.out.println("\nState energy: " + energy);
-			Set<Point> points = new HashSet<>(field.homes.values());
-			points.addAll(List.of(new Point(field.hallwayMinX, field.hallwayY), new Point(field.hallwayMaxX, field.hallwayY)));
-			Point.printField(points, p -> {
-				Character amp = amphipods.get(p);
-				if (amp != null)
-					return amp;
-				return p.y() == field.hallwayY || field.restricted.contains(new Point(p.x(), field.hallwayY)) ? '.' : ' ';
-			});
 		}
 		
 		static State init(Map<Point, Character> amphipods, Field field) {
@@ -208,8 +201,6 @@ public class Day23 {
 		}
 		
 		private boolean canMove(Point position, Character type, Map<Point, Character> amphipods) {
-//			if (settled(position, type, amphipods))
-//				return false;
 			while (position.y() > hallwayY + 1) {
 				position = position.shift(Direction.UP);
 				if (amphipods.containsKey(position))
