@@ -33,7 +33,7 @@ public class Day23 {
 		Set<Point> allEmpty = new HashSet<>(points.get('.'));
 		allEmpty.addAll(amphipods.keySet());
 		Field field = Field.fromEmptyPoints(allEmpty);
-		State state = new State(amphipods, 0);
+		State state = State.init(amphipods, field);
 		
 		long start = System.currentTimeMillis();
 		System.out.println("Answer 1: " + part1(field, state));
@@ -51,7 +51,7 @@ public class Day23 {
 			
 			List<State> nextStates = current.nextStates(field);
 			if (nextStates.isEmpty()) {
-				if (current.allAtHome(field) && current.energy < minEnergy)
+				if (current.allAtHome() && current.energy < minEnergy)
 					minEnergy = current.energy;
 				continue;
 			}
@@ -65,41 +65,44 @@ public class Day23 {
 		return 0;
 	}
 	
-	record State(Map<Point, Character> amphipods, int energy) {
+	record State(Map<Point, Character> amphipods, Set<Point> settled, int energy) {
 		
 		List<State> nextStates(Field field) {
 			List<Map.Entry<Point, Character>> candidates = amphipods.entrySet().stream()
+					.filter(e -> !settled.contains(e.getKey()))
 					.filter(e -> field.canMove(e.getKey(), e.getValue(), amphipods))
 					.toList();
 			
 			for (Map.Entry<Point, Character> candidate : candidates) {
 				Pair<Integer, Point> pathToHome = field.pathToHome(candidate.getKey(), candidate.getValue(), amphipods);
 				if (pathToHome != null)
-					return List.of(nextState(field, pathToHome, candidate.getKey(), candidate.getValue()));
+					return List.of(nextState(field, pathToHome, candidate.getKey(), candidate.getValue(), true));
 			}
 			
 			return candidates.stream()
 					.filter(e -> e.getKey().y() != field.hallwayY)
 					.flatMap(e -> field.allHallwayPaths(e.getKey(), amphipods).stream()
-							.map(pair -> nextState(field, pair, e.getKey(), e.getValue())))
+							.map(pair -> nextState(field, pair, e.getKey(), e.getValue(), false)))
 					.toList();
 		}
 		
-		State nextState(Field field, Pair<Integer, Point> pathToHome, Point position, Character type) {
+		State nextState(Field field, Pair<Integer, Point> pathToHome, Point position, Character type, boolean isSettled) {
 			Map<Point, Character> nextAmphipods = new HashMap<>(amphipods);
 			nextAmphipods.remove(position);
 			nextAmphipods.put(pathToHome.right(), type);
 			int nextEnergy = energy + pathToHome.left() * field.energyCosts.get(type);
-			return new State(nextAmphipods, nextEnergy);
+			Set<Point> nextSettled;
+			if (isSettled) {
+				nextSettled = new HashSet<>(settled);
+				nextSettled.add(pathToHome.right());
+			} else {
+				nextSettled = settled;
+			}
+			return new State(nextAmphipods, nextSettled, nextEnergy);
 		}
 		
-		boolean allAtHome(Field field) {
-			for (Map.Entry<Point, Character> entry : amphipods.entrySet()) {
-				Point position = entry.getKey();
-				if (position.y() == field.hallwayY || position.x() != field.homes.get(entry.getValue()).x())
-					return false;
-			}
-			return true;
+		boolean allAtHome() {
+			return settled.size() == amphipods.size();
 		}
 		
 		void print(Field field) {
@@ -112,6 +115,18 @@ public class Day23 {
 					return amp;
 				return p.y() == field.hallwayY || field.restricted.contains(new Point(p.x(), field.hallwayY)) ? '.' : ' ';
 			});
+		}
+		
+		static State init(Map<Point, Character> amphipods, Field field) {
+			Set<Point> settled = new HashSet<>();
+			for (Map.Entry<Character, Point> entry : field.homes.entrySet()) {
+				Point home = entry.getValue();
+				while (amphipods.get(home) == entry.getKey()) {
+					settled.add(home);
+					home = home.shift(Direction.UP);
+				}
+			}
+			return new State(amphipods, settled, 0);
 		}
 	}
 	
@@ -126,11 +141,8 @@ public class Day23 {
 		List<Pair<Integer, Point>> allHallwayPaths(Point position, Map<Point, Character> amphipods) {
 			List<Pair<Integer, Point>> paths = new ArrayList<>();
 			
-			int stepsUp = 0;
-			while (position.y() > hallwayY) {
-				position = position.shift(Direction.UP);
-				stepsUp++;
-			}
+			int stepsUp = position.y() - hallwayY;
+			position = new Point(position.x(), hallwayY);
 			
 			{
 				int steps = 0;
@@ -195,21 +207,9 @@ public class Day23 {
 			return Pair.of(steps, position);
 		}
 		
-		boolean settled(Point position, Character type, Map<Point, Character> amphipods) {
-			Point home = homes.get(type);
-			if (home.x() != position.x())
-				return false;
-			while (position.y() < home.y()) {
-				position = position.shift(Direction.DOWN);
-				if (amphipods.get(position) != type)
-					return false;
-			}
-			return true;
-		}
-		
 		private boolean canMove(Point position, Character type, Map<Point, Character> amphipods) {
-			if (settled(position, type, amphipods))
-				return false;
+//			if (settled(position, type, amphipods))
+//				return false;
 			while (position.y() > hallwayY + 1) {
 				position = position.shift(Direction.UP);
 				if (amphipods.containsKey(position))
