@@ -29,7 +29,6 @@ public class Day23 {
 		lines2.add(4, "  #D#B#A#C#");
 		Pair<Field, State> part2 = parse(lines2);
 		
-		
 		System.out.println("Answer 1: " + solve(part1.left(), part1.right()));
 		System.out.println("Answer 2: " + solve(part2.left(), part2.right()));
 	}

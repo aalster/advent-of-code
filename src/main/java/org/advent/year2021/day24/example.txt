@@ -1,0 +1,4 @@
+inp w
+add x w
+add y x
+add x y
