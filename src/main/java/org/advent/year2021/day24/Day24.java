@@ -3,6 +3,9 @@ package org.advent.year2021.day24;
 import lombok.Data;
 import org.advent.common.Utils;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -12,45 +15,78 @@ import java.util.function.Function;
 
 @SuppressWarnings("DeconstructionCanBeUsed")
 public class Day24 {
-	static final boolean applyModelNumberOptimizations = true;
 	
 	public static void main(String[] args) {
-//		if (true) {
-//			tests();
-//			return;
-//		}
 		Scanner input = Utils.scanFileNearClass(Day24.class, "input.txt");
 		List<String> lines = Utils.readLines(input);
 		
-		long start = System.currentTimeMillis();
-		System.out.println("Answer 1: " + part1(lines));
-		System.out.println("Answer 2: " + part2());
-		System.out.println((System.currentTimeMillis() - start) + "ms");
-	}
-	
-	private static long part1(List<String> lines) {
 		State state = process(lines);
 		Value z = state.z;
-		System.out.println(z);
-		System.out.println("Range: " + z.possibleValues());
 		
-		for (int i = 1; i < 10; i++) {
-			PartialInputProvider input = new PartialInputProvider(Map.of(0, i));
-			Value simplified = z.input(input);
-			System.out.println(simplified);
-			System.out.println("Range: " + simplified.possibleValues());
+		int[][] possibleDigitsDesc = filterDigits(z);
+		int[][] possibleDigitsAsc = Arrays.stream(possibleDigitsDesc)
+				.map(digits -> Arrays.stream(digits).sorted().toArray())
+				.toArray(int[][]::new);
+		
+		for (int index = 0; index < possibleDigitsAsc.length; index++) {
+			int[] digits = possibleDigitsAsc[index];
+			if (digits.length == 1)
+				z = z.input(new PartialInputProvider(Map.of(index, digits[0])));
 		}
-		return 0;
+		
+		System.out.println("Answer 1: " + searchModelNumberRecursive(possibleDigitsDesc, 0, z));
+		System.out.println("Answer 2: " + searchModelNumberRecursive(possibleDigitsAsc, 0, z));
+	}
+	
+	private static int[][] filterDigits(Value z) {
+		Map<Integer, Integer> singlePossibleDigits = new HashMap<>();
+		
+		int[][] possibleDigits = new int[14][];
+		for (int index = 0; index < 14; index++) {
+			if (singlePossibleDigits.containsKey(index))
+				continue;
+			List<Integer> digits = new ArrayList<>();
+			for (int digit = 9; digit > 0; digit--) {
+				Map<Integer, Integer> inputDigits = new HashMap<>(singlePossibleDigits);
+				inputDigits.put(index, digit);
+				Value simplified = z.input(new PartialInputProvider(inputDigits));
+				if (simplified.possibleValues().contains(0))
+					digits.add(digit);
+			}
+			possibleDigits[index] = digits.stream().mapToInt(i -> i).toArray();
+			if (digits.size() == 1) {
+				singlePossibleDigits.put(index, digits.getFirst());
+				index = -1;
+			}
+		}
+		return possibleDigits;
+	}
+	
+	static String searchModelNumberRecursive(int[][] possibleDigits, int index, Value z) {
+		if (index >= possibleDigits.length - 1) {
+			for (int digit : possibleDigits[index]) {
+				PartialInputProvider input = new PartialInputProvider(Map.of(index, digit));
+				if (z.input(input).compute() == 0)
+					return "" + digit;
+			}
+			return null;
+		}
+		for (int digit : possibleDigits[index]) {
+			PartialInputProvider input = new PartialInputProvider(Map.of(index, digit));
+			Value simplifiedZ = z.input(input);
+			if (!simplifiedZ.possibleValues().contains(0))
+				continue;
+			String result = searchModelNumberRecursive(possibleDigits, index + 1, simplifiedZ);
+			if (result != null)
+				return digit + result;
+		}
+		return null;
 	}
 	
 	private static State process(List<String> operations) {
 		State state = new State();
 		int inputIndex = 0;
-		int i = 0;
 		for (String operation : operations) {
-//			System.out.println(state);
-//			System.out.println();
-//			System.out.println(i++ + " " + operation);
 			String[] split = operation.split(" ");
 			VariableValue left = VariableValue.of(split[1]);
 			
@@ -101,11 +137,11 @@ public class Day24 {
 		
 		Value simplify();
 		
-		int compute();
+		long compute();
 		
 		Value input(InputProvider input);
 		
-		PossibleValues possibleValues();
+		ValuesRange possibleValues();
 		
 		static Value of(String token) {
 			if (Character.isLetter(token.charAt(0)))
@@ -114,9 +150,13 @@ public class Day24 {
 		}
 	}
 	
-	record ConstantValue(int number) implements Value {
+	record ConstantValue(long number, ValuesRange possibleValues) implements Value {
 		static final ConstantValue ZERO = new ConstantValue(0);
 		static final ConstantValue ONE = new ConstantValue(1);
+		
+		public ConstantValue(long number) {
+			this(number, new ValuesRange(number, number));
+		}
 		
 		@Override
 		public Value substituteVars(State state) {
@@ -134,13 +174,8 @@ public class Day24 {
 		}
 		
 		@Override
-		public int compute() {
+		public long compute() {
 			return number;
-		}
-		
-		@Override
-		public PossibleValues possibleValues() {
-			return new ValuesRange(number, number);
 		}
 		
 		@Override
@@ -168,15 +203,13 @@ public class Day24 {
 		}
 		
 		@Override
-		public int compute() {
+		public long compute() {
 			throw new UnsupportedOperationException();
 		}
 		
 		@Override
-		public PossibleValues possibleValues() {
-			if (applyModelNumberOptimizations)
-				return PossibleValues.MODEL_NUMBER_DIGIT;
-			return PossibleValues.ANY;
+		public ValuesRange possibleValues() {
+			return ValuesRange.MODEL_NUMBER_DIGIT;
 		}
 		
 		@Override
@@ -207,12 +240,12 @@ public class Day24 {
 		}
 		
 		@Override
-		public int compute() {
+		public long compute() {
 			throw new UnsupportedOperationException();
 		}
 		
 		@Override
-		public PossibleValues possibleValues() {
+		public ValuesRange possibleValues() {
 			throw new UnsupportedOperationException();
 		}
 		
@@ -238,6 +271,7 @@ public class Day24 {
 		final BiFunction<Value, Value, OperationValue> constructor;
 		final Value left;
 		final Value right;
+		ValuesRange possibleValues;
 		
 		@Override
 		public Value substituteVars(State state) {
@@ -248,8 +282,8 @@ public class Day24 {
 		public Value simplify() {
 			if (left instanceof ConstantValue && right instanceof ConstantValue)
 				return new ConstantValue(compute());
-			PossibleValues possibleValues = possibleValues();
-			if (possibleValues instanceof ValuesRange range && range.singleValue())
+			ValuesRange range = possibleValues();
+			if (range.singleValue())
 				return new ConstantValue(range.min);
 			return this;
 		}
@@ -258,6 +292,15 @@ public class Day24 {
 		public Value input(InputProvider input) {
 			return constructor.apply(left.input(input), right.input(input)).simplify();
 		}
+		
+		@Override
+		public ValuesRange possibleValues() {
+			if (possibleValues == null)
+				possibleValues = initPossibleValues();
+			return possibleValues;
+		}
+		
+		abstract ValuesRange initPossibleValues();
 		
 		@Override
 		public String toString() {
@@ -285,19 +328,15 @@ public class Day24 {
 		}
 		
 		@Override
-		public int compute() {
+		public long compute() {
 			return left.compute() + right.compute();
 		}
 		
 		@Override
-		public PossibleValues possibleValues() {
-			PossibleValues l = left.possibleValues();
-			PossibleValues r = right.possibleValues();
-			if (l == PossibleValues.ANY || r == PossibleValues.ANY)
-				return PossibleValues.ANY;
-			if (l instanceof ValuesRange lr && r instanceof ValuesRange rr)
-				return new ValuesRange(lr.min + rr.min, lr.max + rr.max);
-			throw new IllegalStateException();
+		public ValuesRange initPossibleValues() {
+			ValuesRange l = left.possibleValues();
+			ValuesRange r = right.possibleValues();
+			return new ValuesRange(l.min + r.min, l.max + r.max);
 		}
 	}
 	
@@ -336,26 +375,18 @@ public class Day24 {
 		}
 		
 		@Override
-		public int compute() {
+		public long compute() {
 			return left.compute() * right.compute();
 		}
 		
 		@Override
-		public PossibleValues possibleValues() {
-			PossibleValues l = left.possibleValues();
-			PossibleValues r = right.possibleValues();
-			if (!(l instanceof ValuesRange lr) || !(r instanceof ValuesRange rr))
-				return PossibleValues.ANY;
-			int max = Math.max(Math.abs(lr.min), Math.abs(lr.max)) * Math.max(Math.abs(rr.min), Math.abs(rr.max));
-			if (lr.min < 0 || rr.min < 0)
+		public ValuesRange initPossibleValues() {
+			ValuesRange l = left.possibleValues();
+			ValuesRange r = right.possibleValues();
+			long max = Math.max(Math.abs(l.min), Math.abs(l.max)) * Math.max(Math.abs(r.min), Math.abs(r.max));
+			if (l.min < 0 || r.min < 0)
 				return new ValuesRange(-max, max);
-			try {
-				return new ValuesRange(lr.min * rr.min, max);
-			} catch (RuntimeException e) {
-				System.out.println("LEFT: " + l);
-				System.out.println("RIGHT: " + r);
-				throw e;
-			}
+			return new ValuesRange(l.min * r.min, max);
 		}
 	}
 	
@@ -388,27 +419,25 @@ public class Day24 {
 		}
 		
 		@Override
-		public int compute() {
+		public long compute() {
 			return left.compute() / right.compute();
 		}
 		
 		@Override
-		public PossibleValues possibleValues() {
-			PossibleValues l = left.possibleValues();
-			PossibleValues r = right.possibleValues();
-			if (!(l instanceof ValuesRange lr) || !(r instanceof ValuesRange rr))
-				return PossibleValues.ANY;
+		public ValuesRange initPossibleValues() {
+			ValuesRange l = left.possibleValues();
+			ValuesRange r = right.possibleValues();
 			
-			int maxL = Math.max(Math.abs(lr.min), Math.abs(lr.max));
-			int minR = Math.min(Math.abs(rr.min), Math.abs(rr.max));
+			long maxL = Math.max(Math.abs(l.min), Math.abs(l.max));
+			long minR = Math.min(Math.abs(r.min), Math.abs(r.max));
 			
 			if (maxL < minR)
-				return PossibleValues.ZERO;
+				return ValuesRange.ZERO;
 			
-			if (0 < rr.min)
-				return new ValuesRange(lr.min / minR, lr.max / minR);
-			if (rr.max < 0)
-				return new ValuesRange(-lr.max / minR, -lr.min / minR);
+			if (0 < r.min)
+				return new ValuesRange(l.min / minR, l.max / minR);
+			if (r.max < 0)
+				return new ValuesRange(-l.max / minR, -l.min / minR);
 			return new ValuesRange(-maxL / minR, maxL / minR);
 		}
 	}
@@ -446,22 +475,17 @@ public class Day24 {
 		}
 		
 		@Override
-		public int compute() {
+		public long compute() {
 			return left.compute() % right.compute();
 		}
 		
 		@Override
-		public PossibleValues possibleValues() {
-			PossibleValues l = left.possibleValues();
-			PossibleValues r = right.possibleValues();
-			if (r == PossibleValues.ANY)
-				return PossibleValues.ANY;
-			if (r instanceof ValuesRange rr) {
-				if (l instanceof ValuesRange lr && 0 < lr.min && lr.max < rr.max)
-					return l;
-				return new ValuesRange(0, rr.max - 1);
-			}
-			throw new UnsupportedOperationException();
+		public ValuesRange initPossibleValues() {
+			ValuesRange l = left.possibleValues();
+			ValuesRange r = right.possibleValues();
+			if (0 < l.min && l.max < r.max)
+				return l;
+			return new ValuesRange(0, r.max - 1);
 		}
 	}
 	
@@ -473,21 +497,19 @@ public class Day24 {
 		
 		@Override
 		public Value simplify() {
-			PossibleValues possibleValues = possibleValues();
-			if (possibleValues instanceof ValuesRange range && range.singleValue())
+			ValuesRange range = possibleValues();
+			if (range.singleValue())
 				return new ConstantValue(range.min);
-			if (applyModelNumberOptimizations) {
-				if (left instanceof InputValue)
-					return simplifyForInput(right);
-				if (right instanceof InputValue)
-					return simplifyForInput(left);
-			}
+			if (left instanceof InputValue)
+				return simplifyForInput(right);
+			if (right instanceof InputValue)
+				return simplifyForInput(left);
 			return super.simplify();
 		}
 		
 		private Value simplifyForInput(Value other) {
 			if (other instanceof ConstantValue constant) {
-				int c = constant.compute();
+				long c = constant.compute();
 				if (c < 1 || 9 < c)
 					return ConstantValue.ZERO;
 			}
@@ -495,37 +517,27 @@ public class Day24 {
 		}
 		
 		@Override
-		public int compute() {
+		public long compute() {
 			return left.compute() == right.compute() ? 1 : 0;
 		}
 		
 		@Override
-		public PossibleValues possibleValues() {
-			PossibleValues l = left.possibleValues();
-			PossibleValues r = right.possibleValues();
-			if (l instanceof ValuesRange lr && r instanceof ValuesRange rr) {
-				if (lr.max < rr.min || rr.max < lr.min)
-					return PossibleValues.ZERO;
-				if (lr.singleValue() && rr.singleValue() && lr.min == rr.min)
-					return PossibleValues.ONE;
-			}
+		public ValuesRange initPossibleValues() {
+			ValuesRange l = left.possibleValues();
+			ValuesRange r = right.possibleValues();
+			if (l.max < r.min || r.max < l.min)
+				return ValuesRange.ZERO;
+			if (l.singleValue() && r.singleValue() && l.min == r.min)
+				return ValuesRange.ONE;
 			return new ValuesRange(0, 1);
 		}
 	}
 	
-	interface PossibleValues {
-		PossibleValues ANY = new PossibleValues() {
-			@Override
-			public String toString() {
-				return "ANY";
-			}
-		};
-		ValuesRange ZERO = new ValuesRange(0, 0);
-		ValuesRange ONE = new ValuesRange(1, 1);
-		ValuesRange MODEL_NUMBER_DIGIT = new ValuesRange(1, 9);
-	}
-	
-	record ValuesRange(int min, int max) implements PossibleValues {
+	record ValuesRange(long min, long max) {
+		static ValuesRange ZERO = new ValuesRange(0, 0);
+		static ValuesRange ONE = new ValuesRange(1, 1);
+		static ValuesRange MODEL_NUMBER_DIGIT = new ValuesRange(1, 9);
+		
 		ValuesRange {
 			if (max < min)
 				throw new IllegalArgumentException("Bad range: " + min + ", " + max);
@@ -533,6 +545,10 @@ public class Day24 {
 		
 		boolean singleValue() {
 			return min == max;
+		}
+		
+		boolean contains(int value) {
+			return min <= value && value <= max;
 		}
 		
 		@Override
@@ -556,52 +572,50 @@ public class Day24 {
 	
 	
 	
-	static void tests() {
-		InputValue inp = new InputValue(0);
-		ConstantValue c2 = new ConstantValue(2);
-		ConstantValue c5 = new ConstantValue(5);
-		ConstantValue cn5 = new ConstantValue(-5);
-		ConstantValue c10 = new ConstantValue(10);
-		ConstantValue c25 = new ConstantValue(25);
-		
-		List.of(
-				add(add(inp, c5), c5),
-				add(add(inp, c5), cn5),
-				mul(mul(inp, c5), c5),
-				
-				div(inp, c25),
-				div(add(inp, c5), c25),
-				div(add(inp, c25), c25),
-				mod(inp, c25),
-				mod(add(inp, c5), c25),
-				
-				div(mul(inp, c5), c5),
-				mul(div(inp, c5), c5),
-				mod(mul(inp, c5), c5),
-				mul(mod(inp, c5), c5),
-				
-				div(add(mul(inp, c25), inp), c25),
-				div(add(inp, mul(inp, c25)), c25),
-				mul(add(div(inp, c25), inp), c25),
-				mul(add(inp, div(inp, c25)), c25),
-				mod(add(mul(inp, c25), inp), c25),
-				mod(add(inp, mul(inp, c25)), c25)
-		).forEach(v -> System.out.println(v + " -> " + v.simplify() + "   " + v.possibleValues()));
-	}
-	
-	static OperationValue add(Value left, Value right) {
-		return new AddOperationValue(left, right);
-	}
-	
-	static OperationValue mul(Value left, Value right) {
-		return new MulOperationValue(left, right);
-	}
-	
-	static OperationValue div(Value left, Value right) {
-		return new DivOperationValue(left, right);
-	}
-	
-	static OperationValue mod(Value left, Value right) {
-		return new ModOperationValue(left, right);
-	}
+//	static void tests() {
+//		InputValue inp = new InputValue(0);
+//		ConstantValue c5 = new ConstantValue(5);
+//		ConstantValue cn5 = new ConstantValue(-5);
+//		ConstantValue c25 = new ConstantValue(25);
+//
+//		List.of(
+//				add(add(inp, c5), c5),
+//				add(add(inp, c5), cn5),
+//				mul(mul(inp, c5), c5),
+//
+//				div(inp, c25),
+//				div(add(inp, c5), c25),
+//				div(add(inp, c25), c25),
+//				mod(inp, c25),
+//				mod(add(inp, c5), c25),
+//
+//				div(mul(inp, c5), c5),
+//				mul(div(inp, c5), c5),
+//				mod(mul(inp, c5), c5),
+//				mul(mod(inp, c5), c5),
+//
+//				div(add(mul(inp, c25), inp), c25),
+//				div(add(inp, mul(inp, c25)), c25),
+//				mul(add(div(inp, c25), inp), c25),
+//				mul(add(inp, div(inp, c25)), c25),
+//				mod(add(mul(inp, c25), inp), c25),
+//				mod(add(inp, mul(inp, c25)), c25)
+//		).forEach(v -> System.out.println(v + " -> " + v.simplify() + "   " + v.possibleValues()));
+//	}
+//
+//	static OperationValue add(Value left, Value right) {
+//		return new AddOperationValue(left, right);
+//	}
+//
+//	static OperationValue mul(Value left, Value right) {
+//		return new MulOperationValue(left, right);
+//	}
+//
+//	static OperationValue div(Value left, Value right) {
+//		return new DivOperationValue(left, right);
+//	}
+//
+//	static OperationValue mod(Value left, Value right) {
+//		return new ModOperationValue(left, right);
+//	}
 }
