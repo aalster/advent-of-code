@@ -84,18 +84,9 @@ public class Day22 {
 	
 	static List<Brick> findSupports(List<Brick> settled, Brick lowest) {
 		Rect shadow = lowest.shadow();
-		List<Brick> intersections = settled.stream().filter(b -> intersectsInclusive(b.shadow(), shadow)).toList();
+		List<Brick> intersections = settled.stream().filter(b -> b.shadow().intersectsInclusive(shadow)).toList();
 		int maxZ = intersections.stream().mapToInt(Brick::topZ).max().orElse(0);
 		return intersections.stream().filter(b -> b.topZ() == maxZ).toList();
-	}
-	
-	// Работает только для Rect с x1 < x2 и y1 < y2
-	static boolean intersectsInclusive(Rect left, Rect right) {
-		if (left.x2() < right.x1() || right.x2() < left.x1())
-			return false;
-		if (left.y2() < right.y1() || right.y2() < left.y1())
-			return false;
-		return true;
 	}
 	
 	static List<Brick> lowest(List<Brick> bricks) {
@@ -128,7 +119,7 @@ public class Day22 {
 		}
 		
 		Rect shadow() {
-			return new Rect(from.x(), from.y(), to.x(), to.y());
+			return new Rect(from.x(), to.x(), from.y(), to.y());
 		}
 		
 		Brick shift(int dz) {

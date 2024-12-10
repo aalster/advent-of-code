@@ -1,12 +1,29 @@
 package org.advent.common;
 
-public record Rect(int x1, int y1, int x2, int y2) {
+public record Rect(int minX, int maxX, int minY, int maxY) {
 	
-	public Rect(Point topLeft, Point bottomRight) {
-		this(topLeft.x(), topLeft.y(), bottomRight.x(), bottomRight.y());
+	public Rect {
+		if (maxX < minX || maxY < minY)
+			throw new IllegalArgumentException("Invalid rect");
+	}
+	
+	public Rect(Point from, Point to) {
+		this(from.x(), to.x(), from.y(), to.y());
 	}
 	
 	public boolean containsInclusive(Point p) {
-		return x1 <= p.x() && p.x() <= x2 && y1 <= p.y() && p.y() <= y2;
+		return containsInclusive(p.x(), p.y());
+	}
+	
+	public boolean containsInclusive(int x, int y) {
+		return minX <= x && x <= maxX && minY <= y && y <= maxY;
+	}
+	
+	public boolean intersectsInclusive(Rect other) {
+		if (maxX() < other.minX() || other.maxX() < minX())
+			return false;
+		if (maxY() < other.minY() || other.maxY() < minY())
+			return false;
+		return true;
 	}
 }
