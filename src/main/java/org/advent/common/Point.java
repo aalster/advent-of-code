@@ -26,6 +26,23 @@ public record Point(int x, int y) {
 		return direction.shift(this);
 	}
 	
+	public Point move(Direction direction) {
+		return move(direction, 1);
+	}
+	
+	public Point move(Direction direction, int distance) {
+		return switch (direction) {
+			case LEFT -> new Point(x - distance, y);
+			case RIGHT -> new Point(x + distance, y);
+			case UP -> new Point(x, y - distance);
+			case DOWN -> new Point(x, y + distance);
+		};
+	}
+	
+	public Point scale(int scale) {
+		return new Point(x * scale, y * scale);
+	}
+	
 	public Point subtract(Point p) {
 		return new Point(x - p.x, y - p.y);
 	}
@@ -44,19 +61,6 @@ public record Point(int x, int y) {
 		if (toExclusive.x < from.x || toExclusive.y < from.y)
 			throw new IllegalArgumentException("to lower than from");
 		return from.x <= x && x < toExclusive.x && from.y <= y && y < toExclusive.y;
-	}
-	
-	public Point move(Direction direction) {
-		return move(direction, 1);
-	}
-	
-	public Point move(Direction direction, int distance) {
-		return switch (direction) {
-			case LEFT -> new Point(x - distance, y);
-			case RIGHT -> new Point(x + distance, y);
-			case UP -> new Point(x, y - distance);
-			case DOWN -> new Point(x, y + distance);
-		};
 	}
 	
 	public static Point parse(String value) {

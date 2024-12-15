@@ -3,6 +3,9 @@ package org.advent.common;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.util.EnumSet;
+import java.util.stream.Stream;
+
 @Getter
 @RequiredArgsConstructor
 public enum DirectionExt {
@@ -20,5 +23,9 @@ public enum DirectionExt {
 	
 	public Point shift(Point p) {
 		return p.shift(point);
+	}
+	
+	public static Stream<DirectionExt> stream() {
+		return EnumSet.allOf(DirectionExt.class).stream();
 	}
 }
