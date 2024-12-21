@@ -7,69 +7,75 @@ import org.advent.common.Utils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class Day21 {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day21.class, "example.txt");
+		Scanner input = Utils.scanFileNearClass(Day21.class, "input.txt");
 		List<String> lines = Utils.readLines(input);
 		
-		long start = System.currentTimeMillis();
 		System.out.println("Answer 1: " + solve(lines, 2));
-//		System.out.println("Answer 2: " + solve(lines, 25));
-		System.out.println((System.currentTimeMillis() - start) + "ms");
+		System.out.println("Answer 2: " + solve(lines, 25));
 	}
 	
 	private static long solve(List<String> lines, int nestedLevel) {
-		KeypadButtons numeric = KeypadButtons.numeric();
-		KeypadButtons directional = KeypadButtons.directional();
+		Keypad keypad = null;
+		while (nestedLevel-- > 0)
+			keypad = new Keypad(KeypadButtons.directional, keypad);
+		keypad = new Keypad(KeypadButtons.numeric, keypad);
 		
-		Keypad keypad = new Keypad(numeric, null);
-		while (nestedLevel > 0) {
-			nestedLevel--;
-			keypad = new Keypad(directional, keypad);
-		}
-		
-		int result = 0;
-		for (String line : lines) {
-			String firstCombination = keypad.nestedCombination(line).getFirst();
-			System.out.println(line + ": " + firstCombination.length() + " " + firstCombination);
-			result += firstCombination.length() * Integer.parseInt(line.replace("A", ""));
-		}
+		long result = 0;
+		for (String line : lines)
+			result += keypad.minCombinationLength(line) * Integer.parseInt(line.replace("A", ""));
 		return result;
 	}
 	
-	record Keypad(KeypadButtons buttons, Keypad nested) {
+	record Keypad(KeypadButtons buttons, Keypad nested, Map<String, Long> cache) {
 		
-		List<String> nestedCombination(String key) {
-			if (nested == null)
-				return combinations(key);
-			List<String> combinations = nested.nestedCombination(key).stream().flatMap(c -> combinations(c).stream()).toList();
-			int minLength = combinations.stream().mapToInt(String::length).min().orElseThrow();
-			return combinations.stream().filter(c -> c.length() == minLength).toList();
+		public Keypad(KeypadButtons buttons, Keypad nested) {
+			this(buttons, nested, new HashMap<>());
 		}
 		
-		List<String> combinations(String key) {
+		long minCombinationLength(String key) {
+			return cache.computeIfAbsent(key, this::calcMinCombinationLength);
+		}
+		
+		long calcMinCombinationLength(String key) {
 			char[] chars = key.toCharArray();
-			List<List<String>> variants = new ArrayList<>();
-			variants.add(buttons.moves('A', chars[0]));
-			for (int i = 1; i < chars.length; i++)
-				variants.add(buttons.moves(chars[i - 1], chars[i]));
-			return permutations(variants);
+			Stream<List<String>> charPairs = Stream.concat(
+							Stream.of(Pair.of('A', chars[0])),
+							IntStream.range(1, chars.length).mapToObj(i -> Pair.of(chars[i - 1], chars[i])))
+					.map(p -> buttons.moves(p.left(), p.right()));
+			
+			if (nested == null)
+				return charPairs
+						.mapToLong(keys -> keys.stream().mapToLong(String::length).min().orElseThrow())
+						.sum();
+			return charPairs
+					.mapToLong(keys -> keys.stream().mapToLong(nested::minCombinationLength).min().orElseThrow())
+					.sum();
 		}
 	}
 	
-	record KeypadButtons(Map<Character, Point> buttons, Point skip, Map<Character, Map<Character, List<String>>> cache) {
+	record KeypadButtons(Map<Character, Point> buttons, Set<Point> allowedPositions) {
+		static KeypadButtons numeric = KeypadButtons.parse(List.of(
+				"789",
+				"456",
+				"123",
+				" 0A"));
+		static KeypadButtons directional = KeypadButtons.parse(List.of(
+				" ^A",
+				"<v>"));
 		
 		List<String> moves(Character currentSymbol, Character targetSymbol) {
-			return cache.computeIfAbsent(currentSymbol, k -> new HashMap<>())
-					.computeIfAbsent(targetSymbol, k -> calcMoves(currentSymbol, targetSymbol));
-		}
-		
-		List<String> calcMoves(Character currentSymbol, Character targetSymbol) {
 			Point position = buttons.get(currentSymbol);
 			Point target = buttons.get(targetSymbol);
 			if (position.equals(target))
@@ -83,7 +89,7 @@ public class Day21 {
 			
 			while (!possibleVariants.isEmpty()) {
 				Pair<String, Point> variant = possibleVariants.removeFirst();
-				if (variant.right().equals(skip))
+				if (!allowedPositions.contains(variant.right()))
 					continue;
 				if (variant.right().equals(target)) {
 					variants.add(variant.left() + "A");
@@ -97,34 +103,11 @@ public class Day21 {
 			return variants;
 		}
 		
-		static KeypadButtons numeric() {
-			Map<Character, Point> buttons = Map.ofEntries(
-					Map.entry('7', new Point(0, 0)), Map.entry('8', new Point(1, 0)), Map.entry('9', new Point(2, 0)),
-					Map.entry('4', new Point(0, 1)), Map.entry('5', new Point(1, 1)), Map.entry('6', new Point(2, 1)),
-					Map.entry('1', new Point(0, 2)), Map.entry('2', new Point(1, 2)), Map.entry('3', new Point(2, 2)),
-					Map.entry('0', new Point(1, 3)), Map.entry('A', new Point(2, 3))
-			);
-			return new KeypadButtons(buttons, new Point(0, 3), new HashMap<>());
+		static KeypadButtons parse(List<String> lines) {
+			Map<Character, Point> buttons = Point.readField(lines).entrySet().stream()
+					.filter(e -> e.getKey() != ' ')
+					.collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getFirst()));
+			return new KeypadButtons(buttons, new HashSet<>(buttons.values()));
 		}
-		
-		static KeypadButtons directional() {
-			Map<Character, Point> buttons = Map.ofEntries(
-					Map.entry('^', new Point(1, 0)), Map.entry('A', new Point(2, 0)),
-					Map.entry('<', new Point(0, 1)), Map.entry('v', new Point(1, 1)), Map.entry('>', new Point(2, 1))
-			);
-			return new KeypadButtons(buttons, new Point(0, 0), new HashMap<>());
-		}
-	}
-	
-	static List<String> permutations(List<List<String>> variants) {
-		variants = new ArrayList<>(variants);
-		List<String> result = variants.removeFirst();
-		while (!variants.isEmpty()) {
-			List<String> next = variants.removeFirst();
-			result = result.stream()
-					.flatMap(r -> next.stream().map(n -> r + n))
-					.toList();
-		}
-		return result;
 	}
 }
