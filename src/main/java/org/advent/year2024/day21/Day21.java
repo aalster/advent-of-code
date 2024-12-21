@@ -17,108 +17,84 @@ public class Day21 {
 		Scanner input = Utils.scanFileNearClass(Day21.class, "example.txt");
 		List<String> lines = Utils.readLines(input);
 		
-		System.out.println("Answer 1: " + part1(lines));
-		System.out.println("Answer 2: " + part2());
+		long start = System.currentTimeMillis();
+		System.out.println("Answer 1: " + solve(lines, 2));
+//		System.out.println("Answer 2: " + solve(lines, 25));
+		System.out.println((System.currentTimeMillis() - start) + "ms");
 	}
 	
-	private static long part1(List<String> lines) {
+	private static long solve(List<String> lines, int nestedLevel) {
 		KeypadButtons numeric = KeypadButtons.numeric();
 		KeypadButtons directional = KeypadButtons.directional();
 		
-//		Keypad test = new Keypad(directional, null);
-//		test.combination('<').forEach(System.out::println);
-//		if (true)
-//			return 0;
+		Keypad keypad = new Keypad(numeric, null);
+		while (nestedLevel > 0) {
+			nestedLevel--;
+			keypad = new Keypad(directional, keypad);
+		}
 		
 		int result = 0;
 		for (String line : lines) {
-			Keypad keypad = new Keypad(directional, new Keypad(directional, new Keypad(numeric, null)));
-			System.out.print(line + ": ");
-			int combinationSize = 0;
-			for (char c : line.toCharArray()) {
-				List<Character> combination = keypad.nestedCombination(c);
-				combinationSize += combination.size();
-				combination.forEach(System.out::print);
-				System.out.print(" ");
-			}
-			System.out.println("\n" + combinationSize + " * " + numericPart(line) + "\n");
-			result += combinationSize * numericPart(line);
+			String firstCombination = keypad.nestedCombination(line).getFirst();
+			System.out.println(line + ": " + firstCombination.length() + " " + firstCombination);
+			result += firstCombination.length() * Integer.parseInt(line.replace("A", ""));
 		}
 		return result;
 	}
 	
-	private static long part2() {
-		return 0;
-	}
-	
-	static int numericPart(String line) {
-		while (line.startsWith("0"))
-			line = line.substring(1);
-		return Integer.parseInt(line.replace("A", ""));
-	}
-	
-	static class Keypad {
-		final KeypadButtons buttons;
-		final Keypad nested;
-		Point position;
+	record Keypad(KeypadButtons buttons, Keypad nested) {
 		
-		Keypad(KeypadButtons buttons, Keypad nested) {
-			this.buttons = buttons;
-			this.nested = nested;
-			this.position = buttons.buttons.get('A');
-		}
-		
-		List<Character> nestedCombination(Character key) {
+		List<String> nestedCombination(String key) {
 			if (nested == null)
-				return combination(key);
-			return nested.nestedCombination(key).stream().flatMap(c -> combination(c).stream()).toList();
+				return combinations(key);
+			List<String> combinations = nested.nestedCombination(key).stream().flatMap(c -> combinations(c).stream()).toList();
+			int minLength = combinations.stream().mapToInt(String::length).min().orElseThrow();
+			return combinations.stream().filter(c -> c.length() == minLength).toList();
 		}
 		
-		List<Character> combination(Character key) {
-			List<Character> combination = new ArrayList<>();
-			Pair<List<Direction>, Point> directions = buttons.findDirections(position, key);
-			position = directions.right();
-			directions.left().stream().map(Direction::presentation).map(s -> s.charAt(0)).forEach(combination::add);
-			combination.add('A');
-			return combination;
+		List<String> combinations(String key) {
+			char[] chars = key.toCharArray();
+			List<List<String>> variants = new ArrayList<>();
+			variants.add(buttons.moves('A', chars[0]));
+			for (int i = 1; i < chars.length; i++)
+				variants.add(buttons.moves(chars[i - 1], chars[i]));
+			return permutations(variants);
 		}
 	}
 	
-	record KeypadButtons(Map<Character, Point> buttons, Point skip, Map<Point, Map<Point, List<Direction>>> cache) {
+	record KeypadButtons(Map<Character, Point> buttons, Point skip, Map<Character, Map<Character, List<String>>> cache) {
 		
-		Pair<List<Direction>, Point> findDirections(Point position, Character targetSymbol) {
+		List<String> moves(Character currentSymbol, Character targetSymbol) {
+			return cache.computeIfAbsent(currentSymbol, k -> new HashMap<>())
+					.computeIfAbsent(targetSymbol, k -> calcMoves(currentSymbol, targetSymbol));
+		}
+		
+		List<String> calcMoves(Character currentSymbol, Character targetSymbol) {
+			Point position = buttons.get(currentSymbol);
 			Point target = buttons.get(targetSymbol);
 			if (position.equals(target))
-				return Pair.of(List.of(), target);
+				return List.of("A");
 			
-			List<Direction> directions = new ArrayList<>();
 			Direction horizontal = position.x() == target.x() ? null : target.x() < position.x() ? Direction.LEFT : Direction.RIGHT;
 			Direction vertical = position.y() == target.y() ? null : target.y() < position.y() ? Direction.UP : Direction.DOWN;
-			if (position.y() == skip.y() && vertical != null) {
-				while (position.y() != target.y()) {
-					directions.add(vertical);
-					position = position.shift(vertical);
+			
+			List<Pair<String, Point>> possibleVariants = new ArrayList<>(List.of(Pair.of("", position)));
+			List<String> variants = new ArrayList<>();
+			
+			while (!possibleVariants.isEmpty()) {
+				Pair<String, Point> variant = possibleVariants.removeFirst();
+				if (variant.right().equals(skip))
+					continue;
+				if (variant.right().equals(target)) {
+					variants.add(variant.left() + "A");
+					continue;
 				}
+				if (variant.right().x() != target.x() && horizontal != null)
+					possibleVariants.add(Pair.of(variant.left() + horizontal.presentation(), variant.right().shift(horizontal)));
+				if (variant.right().y() != target.y() && vertical != null)
+					possibleVariants.add(Pair.of(variant.left() + vertical.presentation(), variant.right().shift(vertical)));
 			}
-			if (position.x() == skip.x() && horizontal != null) {
-				while (position.x() != target.x()) {
-					directions.add(horizontal);
-					position = position.shift(horizontal);
-				}
-			}
-			if (vertical != null) {
-				while (position.y() != target.y()) {
-					directions.add(vertical);
-					position = position.shift(vertical);
-				}
-			}
-			if (horizontal != null) {
-				while (position.x() != target.x()) {
-					directions.add(horizontal);
-					position = position.shift(horizontal);
-				}
-			}
-			return Pair.of(directions, position);
+			return variants;
 		}
 		
 		static KeypadButtons numeric() {
@@ -138,5 +114,17 @@ public class Day21 {
 			);
 			return new KeypadButtons(buttons, new Point(0, 0), new HashMap<>());
 		}
+	}
+	
+	static List<String> permutations(List<List<String>> variants) {
+		variants = new ArrayList<>(variants);
+		List<String> result = variants.removeFirst();
+		while (!variants.isEmpty()) {
+			List<String> next = variants.removeFirst();
+			result = result.stream()
+					.flatMap(r -> next.stream().map(n -> r + n))
+					.toList();
+		}
+		return result;
 	}
 }
