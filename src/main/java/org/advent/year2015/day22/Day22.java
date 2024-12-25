@@ -3,11 +3,9 @@ package org.advent.year2015.day22;
 import lombok.RequiredArgsConstructor;
 import org.advent.common.Utils;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -18,16 +16,15 @@ public class Day22 {
 		int[] array = Utils.readLines(input).stream().map(line -> line.split(": ")[1]).mapToInt(Integer::parseInt).toArray();
 		Character boss = new Character(array[0], array[1], 0);
 		
-		System.out.println("Answer 1: " + part1(boss));
-		System.out.println("Answer 2: " + part2());
+		System.out.println("Answer 1: " + solve(boss, false));
+		System.out.println("Answer 2: " + solve(boss, true));
 	}
 	
-	private static long part1(Character boss) {
+	private static long solve(Character boss, boolean hard) {
 		int startingHp = 50;
 		int startingMana = 500;
 		
 		Character player = new Character(startingHp, 0, 0);
-		p = player;
 		List<GameState> gameStates = List.of(new GameState(player, boss, startingMana, 0, 0, 0, 0));
 		
 		int turn = 0;
@@ -37,7 +34,9 @@ public class Day22 {
 			int _minUsedMana = minUsedMana;
 			Map<Boolean, List<GameState>> nextStates = gameStates.stream()
 					.filter(s -> s.usedMana < _minUsedMana)
-					.flatMap(s -> s.nextTurn(_turn, false))
+					.flatMap(s -> s.difficultyEffect(hard))
+					.flatMap(GameState::processEffects)
+					.flatMap(s -> s.nextTurn(_turn))
 					.collect(Collectors.groupingBy(s -> s.boss.hp <= 0));
 			
 			for (GameState finished : nextStates.getOrDefault(Boolean.TRUE, List.of()))
@@ -46,36 +45,28 @@ public class Day22 {
 			gameStates = nextStates.getOrDefault(Boolean.FALSE, List.of());
 			turn++;
 		}
-		System.out.println("DEBUG: " + allDamages);
 		return minUsedMana == Integer.MAX_VALUE ? -1 : minUsedMana;
-	}
-	
-	private static long part2() {
-		return 0;
 	}
 	
 	record GameState(Character player, Character boss, int mana, int usedMana, int armorDuration, int poisonDuration, int manaDuration) {
 		
-		Stream<GameState> nextTurn(int turn, boolean hard) {
+		Stream<GameState> difficultyEffect(boolean hard) {
+			if (!hard)
+				return Stream.of(this);
+			
+			if (player.hp <= 0)
+				return Stream.empty();
+			if (boss.hp <= 0)
+				return Stream.of(this);
+			return Stream.of(new GameState(player.hit(1), boss, mana, usedMana, armorDuration, poisonDuration, manaDuration));
+		}
+		
+		Stream<GameState> processEffects() {
 			if (player.hp <= 0)
 				return Stream.empty();
 			if (boss.hp <= 0)
 				return Stream.of(this);
 			
-			if (hard)
-				return new GameState(player.hit(1), boss, mana, usedMana, armorDuration, poisonDuration, manaDuration)
-						.nextTurn(turn, false);
-			
-			GameState afterEffects = processEffects();
-			if (afterEffects.player.hp <= 0)
-				return Stream.empty();
-			if (afterEffects.boss.hp <= 0)
-				return Stream.of(afterEffects);
-			
-			return afterEffects.dealDamage(turn);
-		}
-		
-		GameState processEffects() {
 			Character player = this.player;
 			Character boss = this.boss;
 			int mana = this.mana;
@@ -97,10 +88,15 @@ public class Day22 {
 				mana += Spell.RECHARGE.manaBuff;
 			}
 			
-			return new GameState(player, boss, mana, usedMana, armorDuration, poisonDuration, manaDuration);
+			return Stream.of(new GameState(player, boss, mana, usedMana, armorDuration, poisonDuration, manaDuration));
 		}
 		
-		Stream<GameState> dealDamage(int turn) {
+		Stream<GameState> nextTurn(int turn) {
+			if (player.hp <= 0)
+				return Stream.empty();
+			if (boss.hp <= 0)
+				return Stream.of(this);
+			
 			if (turn % 2 == 1)
 				return Stream.of(new GameState(player.hit(boss.damage), boss, mana, usedMana, armorDuration, poisonDuration, manaDuration));
 			
@@ -108,17 +104,11 @@ public class Day22 {
 		}
 	}
 	
-	static Set<Integer> allDamages = new HashSet<>();
-	static Character p;
-	
 	record Character(int hp, int damage, int armor) {
 		Character hit(int damageDealt) {
 			if (damageDealt == 0)
 				return this;
-			int actualDamage = Math.max(damageDealt - armor, 1);
-			if (p == this)
-				allDamages.add(actualDamage);
-			return new Character(hp - actualDamage, damage, armor);
+			return new Character(hp - Math.max(damageDealt - armor, 1), damage, armor);
 		}
 		
 		Character buff(int hpBuff, int armorBuff) {
