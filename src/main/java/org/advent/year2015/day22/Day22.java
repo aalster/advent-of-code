@@ -34,7 +34,7 @@ public class Day22 {
 			int _minUsedMana = minUsedMana;
 			Map<Boolean, List<GameState>> nextStates = gameStates.stream()
 					.filter(s -> s.usedMana < _minUsedMana)
-					.flatMap(s -> s.difficultyEffect(hard))
+					.flatMap(s -> s.difficultyEffect(_turn, hard))
 					.flatMap(GameState::processEffects)
 					.flatMap(s -> s.nextTurn(_turn))
 					.collect(Collectors.groupingBy(s -> s.boss.hp <= 0));
@@ -50,8 +50,8 @@ public class Day22 {
 	
 	record GameState(Character player, Character boss, int mana, int usedMana, int armorDuration, int poisonDuration, int manaDuration) {
 		
-		Stream<GameState> difficultyEffect(boolean hard) {
-			if (!hard)
+		Stream<GameState> difficultyEffect(int turn, boolean hard) {
+			if (!hard || turn % 2 == 1)
 				return Stream.of(this);
 			
 			if (player.hp <= 0)
