@@ -2,10 +2,7 @@ package org.advent.runner;
 
 import lombok.RequiredArgsConstructor;
 
-import java.util.Map;
-import java.util.Objects;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 public class DayRunner {
@@ -17,17 +14,15 @@ public class DayRunner {
 	}
 	
 	public void run(String file) {
-		ExpectedAnswers expected = Objects.requireNonNull(expectedMap().get(file), "Expected answers does not contain " + file);
-		run(expected, false, false);
+		run(expected(file), false, false);
 	}
 	
-	void run(String file, boolean pad) {
-		ExpectedAnswers expected = Objects.requireNonNull(expectedMap().get(file), "Expected answers does not contain " + file);
-		run(expected, false, pad);
+	void runForYear(String file) {
+		run(expected(file), false, true);
 	}
 	
 	public void run(String file, int part) {
-		ExpectedAnswers expected = Objects.requireNonNull(expectedMap().get(file), "Expected answers does not contain " + file);
+		ExpectedAnswers expected = expected(file);
 		expected = new ExpectedAnswers(expected.file(),
 				part == 1 ? expected.answer1() : ExpectedAnswers.IGNORE,
 				part == 2 ? expected.answer2() : ExpectedAnswers.IGNORE);
@@ -49,11 +44,23 @@ public class DayRunner {
 			return;
 		Object answer = part.get();
 		System.out.print(" ".repeat(pad) + "Answer " + partNumber + " " + timer.stepFormatted(7) + ": ");
-		String prefix = expected != null && expected.equals(answer) ? "✅" : "❌";
-		System.out.println(prefix + OutputUtils.white(" " + answer) + (expected != null && prefix.equals("❌") ? " Expected: " + expected : ""));
+		boolean passes = passes(expected, answer);
+		System.out.println((passes ? "✅" : "❌") + OutputUtils.white(" " + answer)
+				+ (expected != null && !passes ? " Expected: " + expected : ""));
 	}
 	
-	private Map<String, ExpectedAnswers> expectedMap() {
-		return day.expected().stream().collect(Collectors.toMap(ExpectedAnswers::file, e -> e));
+	private boolean passes(Object expected, Object answer) {
+		if (expected == null || answer == null)
+			return false;
+		if (expected instanceof Number en && answer instanceof Number an)
+			return en.doubleValue() == an.doubleValue();
+		return expected.equals(answer);
+	}
+	
+	private ExpectedAnswers expected(String file) {
+		for (ExpectedAnswers expectedAnswers : day.expected())
+			if (file.equals(expectedAnswers.file()))
+				return expectedAnswers;
+		return new ExpectedAnswers(file, null, null);
 	}
 }

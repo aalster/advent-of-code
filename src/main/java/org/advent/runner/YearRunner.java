@@ -30,7 +30,7 @@ public class YearRunner {
 					System.out.println(OutputUtils.white("Year " + day.getYear()));
 				System.out.println(OutputUtils.white("  Day " + day.getDay()));
 				
-				new DayRunner(day).run("input.txt", true);
+				new DayRunner(day).runForYear("input.txt");
 				
 				prevYear = day.getYear();
 			} catch (Exception e) {

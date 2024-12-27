@@ -1,17 +1,34 @@
 package org.advent.year2024.day25;
 
 import org.advent.common.Utils;
+import org.advent.runner.AbstractDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-public class Day25 {
+public class Day25 extends AbstractDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day25.class, "input.txt");
-		List<Pins> locks = new ArrayList<>();
-		List<Pins> keys = new ArrayList<>();
+		new DayRunner(new Day25()).run("example.txt");
+	}
+	
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 3, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("input.txt", 3255, ExpectedAnswers.IGNORE)
+		);
+	}
+	
+	List<Pins> locks = new ArrayList<>();
+	List<Pins> keys = new ArrayList<>();
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
 		
 		List<String> lines = new ArrayList<>();
 		while (input.hasNext()) {
@@ -24,12 +41,16 @@ public class Day25 {
 			lines = new ArrayList<>();
 		}
 		(lines.getFirst().startsWith("#") ? locks : keys).add(Pins.parse(lines));
-		
-		System.out.println("Answer: " + part1(locks, keys));
 	}
 	
-	private static long part1(List<Pins> locks, List<Pins> keys) {
+	@Override
+	public Object part1() {
 		return locks.stream().flatMap(lock -> keys.stream().map(lock::fits)).filter(f -> f).count();
+	}
+	
+	@Override
+	public Object part2() {
+		return null;
 	}
 	
 	record Pins(int[] pins) {

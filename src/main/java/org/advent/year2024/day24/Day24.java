@@ -1,6 +1,9 @@
 package org.advent.year2024.day24;
 
 import org.advent.common.Utils;
+import org.advent.runner.AbstractDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -17,11 +20,27 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Day24 {
+public class Day24 extends AbstractDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day24.class, "input.txt");
-		Map<String, Boolean> initialValues = new HashMap<>();
+		new DayRunner(new Day24()).run("input.txt");
+	}
+	
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 2024, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("input.txt", 55544677167336L, "gsd,kth,qnf,tbt,vpm,z12,z26,z32")
+		);
+	}
+	
+	Map<String, Boolean> initialValues;
+	Algorithm algorithm;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		initialValues = new HashMap<>();
 		while (input.hasNext()) {
 			String line = input.nextLine();
 			if (line.isEmpty())
@@ -29,17 +48,16 @@ public class Day24 {
 			String[] split = line.split(": ");
 			initialValues.put(split[0], "1".equals(split[1]));
 		}
-		Algorithm algorithm = Algorithm.parse(Utils.readLines(input));
-		
-		System.out.println("Answer 1: " + part1(initialValues, algorithm));
-		System.out.println("Answer 2: " + part2(algorithm));
+		algorithm = Algorithm.parse(Utils.readLines(input));
 	}
 	
-	private static long part1(Map<String, Boolean> initialValues, Algorithm algorithm) {
+	@Override
+	public Object part1() {
 		return algorithm.computeAll(initialValues);
 	}
 	
-	private static String part2(Algorithm algorithm) {
+	@Override
+	public Object part2() {
 		int maxBit = algorithm.operations.keySet().stream()
 				.filter(n -> n.startsWith("z"))
 				.max(Comparator.naturalOrder())
