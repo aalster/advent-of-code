@@ -4,7 +4,7 @@ import org.advent.common.Direction;
 import org.advent.common.Pair;
 import org.advent.common.Point;
 import org.advent.common.Utils;
-import org.advent.runner.AbstractDay;
+import org.advent.runner.AdventDay;
 import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
 
@@ -15,10 +15,10 @@ import java.util.Map;
 import java.util.SequencedMap;
 import java.util.Set;
 
-public class Day20 extends AbstractDay {
+public class Day20 extends AdventDay {
 	
 	public static void main(String[] args) {
-		new DayRunner(new Day20()).run("input.txt");
+		new DayRunner(new Day20()).runAll();
 	}
 	
 	@Override

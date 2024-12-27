@@ -1,6 +1,9 @@
 package org.advent.year2015.day24;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -8,23 +11,43 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.stream.Stream;
 
-public class Day24 {
+public class Day24 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day24.class, "input.txt");
-		int[] weights = Utils.readLines(input).stream()
+		new DayRunner(new Day24()).runAll();
+	}
+	
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 99, 44),
+				new ExpectedAnswers("input.txt", 10723906903L, 74850409)
+		);
+	}
+	
+	int[] weights;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		weights = Utils.readLines(input).stream()
 				.map(Integer::parseInt)
 				.sorted(Comparator.reverseOrder())
 				.mapToInt(i -> i)
 				.toArray();
-		
-		long start = System.currentTimeMillis();
-		System.out.println("Answer 1: " + solve(weights, 3));
-		System.out.println("Answer 2: " + solve(weights, 4));
-		System.out.println((System.currentTimeMillis() - start) + "ms");
 	}
 	
-	private static long solve(int[] weights, int groupsCount) {
+	@Override
+	public Object part1() {
+		return solve(weights, 3);
+	}
+	
+	@Override
+	public Object part2() {
+		return solve(weights, 4);
+	}
+	
+	long solve(int[] weights, int groupsCount) {
 		int groupTotal = Arrays.stream(weights).sum() / groupsCount;
 		for (int firstGroupSize = 1; firstGroupSize < weights.length; firstGroupSize++) {
 			long result = combinations(weights, groupTotal, 0, new Group(), firstGroupSize).stream()
@@ -42,7 +65,7 @@ public class Day24 {
 		return 0;
 	}
 	
-	static List<Group> combinations(int[] weights, int groupTotal, int index, Group group, int maxWeights) {
+	List<Group> combinations(int[] weights, int groupTotal, int index, Group group, int maxWeights) {
 		if (group.total == groupTotal)
 			return List.of(group);
 		
@@ -55,7 +78,7 @@ public class Day24 {
 				.toList();
 	}
 	
-	static boolean otherGroupsSolvable(int[] weights, int groupTotal, int groupsToSolve) {
+	boolean otherGroupsSolvable(int[] weights, int groupTotal, int groupsToSolve) {
 		return groupsToSolve == 1 || combinations(weights, groupTotal, 0, new Group(), Integer.MAX_VALUE).stream()
 				.map(group -> Arrays.stream(weights).filter(group::notUsed).toArray())
 				.anyMatch(nextWeights -> otherGroupsSolvable(nextWeights, groupTotal, groupsToSolve - 1));

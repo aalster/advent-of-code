@@ -2,6 +2,9 @@ package org.advent.year2015.day22;
 
 import lombok.RequiredArgsConstructor;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.List;
 import java.util.Map;
@@ -9,21 +12,54 @@ import java.util.Scanner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Day22 {
+public class Day22 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day22.class, "input.txt");
-		int[] array = Utils.readLines(input).stream().map(line -> line.split(": ")[1]).mapToInt(Integer::parseInt).toArray();
-		Character boss = new Character(array[0], array[1], 0);
-		
-		System.out.println("Answer 1: " + solve(boss, false));
-		System.out.println("Answer 2: " + solve(boss, true));
+		new DayRunner(new Day22()).runAll();
 	}
 	
-	private static long solve(Character boss, boolean hard) {
-		int startingHp = 50;
-		int startingMana = 500;
-		
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 229 + 113 + 73 + 173 + 53, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("input.txt", 953, 1289)
+		);
+	}
+	
+	Character boss;
+	int startingHp;
+	int startingMana;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		int[] array = Utils.readLines(input).stream()
+				.mapToInt(line -> Integer.parseInt(line.split(": ")[1]))
+				.toArray();
+		boss = new Character(array[0], array[1], 0);
+		startingHp = switch (file) {
+			case "example.txt" -> 10;
+			case "input.txt" -> 50;
+			default -> throw new IllegalStateException("Unexpected value: " + file);
+		};
+		startingMana = switch (file) {
+			case "example.txt" -> 250;
+			case "input.txt" -> 500;
+			default -> throw new IllegalStateException("Unexpected value: " + file);
+		};
+	}
+	
+	@Override
+	public Object part1() {
+		return solve(false);
+	}
+	
+	@Override
+	public Object part2() {
+		return solve(true);
+	}
+	
+	long solve(boolean hard) {
 		Character player = new Character(startingHp, 0, 0);
 		List<GameState> gameStates = List.of(new GameState(player, boss, startingMana, 0, 0, 0, 0));
 		

@@ -1,34 +1,52 @@
 package org.advent.year2015.day20;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
+import java.util.List;
 import java.util.Scanner;
 
-public class Day20 {
+public class Day20 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day20.class, "input.txt");
-		int targetPresents = Integer.parseInt(input.nextLine());
-		
-		System.out.println("Answer 1: " + part1(targetPresents));
-		System.out.println("Answer 2: " + part2(targetPresents));
+		new DayRunner(new Day20()).runAll();
 	}
 	
-	private static long part1(int targetPresents) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 6, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("input.txt", 776160, 786240)
+		);
+	}
+	
+	int targetPresents;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		targetPresents = Integer.parseInt(input.nextLine());
+	}
+	
+	@Override
+	public Object part1() {
 		for (int i = 1; i < 1000000; i++)
 			if (countPresents1(i) >= targetPresents)
 				return i;
 		return 0;
 	}
 	
-	private static long part2(int targetPresents) {
+	@Override
+	public Object part2() {
 		for (int i = 1; i < 1000000; i++)
 			if (countPresents2(i) >= targetPresents)
 				return i;
 		return 0;
 	}
 	
-	private static int countPresents1(int house) {
+	int countPresents1(int house) {
 		int presents = 0;
 		double sqrt = Math.sqrt(house);
 		for (int i = 1; i <= sqrt; i++)
@@ -37,7 +55,7 @@ public class Day20 {
 		return presents * 10;
 	}
 	
-	private static int countPresents2(int house) {
+	int countPresents2(int house) {
 		int presents = 0;
 		double sqrt = Math.sqrt(house);
 		for (int i = 1; i <= sqrt; i++) {

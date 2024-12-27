@@ -10,7 +10,7 @@ public class YearRunner {
 	
 	public static void main(String[] args) {
 //		new YearRunner().runAll("input.txt");
-		new YearRunner().runYear(2024);
+		new YearRunner().runYear(2015);
 	}
 	
 	public void runAll() {
@@ -26,14 +26,14 @@ public class YearRunner {
 	}
 	
 	public void runYear(int year, String file) {
-		run(dayClasses().filter(c -> AbstractDay.year(c) == year).toList(), file);
+		run(dayClasses().filter(c -> AdventDay.year(c) == year).toList(), file);
 	}
 	
-	private void run(List<Class<? extends AbstractDay>> dayClasses, String file) {
+	private void run(List<Class<? extends AdventDay>> dayClasses, String file) {
 		int prevYear = 0;
-		for (Class<? extends AbstractDay> dayClass : dayClasses) {
+		for (Class<? extends AdventDay> dayClass : dayClasses) {
 			try {
-				AbstractDay day = dayClass.getDeclaredConstructor().newInstance();
+				AdventDay day = dayClass.getDeclaredConstructor().newInstance();
 				if (prevYear == 0 || prevYear != day.getYear())
 					System.out.println("\n" + OutputUtils.white("Year " + day.getYear()));
 				System.out.println(OutputUtils.white("  Day " + day.getDay()));
@@ -47,10 +47,10 @@ public class YearRunner {
 		}
 	}
 	
-	private Stream<Class<? extends AbstractDay>> dayClasses() {
+	private Stream<Class<? extends AdventDay>> dayClasses() {
 		System.setProperty("org.slf4j.simpleLogger.log.org.reflections.Reflections", "warn");
-		return new Reflections("org.advent").getSubTypesOf(AbstractDay.class).stream()
+		return new Reflections("org.advent").getSubTypesOf(AdventDay.class).stream()
 				.filter(type -> !type.getName().toLowerCase().contains("template"))
-				.sorted(Comparator.comparing(AbstractDay::year).thenComparing(AbstractDay::day));
+				.sorted(Comparator.comparing(AdventDay::year).thenComparing(AdventDay::day));
 	}
 }

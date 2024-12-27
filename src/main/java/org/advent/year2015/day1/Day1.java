@@ -1,27 +1,46 @@
 package org.advent.year2015.day1;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
+import java.util.List;
 import java.util.Scanner;
 
-public class Day1 {
+public class Day1 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day1.class, "input.txt");
-		String line = input.nextLine();
-		
-		System.out.println("Answer 1: " + part1(line));
-		System.out.println("Answer 2: " + part2(line));
+		new DayRunner(new Day1()).runAll();
 	}
 	
-	private static long part1(String line) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", -3, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("example2.txt", ExpectedAnswers.IGNORE, 5),
+				new ExpectedAnswers("input.txt", 280, 1797)
+		);
+	}
+	
+	String line;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		line = input.nextLine();
+	}
+	
+	@Override
+	public Object part1() {
 		int floor = 0;
 		for (char c : line.toCharArray())
 			floor += c == '(' ? 1 : -1;
 		return floor;
 	}
 	
-	private static long part2(String line) {
+	@Override
+	public Object part2() {
 		int floor = 0;
 		int position = 0;
 		for (char c : line.toCharArray()) {

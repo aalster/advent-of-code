@@ -1,7 +1,7 @@
 package org.advent.year2024.day3;
 
 import org.advent.common.Utils;
-import org.advent.runner.AbstractDay;
+import org.advent.runner.AdventDay;
 import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
 
@@ -9,10 +9,10 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class Day3 extends AbstractDay {
+public class Day3 extends AdventDay {
 	
 	public static void main(String[] args) {
-		new DayRunner(new Day3()).run("input.txt");
+		new DayRunner(new Day3()).runAll();
 	}
 	
 	@Override

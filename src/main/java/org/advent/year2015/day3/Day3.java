@@ -3,23 +3,40 @@ package org.advent.year2015.day3;
 import org.advent.common.Direction;
 import org.advent.common.Point;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
 
-public class Day3 {
+public class Day3 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day3.class, "input.txt");
-		String line = input.nextLine();
-		
-		System.out.println("Answer 1: " + part1(line));
-		System.out.println("Answer 2: " + part2(line));
+		new DayRunner(new Day3()).runAll();
 	}
 	
-	private static long part1(String line) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 4, 3),
+				new ExpectedAnswers("example2.txt", 2, 11),
+				new ExpectedAnswers("input.txt", 2592, 2360)
+		);
+	}
+	
+	String line;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		line = input.nextLine();
+	}
+	
+	@Override
+	public Object part1() {
 		Point current = new Point(0, 0);
 		Set<Point> visited = new HashSet<>(List.of(current));
 		for (char direction : line.toCharArray()) {
@@ -29,7 +46,8 @@ public class Day3 {
 		return visited.size();
 	}
 	
-	private static long part2(String line) {
+	@Override
+	public Object part2() {
 		Point start = new Point(0, 0);
 		Point[] current = new Point[] {start, start};
 		Set<Point> visited = new HashSet<>(List.of(start));

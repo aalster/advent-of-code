@@ -1,21 +1,37 @@
 package org.advent.year2015.day8;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.List;
 import java.util.Scanner;
 
-public class Day8 {
+public class Day8 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day8.class, "input.txt");
-		List<String> lines = Utils.readLines(input);
-		
-		System.out.println("Answer 1: " + part1(lines));
-		System.out.println("Answer 2: " + part2(lines));
+		new DayRunner(new Day8()).runAll();
 	}
 	
-	private static long part1(List<String> lines) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 12, 19),
+				new ExpectedAnswers("input.txt", 1333, 2046)
+		);
+	}
+	
+	List<String> lines;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		lines = Utils.readLines(input);
+	}
+	
+	@Override
+	public Object part1() {
 		int diff = lines.size() * 2;
 		for (String line : lines) {
 			char[] chars = line.toCharArray();
@@ -30,7 +46,8 @@ public class Day8 {
 		return diff;
 	}
 	
-	private static long part2(List<String> lines) {
+	@Override
+	public Object part2() {
 		int diff = lines.size() * 2;
 		for (String line : lines)
 			for (char c : line.toCharArray())

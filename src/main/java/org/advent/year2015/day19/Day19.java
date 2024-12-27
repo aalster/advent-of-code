@@ -1,6 +1,9 @@
 package org.advent.year2015.day19;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -10,11 +13,27 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 
-public class Day19 {
+public class Day19 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day19.class, "input.txt");
-		Map<String, List<String>> replacements = new HashMap<>();
+		new DayRunner(new Day19()).runAll();
+	}
+	
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 4, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("input.txt", 518, 200)
+		);
+	}
+	
+	Map<String, List<String>> replacements;
+	String molecule;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		replacements = new HashMap<>();
 		while (input.hasNext()) {
 			String line = input.nextLine();
 			if (line.isEmpty())
@@ -22,13 +41,11 @@ public class Day19 {
 			String[] split = line.split(" => ");
 			replacements.computeIfAbsent(split[0], k -> new ArrayList<>()).add(split[1]);
 		}
-		String molecule = input.nextLine();
-		
-		System.out.println("Answer 1: " + part1(replacements, molecule));
-		System.out.println("Answer 2: " + part2(replacements, molecule));
+		molecule = input.nextLine();
 	}
 	
-	private static long part1(Map<String, List<String>> replacements, String molecule) {
+	@Override
+	public Object part1() {
 		Set<String> nextMolecules = new HashSet<>(molecule.length() * 2);
 		for (String replace : replacements.keySet()) {
 			int prevIndex = 0;
@@ -46,12 +63,13 @@ public class Day19 {
 		return nextMolecules.size();
 	}
 	
-	private static long part2(Map<String, List<String>> replacements, String molecule) {
+	@Override
+	public Object part2() {
 		return molecule.chars().filter(Character::isUpperCase).count()
 				- count(molecule, "Rn") - count(molecule, "Ar") - count(molecule, "Y") * 2L - 1;
 	}
 	
-	static int count(String text, String target) {
+	int count(String text, String target) {
 		int count = 0;
 		int prevIndex = 0;
 		while (true) {

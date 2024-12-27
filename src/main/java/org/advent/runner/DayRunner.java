@@ -6,7 +6,7 @@ import java.util.function.Supplier;
 
 @RequiredArgsConstructor
 public class DayRunner {
-	private final AbstractDay day;
+	private final AdventDay day;
 	
 	public void runAll() {
 		System.out.println(day);
@@ -50,12 +50,12 @@ public class DayRunner {
 			String time = timer.stepFormatted(7);
 			boolean passes = passes(expected, answer);
 			System.out.println(" ".repeat(pad) + "Answer " + partNumber + " " + time + ": "
-					+ (passes ? "✅" : "❌") + OutputUtils.white(" " + answer)
+					+ (passes ? "✅" : "❌") + " " + OutputUtils.white("" + answer)
 					+ (expected != null && !passes ? " Expected: " + expected : ""));
 		} catch (Exception e) {
 			String time = timer.stepFormatted(7);
 			System.out.println(" ".repeat(pad) + "Answer " + partNumber + " " + time + ": "
-					+ "❌" + OutputUtils.red("Error: " + e.getMessage()));
+					+ "❌ " + OutputUtils.red("Error: " + e.getMessage()));
 		}
 	}
 	

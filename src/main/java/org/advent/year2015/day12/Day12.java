@@ -2,6 +2,9 @@ package org.advent.year2015.day12;
 
 import org.advent.common.Pair;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -9,17 +12,31 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
-public class Day12 {
+public class Day12 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day12.class, "input.txt");
-		String line = input.nextLine();
-		
-		System.out.println("Answer 1: " + part1(line));
-		System.out.println("Answer 2: " + part2(line));
+		new DayRunner(new Day12()).runAll();
 	}
 	
-	private static long part1(String line) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 6 * 2 + 3 * 2, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("example2.txt", ExpectedAnswers.IGNORE, 6 + 4 + 6),
+				new ExpectedAnswers("input.txt", 111754, 65402)
+		);
+	}
+	
+	String line;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		line = input.nextLine();
+	}
+	
+	@Override
+	public Object part1() {
 		int result = 0;
 		char[] chars = line.toCharArray();
 		for (int i = 0; i < chars.length; i++) {
@@ -39,10 +56,9 @@ public class Day12 {
 		return result;
 	}
 	
-	private static long part2(String line) {
-		JsonElement json = JsonElement.parse(line);
-		System.out.println(json);
-		return json.numbersSum("red");
+	@Override
+	public Object part2() {
+		return JsonElement.parse(line).numbersSum("red");
 	}
 	
 	sealed interface JsonElement permits JsonString, JsonNumber, JsonArray, JsonObject {

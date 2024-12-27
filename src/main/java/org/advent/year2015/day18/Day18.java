@@ -3,39 +3,68 @@ package org.advent.year2015.day18;
 import org.advent.common.DirectionExt;
 import org.advent.common.Point;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Day18 {
+public class Day18 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day18.class, "input.txt");
-		Map<Point, Character> field = Point.readFieldMap(Utils.readLines(input));
-		
-		System.out.println("Answer 1: " + part1(field));
-		System.out.println("Answer 2: " + part2(field));
+		new DayRunner(new Day18()).runAll();
 	}
 	
-	private static long part1(Map<Point, Character> field) {
-		return solve(field, Map.of());
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 4, 17),
+				new ExpectedAnswers("input.txt", 821, 886)
+		);
 	}
 	
-	private static long part2(Map<Point, Character> field) {
+	Map<Point, Character> field;
+	int part1Steps;
+	int part2Steps;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		field = Point.readFieldMap(Utils.readLines(input));
+		part1Steps = switch (file) {
+			case "example.txt" -> 4;
+			case "input.txt" -> 100;
+			default -> throw new IllegalStateException("Unexpected value: " + file);
+		};
+		part2Steps = switch (file) {
+			case "example.txt" -> 5;
+			case "input.txt" -> 100;
+			default -> throw new IllegalStateException("Unexpected value: " + file);
+		};
+	}
+	
+	@Override
+	public Object part1() {
+		return solve(field, Map.of(), part1Steps);
+	}
+	
+	@Override
+	public Object part2() {
 		Point bound = Point.maxBound(field.keySet());
 		Map<Point, Character> fixed = Stream.of(new Point(0, 0), new Point(0, bound.y()), new Point(bound.x(), 0), bound)
 				.collect(Collectors.toMap(p -> p, p -> '#'));
 		
-		field = new HashMap<>(field);
-		field.putAll(fixed);
-		return solve(field, fixed);
+		Map<Point, Character> fieldWithFixed = new HashMap<>(field);
+		fieldWithFixed.putAll(fixed);
+		return solve(fieldWithFixed, fixed, part2Steps);
 	}
 	
-	private static long solve(Map<Point, Character> field, Map<Point, Character> fixed) {
-		int steps = 100;
+	long solve(Map<Point, Character> field, Map<Point, Character> fixed, int steps) {
 		while (steps > 0) {
 			Map<Point, Character> _field = field;
 			Map<Point, Character> nextField = new HashMap<>();

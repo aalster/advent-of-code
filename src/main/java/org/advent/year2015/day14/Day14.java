@@ -1,6 +1,9 @@
 package org.advent.year2015.day14;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.HashMap;
 import java.util.List;
@@ -9,23 +12,41 @@ import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class Day14 {
+public class Day14 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day14.class, "input.txt");
-		List<Reindeer> reindeers = Utils.readLines(input).stream().map(Reindeer::parse).toList();
-		
-		System.out.println("Answer 1: " + part1(reindeers));
-		System.out.println("Answer 2: " + part2(reindeers));
+		new DayRunner(new Day14()).runAll();
 	}
 	
-	private static long part1(List<Reindeer> reindeers) {
-		int seconds = 2503;
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 1120, 689),
+				new ExpectedAnswers("input.txt", 2655, 1059)
+		);
+	}
+	
+	List<Reindeer> reindeers;
+	int seconds;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		reindeers = Utils.readLines(input).stream().map(Reindeer::parse).toList();
+		seconds = switch (file) {
+			case "example.txt" -> 1000;
+			case "input.txt" -> 2503;
+			default -> throw new IllegalStateException("Unexpected value: " + file);
+		};
+	}
+	
+	@Override
+	public Object part1() {
 		return reindeers.stream().mapToInt(r -> r.distance(seconds)).max().orElseThrow();
 	}
 	
-	private static long part2(List<Reindeer> reindeers) {
-		int seconds = 2503;
+	@Override
+	public Object part2() {
 		Map<String, Integer> distances = new HashMap<>();
 		Map<String, Integer> points = new HashMap<>();
 		for (Reindeer reindeer : reindeers) {

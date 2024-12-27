@@ -5,11 +5,11 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public abstract class AbstractDay {
+public abstract class AdventDay {
 	private final int year;
 	private final int day;
 	
-	public AbstractDay() {
+	public AdventDay() {
 		this.year = year(getClass());
 		this.day = day(getClass());
 	}

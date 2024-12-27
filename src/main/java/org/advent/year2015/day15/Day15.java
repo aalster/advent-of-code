@@ -1,6 +1,9 @@
 package org.advent.year2015.day15;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,22 +12,44 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
-public class Day15 {
+public class Day15 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day15.class, "input.txt");
-		List<Ingredient> ingredients = Utils.readLines(input).stream().map(Ingredient::parse).toList();
-		
-		System.out.println("Answer 1: " + solve(ingredients, false));
-		System.out.println("Answer 2: " + solve(ingredients, true));
+		new DayRunner(new Day15()).runAll();
 	}
 	
-	private static long solve(List<Ingredient> ingredients, boolean checkCalories) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 62842880, 57600000),
+				new ExpectedAnswers("input.txt", 21367368, 1766400)
+		);
+	}
+	
+	List<Ingredient> ingredients;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		ingredients = Utils.readLines(input).stream().map(Ingredient::parse).toList();
+	}
+	
+	@Override
+	public Object part1() {
+		return solve(false);
+	}
+	
+	@Override
+	public Object part2() {
+		return solve(true);
+	}
+	
+	long solve(boolean checkCalories) {
 		Ingredient total = new Ingredient("Total", 0, 0, 0, 0, 0);
 		return nextIngredient(total, ingredients, 100, checkCalories);
 	}
 	
-	static long nextIngredient(Ingredient total, List<Ingredient> unusedIngredients, int spoonsLeft, boolean checkCalories) {
+	long nextIngredient(Ingredient total, List<Ingredient> unusedIngredients, int spoonsLeft, boolean checkCalories) {
 		if (unusedIngredients.size() <= 1) {
 			Ingredient completed = total.add(unusedIngredients.getFirst(), spoonsLeft);
 			if (checkCalories && completed.calories != 500)

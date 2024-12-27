@@ -3,7 +3,7 @@ package org.advent.year2024.day8;
 import org.advent.common.Point;
 import org.advent.common.Rect;
 import org.advent.common.Utils;
-import org.advent.runner.AbstractDay;
+import org.advent.runner.AdventDay;
 import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
 
@@ -13,10 +13,10 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 
-public class Day8 extends AbstractDay {
+public class Day8 extends AdventDay {
 	
 	public static void main(String[] args) {
-		new DayRunner(new Day8()).run("input.txt");
+		new DayRunner(new Day8()).runAll();
 	}
 	
 	@Override

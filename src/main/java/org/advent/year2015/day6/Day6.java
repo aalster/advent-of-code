@@ -4,27 +4,43 @@ import lombok.RequiredArgsConstructor;
 import org.advent.common.Point;
 import org.advent.common.Rect;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.List;
 import java.util.Scanner;
 
-public class Day6 {
+public class Day6 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day6.class, "input.txt");
-		List<Instruction> instructions = Utils.readLines(input).stream().map(Instruction::parse).toList();
-		
-		System.out.println("Answer 1: " + part1(instructions));
-		System.out.println("Answer 2: " + part2(instructions));
+		new DayRunner(new Day6()).runAll();
 	}
 	
-	private static long part1(List<Instruction> instructions) {
-		instructions = instructions.reversed();
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 7, 23),
+				new ExpectedAnswers("input.txt", 543903, 14687245)
+		);
+	}
+	
+	List<Instruction> instructions;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		instructions = Utils.readLines(input).stream().map(Instruction::parse).toList();
+	}
+	
+	@Override
+	public Object part1() {
+		List<Instruction> reversedInstructions = instructions.reversed();
 		int lights = 0;
 		for (int y = 0; y < 1000; y++) {
 			nextLight: for (int x = 0; x < 1000; x++) {
 				boolean toggle = false;
-				for (Instruction instruction : instructions) {
+				for (Instruction instruction : reversedInstructions) {
 					if (!instruction.rect.containsInclusive(x, y))
 						continue;
 					switch (instruction.light) {
@@ -48,7 +64,8 @@ public class Day6 {
 		return lights;
 	}
 	
-	private static long part2(List<Instruction> instructions) {
+	@Override
+	public Object part2() {
 		int totalBrightness = 0;
 		for (int y = 0; y < 1000; y++) {
 			for (int x = 0; x < 1000; x++) {

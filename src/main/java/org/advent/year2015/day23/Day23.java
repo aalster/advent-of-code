@@ -1,21 +1,45 @@
 package org.advent.year2015.day23;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.List;
 import java.util.Scanner;
 
-public class Day23 {
+public class Day23 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day23.class, "input.txt");
-		List<String> lines = Utils.readLines(input);
-		
-		System.out.println("Answer 1: " + solve(lines, 0));
-		System.out.println("Answer 2: " + solve(lines, 1));
+		new DayRunner(new Day23()).runAll();
 	}
 	
-	private static long solve(List<String> lines, long a) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("input.txt", 170, 247)
+		);
+	}
+	
+	List<String> lines;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		lines = Utils.readLines(input);
+	}
+	
+	@Override
+	public Object part1() {
+		return solve(0);
+	}
+	
+	@Override
+	public Object part2() {
+		return solve(1);
+	}
+	
+	long solve(long a) {
 		long b = 0;
 		
 		for (int i = 0; i < lines.size(); i++) {

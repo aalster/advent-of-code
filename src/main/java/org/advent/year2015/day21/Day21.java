@@ -1,6 +1,9 @@
 package org.advent.year2015.day21;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
@@ -15,13 +18,32 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.IntStream;
 
-public class Day21 {
+public class Day21 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner shopInput = Utils.scanFileNearClass(Day21.class, "shop.txt");
-		Scanner input = Utils.scanFileNearClass(Day21.class, "input.txt");
+		new DayRunner(new Day21()).runAll();
+	}
+	
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("input.txt", 91, 158)
+		);
+	}
+	
+	Map<String, List<Weapon>> weapons;
+	Character boss;
+	Map<String, int[]> weaponsLimits = Map.of(
+			"Weapons", new int[] {1},
+			"Armor", new int[] {0, 1},
+			"Rings", new int[] {0, 1, 2});
+	
+	@Override
+	public void prepare(String file) {
+		Scanner shopInput = Utils.scanFileNearClass(getClass(), "shop.txt");
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
 		
-		Map<String, List<Weapon>> weapons = new HashMap<>();
+		weapons = new HashMap<>();
 		while (shopInput.hasNext()) {
 			String type = shopInput.nextLine().split(":")[0];
 			weapons.put(type, new ArrayList<>());
@@ -32,25 +54,20 @@ public class Day21 {
 				weapons.get(type).add(Weapon.parse(line));
 			}
 		}
-		Character boss = Character.parse(input);
-		Map<String, int[]> weaponsLimits = Map.of(
-				"Weapons", new int[] {1},
-				"Armor", new int[] {0, 1},
-				"Rings", new int[] {0, 1, 2});
-		
-		System.out.println("Answer 1: " + part1(weapons, weaponsLimits, boss));
-		System.out.println("Answer 2: " + part2(weapons, weaponsLimits, boss));
+		boss = Character.parse(input);
 	}
 	
-	private static long part1(Map<String, List<Weapon>> weapons, Map<String, int[]> weaponsLimits, Character boss) {
+	@Override
+	public Object part1() {
 		return minCostToWin(weapons, weaponsLimits, Set.of(), boss);
 	}
 	
-	private static long part2(Map<String, List<Weapon>> weapons, Map<String, int[]> weaponsLimits, Character boss) {
+	@Override
+	public Object part2() {
 		return maxCostToLoose(weapons, weaponsLimits, Set.of(), boss);
 	}
 	
-	static int minCostToWin(Map<String, List<Weapon>> weapons, Map<String, int[]> weaponsLimits, Set<Weapon> selected, Character boss) {
+	int minCostToWin(Map<String, List<Weapon>> weapons, Map<String, int[]> weaponsLimits, Set<Weapon> selected, Character boss) {
 		if (Character.player(selected).winsOver(boss))
 			return selected.stream().mapToInt(Weapon::cost).sum();
 		
@@ -94,7 +111,7 @@ public class Day21 {
 				.orElse(Integer.MAX_VALUE);
 	}
 	
-	static int maxCostToLoose(Map<String, List<Weapon>> weapons, Map<String, int[]> weaponsLimits, Set<Weapon> selected, Character boss) {
+	int maxCostToLoose(Map<String, List<Weapon>> weapons, Map<String, int[]> weaponsLimits, Set<Weapon> selected, Character boss) {
 		if (Character.player(selected).winsOver(boss))
 			return 0;
 		

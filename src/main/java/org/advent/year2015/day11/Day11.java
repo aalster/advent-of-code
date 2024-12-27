@@ -1,24 +1,49 @@
 package org.advent.year2015.day11;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class Day11 {
+public class Day11 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day11.class, "input.txt");
-		String line = input.nextLine();
-		
-		String part1 = solve(line, false);
-		System.out.println("Answer 1: " + part1);
-		System.out.println("Answer 2: " + solve(part1, true));
+		new DayRunner(new Day11()).runAll();
 	}
 	
-	private static String solve(String line, boolean skipCurrent) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", "ghjaabcc", ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("input.txt", "hxbxxyzz", "hxcaabcc")
+		);
+	}
+	
+	String line;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		line = input.nextLine();
+	}
+	
+	@Override
+	public Object part1() {
+		return solve(line, false);
+	}
+	
+	@Override
+	public Object part2() {
+		return solve(solve(line, false), true);
+	}
+	
+	String solve(String line, boolean skipCurrent) {
 		Set<Integer> restricted = "iol".chars().map(c -> c - 'a').boxed().collect(Collectors.toSet());
 		int[] letters = line.chars().map(c -> c - 'a').toArray();
 		if (skipCurrent)
@@ -37,7 +62,7 @@ public class Day11 {
 		return lettersToString(letters);
 	}
 	
-	private static void increaseDigit(int[] letters, int index, Set<Integer> restricted) {
+	void increaseDigit(int[] letters, int index, Set<Integer> restricted) {
 		boolean overflow = true;
 		while (restricted.contains(letters[index]) || overflow) {
 			overflow = false;
@@ -55,7 +80,7 @@ public class Day11 {
 		}
 	}
 	
-	static boolean valid(int[] letters) {
+	boolean valid(int[] letters) {
 		boolean inc = false;
 		for (int i = 0; i < letters.length - 2; i++) {
 			if (letters[i] + 2 < 26 && letters[i] + 1 == letters[i + 1] && letters[i] + 2 == letters[i + 2]) {
@@ -78,7 +103,7 @@ public class Day11 {
 		return false;
 	}
 	
-	private static String lettersToString(int[] letters) {
+	String lettersToString(int[] letters) {
 		return Arrays.stream(letters).mapToObj(l -> "" + (char) ('a' + l)).collect(Collectors.joining());
 	}
 }

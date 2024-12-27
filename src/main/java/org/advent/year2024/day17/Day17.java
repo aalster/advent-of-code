@@ -2,7 +2,7 @@ package org.advent.year2024.day17;
 
 import lombok.ToString;
 import org.advent.common.Utils;
-import org.advent.runner.AbstractDay;
+import org.advent.runner.AdventDay;
 import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
 
@@ -14,10 +14,10 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 
-public class Day17 extends AbstractDay {
+public class Day17 extends AdventDay {
 	
 	public static void main(String[] args) {
-		new DayRunner(new Day17()).run("input.txt");
+		new DayRunner(new Day17()).runAll();
 	}
 	
 	@Override

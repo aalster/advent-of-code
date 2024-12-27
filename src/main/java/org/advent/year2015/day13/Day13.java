@@ -1,18 +1,37 @@
 package org.advent.year2015.day13;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.SequencedSet;
 
-public class Day13 {
+public class Day13 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day13.class, "input.txt");
-		Map<String, Map<String, Integer>> values = new HashMap<>();
+		new DayRunner(new Day13()).runAll();
+	}
+	
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 330, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("input.txt", 733, 725)
+		);
+	}
+	
+	Map<String, Map<String, Integer>> values;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		values = new HashMap<>();
 		while (input.hasNext()) {
 			String line = input.nextLine();
 			String[] split = line.replace(" would ", ",")
@@ -26,22 +45,25 @@ public class Day13 {
 			values.computeIfAbsent(split[2], k -> new HashMap<>())
 					.compute(split[0], (k, v) -> (v == null ? 0 : v) + Integer.parseInt(split[1]));
 		}
-		
-		System.out.println("Answer 1: " + part1(values));
-		System.out.println("Answer 2: " + part2(values));
 	}
 	
-	private static long part1(Map<String, Map<String, Integer>> values) {
-		return pickNext(new LinkedHashSet<>(), values.keySet().iterator().next(), values);
+	@Override
+	public Object part1() {
+		return solve(values);
 	}
 	
-	private static long part2(Map<String, Map<String, Integer>> values) {
+	@Override
+	public Object part2() {
 		Map<String, Map<String, Integer>> withMe = new HashMap<>(values);
 		for (String other : values.keySet()) {
 			withMe.computeIfAbsent("Me", k -> new HashMap<>()).put(other, 0);
 			withMe.get(other).put("Me", 0);
 		}
-		return part1(withMe);
+		return solve(withMe);
+	}
+	
+	int solve(Map<String, Map<String, Integer>> values) {
+		return pickNext(new LinkedHashSet<>(), values.keySet().iterator().next(), values);
 	}
 	
 	static int pickNext(SequencedSet<String> sitting, String previous, Map<String, Map<String, Integer>> values) {

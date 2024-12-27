@@ -1,39 +1,63 @@
 package org.advent.year2015.day17;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
-public class Day17 {
+public class Day17 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day17.class, "input.txt");
-		int[] containers = Utils.readLines(input).stream().mapToInt(Integer::parseInt).toArray();
-		
-		System.out.println("Answer 1: " + part1(containers));
-		System.out.println("Answer 2: " + part2(containers));
+		new DayRunner(new Day17()).runAll();
 	}
 	
-	private static long part1(int[] containers) {
-		return countNext(containers, 0, 0, 150).values().stream().mapToInt(i -> i).sum();
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 4, 3),
+				new ExpectedAnswers("input.txt", 4372, 4)
+		);
 	}
 	
-	private static long part2(int[] containers) {
-		Map<Integer, Integer> combinations = countNext(containers, 0, 0, 150);
+	int[] containers;
+	int liters;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		containers = Utils.readLines(input).stream().mapToInt(Integer::parseInt).toArray();
+		liters = switch (file) {
+			case "example.txt" -> 25;
+			case "input.txt" -> 150;
+			default -> throw new IllegalArgumentException("Invalid file: " + file);
+		};
+	}
+	
+	@Override
+	public Object part1() {
+		return countNext(containers, 0, 0, liters).values().stream().mapToInt(i -> i).sum();
+	}
+	
+	@Override
+	public Object part2() {
+		Map<Integer, Integer> combinations = countNext(containers, 0, 0, liters);
 		return combinations.get(combinations.keySet().stream().mapToInt(i -> i).min().orElseThrow());
 	}
 	
-	static Map<Integer, Integer> countNext(int[] containers, int currentIndex, int containersUsed, int litersLeft) {
+	Map<Integer, Integer> countNext(int[] containers, int index, int containersUsed, int litersLeft) {
 		if (litersLeft == 0)
 			return Map.of(containersUsed, 1);
-		if (litersLeft < 0 || currentIndex >= containers.length)
+		if (litersLeft < 0 || index >= containers.length)
 			return Map.of();
 		
-		int container = containers[currentIndex];
-		Map<Integer, Integer> currentUsed = countNext(containers, currentIndex + 1, containersUsed + 1, litersLeft - container);
-		Map<Integer, Integer> currentNotUsed = countNext(containers, currentIndex + 1, containersUsed, litersLeft);
+		int container = containers[index];
+		Map<Integer, Integer> currentUsed = countNext(containers, index + 1, containersUsed + 1, litersLeft - container);
+		Map<Integer, Integer> currentNotUsed = countNext(containers, index + 1, containersUsed, litersLeft);
 		
 		HashMap<Integer, Integer> result = new HashMap<>(currentUsed.size() + currentNotUsed.size());
 		result.putAll(currentUsed);

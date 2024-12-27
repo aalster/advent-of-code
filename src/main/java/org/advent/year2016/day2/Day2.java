@@ -3,7 +3,7 @@ package org.advent.year2016.day2;
 import org.advent.common.Direction;
 import org.advent.common.Point;
 import org.advent.common.Utils;
-import org.advent.runner.AbstractDay;
+import org.advent.runner.AdventDay;
 import org.advent.runner.ExpectedAnswers;
 import org.advent.runner.DayRunner;
 
@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class Day2 extends AbstractDay {
+public class Day2 extends AdventDay {
 	
 	public static void main(String[] args) {
 		new DayRunner(new Day2()).runAll();

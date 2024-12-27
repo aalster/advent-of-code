@@ -1,7 +1,7 @@
 package org.advent.year2024.day22;
 
 import org.advent.common.Utils;
-import org.advent.runner.AbstractDay;
+import org.advent.runner.AdventDay;
 import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
 
@@ -11,10 +11,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
-public class Day22 extends AbstractDay {
+public class Day22 extends AdventDay {
 	
 	public static void main(String[] args) {
-		new DayRunner(new Day22()).run("input.txt");
+		new DayRunner(new Day22()).runAll();
 	}
 	
 	@Override

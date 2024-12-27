@@ -1,14 +1,14 @@
 package org.advent.template2;
 
 import org.advent.common.Utils;
-import org.advent.runner.AbstractDay;
+import org.advent.runner.AdventDay;
 import org.advent.runner.ExpectedAnswers;
 import org.advent.runner.DayRunner;
 
 import java.util.List;
 import java.util.Scanner;
 
-public class DayTemplate extends AbstractDay {
+public class DayTemplate extends AdventDay {
 	
 	public static void main(String[] args) {
 		DayRunner runner = new DayRunner(new DayTemplate());

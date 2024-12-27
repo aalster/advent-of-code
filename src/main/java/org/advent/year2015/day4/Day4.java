@@ -1,22 +1,51 @@
 package org.advent.year2015.day4;
 
+import lombok.SneakyThrows;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.security.MessageDigest;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Scanner;
 
-public class Day4 {
+public class Day4 extends AdventDay {
 	
-	public static void main(String[] args) throws Exception {
-		Scanner input = Utils.scanFileNearClass(Day4.class, "input.txt");
-		String line = input.nextLine();
-		
-		System.out.println("Answer 1: " + solve(line, "00000"));
-		System.out.println("Answer 2: " + solve(line, "000000"));
+	public static void main(String[] args) {
+		new DayRunner(new Day4()).runAll();
 	}
 	
-	private static long solve(String line, String prefix) throws Exception {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 609043, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("example2.txt", 1048970, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("input.txt", 117946, 3938038)
+		);
+	}
+	
+	String line;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		line = input.nextLine();
+	}
+	
+	@Override
+	public Object part1() {
+		return solve("00000");
+	}
+	
+	@Override
+	public Object part2() {
+		return solve("000000");
+	}
+	
+	@SneakyThrows
+	long solve(String prefix) {
 		int n = 0;
 		MessageDigest md = MessageDigest.getInstance("MD5");
 		HexFormat hex = HexFormat.of();

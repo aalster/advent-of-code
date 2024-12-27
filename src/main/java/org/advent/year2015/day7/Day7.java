@@ -1,6 +1,9 @@
 package org.advent.year2015.day7;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -9,27 +12,46 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.function.Function;
 
-public class Day7 {
+public class Day7 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day7.class, "input.txt");
-		List<String> lines = Utils.readLines(input);
-		
-		System.out.println("Answer 1: " + part1(lines));
-		System.out.println("Answer 2: " + part2(lines));
+		new DayRunner(new Day7()).runAll();
 	}
 	
-	private static long part1(List<String> lines) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 65412, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("input.txt", 46065, 14134)
+		);
+	}
+	
+	List<String> lines;
+	String outputWire;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		lines = Utils.readLines(input);
+		outputWire = switch (file) {
+			case "example.txt" -> "h";
+			case "input.txt" -> "a";
+			default -> throw new IllegalStateException("Unexpected value: " + file);
+		};
+	}
+	
+	@Override
+	public Object part1() {
 		return solve(lines);
 	}
 	
-	private static long part2(List<String> lines) {
-		long answer1 = part1(lines);
-		lines = lines.stream().map(l -> l.endsWith(" -> b") ? answer1 + " -> b" : l).toList();
-		return solve(lines);
+	@Override
+	public Object part2() {
+		int answer1 = solve(lines);
+		return solve(lines.stream().map(l -> l.endsWith(" -> b") ? answer1 + " -> b" : l).toList());
 	}
 	
-	private static Integer solve(List<String> lines) {
+	int solve(List<String> lines) {
 		lines = new ArrayList<>(lines);
 		
 		Map<String, Integer> values = new HashMap<>();
@@ -67,6 +89,6 @@ public class Day7 {
 				default -> throw new IllegalStateException("Unexpected operation: " + line);
 			});
 		}
-		return values.get("a");
+		return values.get(outputWire);
 	}
 }
