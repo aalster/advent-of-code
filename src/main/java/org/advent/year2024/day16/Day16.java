@@ -3,6 +3,9 @@ package org.advent.year2024.day16;
 import org.advent.common.Direction;
 import org.advent.common.Point;
 import org.advent.common.Utils;
+import org.advent.runner.AbstractDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,21 +17,39 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Stream;
 
-public class Day16 {
+public class Day16 extends AbstractDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day16.class, "input.txt");
-		Map<Character, List<Point>> field = Point.readField(Utils.readLines(input));
-		
-		List<Path> minPaths = findMinPaths(field);
-		int part1 = minPaths.getFirst().score;
-		long part2 = minPaths.stream().flatMap(p -> p.visited.stream()).distinct().count() + 1;
-		
-		System.out.println("Answer 1: " + part1);
-		System.out.println("Answer 2: " + part2);
+		new DayRunner(new Day16()).run("input.txt");
 	}
 	
-	static List<Path> findMinPaths(Map<Character, List<Point>> field) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", null, null),
+				new ExpectedAnswers("input.txt", null, null)
+		);
+	}
+	
+	Map<Character, List<Point>> field;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		field = Point.readField(Utils.readLines(input));
+	}
+	
+	@Override
+	public Object part1() {
+		return findMinPaths(field).getFirst().score;
+	}
+	
+	@Override
+	public Object part2() {
+		return findMinPaths(field).stream().flatMap(p -> p.visited.stream()).distinct().count() + 1;
+	}
+	
+	List<Path> findMinPaths(Map<Character, List<Point>> field) {
 		Set<Point> walls = new HashSet<>(field.get('#'));
 		Point start = field.get('S').getFirst();
 		Point end = field.get('E').getFirst();

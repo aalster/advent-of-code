@@ -4,29 +4,52 @@ import org.advent.common.Direction;
 import org.advent.common.Pair;
 import org.advent.common.Point;
 import org.advent.common.Utils;
+import org.advent.runner.AbstractDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public class Day21 {
+public class Day21 extends AbstractDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day21.class, "input.txt");
-		List<String> lines = Utils.readLines(input);
-		
-		System.out.println("Answer 1: " + solve(lines, 2));
-		System.out.println("Answer 2: " + solve(lines, 25));
+		new DayRunner(new Day21()).run("input.txt");
 	}
 	
-	private static long solve(List<String> lines, int nestedLevel) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", null, null),
+				new ExpectedAnswers("input.txt", null, null)
+		);
+	}
+	
+	List<String> lines;
+	
+	@Override
+	public void prepare(String file) {
+		lines = Utils.readLines(Utils.scanFileNearClass(getClass(), file));
+	}
+	
+	@Override
+	public Object part1() {
+		return solve(2);
+	}
+	
+	@Override
+	public Object part2() {
+		return solve(25);
+	}
+	
+	private long solve(int nestedLevel) {
 		Keypad keypad = null;
 		while (nestedLevel-- > 0)
 			keypad = new Keypad(KeypadButtons.directional, keypad);

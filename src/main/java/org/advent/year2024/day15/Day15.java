@@ -3,6 +3,9 @@ package org.advent.year2024.day15;
 import org.advent.common.Direction;
 import org.advent.common.Point;
 import org.advent.common.Utils;
+import org.advent.runner.AbstractDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,10 +14,26 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 
-public class Day15 {
+public class Day15 extends AbstractDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day15.class, "input.txt");
+		new DayRunner(new Day15()).run("input.txt");
+	}
+	
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", null, null),
+				new ExpectedAnswers("input.txt", null, null)
+		);
+	}
+	
+	Map<Point, Character> field;
+	String moves;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
 		List<String> fieldLines = new ArrayList<>();
 		while (input.hasNext()) {
 			String line = input.nextLine();
@@ -22,14 +41,12 @@ public class Day15 {
 				break;
 			fieldLines.add(line);
 		}
-		Map<Point, Character> field = Point.readFieldMap(fieldLines);
-		String moves = String.join("", Utils.readLines(input));
-		
-		System.out.println("Answer 1: " + part1(field, moves));
-		System.out.println("Answer 2: " + part2(field, moves));
+		field = Point.readFieldMap(fieldLines);
+		moves = String.join("", Utils.readLines(input));
 	}
 	
-	private static long part1(Map<Point, Character> field, String moves) {
+	@Override
+	public Object part1() {
 		field = new HashMap<>(field);
 		Point current = findStart(field);
 		
@@ -49,7 +66,8 @@ public class Day15 {
 		return gps(field);
 	}
 	
-	private static long part2(Map<Point, Character> field, String moves) {
+	@Override
+	public Object part2() {
 		field = widenField(field);
 		Point current = findStart(field);
 		
@@ -73,7 +91,7 @@ public class Day15 {
 		return gps(field);
 	}
 	
-	static Point nextEmpty(Map<Point, Character> field, Point current, Direction d) {
+	Point nextEmpty(Map<Point, Character> field, Point current, Direction d) {
 		while (field.get(current) != '.') {
 			current = current.move(d);
 			if (field.get(current) == '#')
@@ -82,7 +100,7 @@ public class Day15 {
 		return current;
 	}
 	
-	static Map<Point, Character> diff(Map<Point, Character> field, Point currentPosition, Direction d) {
+	Map<Point, Character> diff(Map<Point, Character> field, Point currentPosition, Direction d) {
 		Map<Point, Character> diff = new HashMap<>();
 		Map<Point, Character> current = new HashMap<>();
 		current.put(currentPosition, field.get(currentPosition));
@@ -112,14 +130,14 @@ public class Day15 {
 		return diff;
 	}
 	
-	static Point findStart(Map<Point, Character> field) {
+	Point findStart(Map<Point, Character> field) {
 		return field.entrySet().stream()
 				.filter(e -> e.getValue() == '@')
 				.map(Map.Entry::getKey)
 				.findAny().orElseThrow();
 	}
 	
-	static int gps(Map<Point, Character> field) {
+	int gps(Map<Point, Character> field) {
 		Set<Character> boxChars = Set.of('O', '[');
 		return field.entrySet().stream()
 				.filter(e -> boxChars.contains(e.getValue()))
@@ -128,7 +146,7 @@ public class Day15 {
 				.sum();
 	}
 	
-	static Map<Point, Character> widenField(Map<Point, Character> field) {
+	Map<Point, Character> widenField(Map<Point, Character> field) {
 		Map<Point, Character> wideField = new HashMap<>(field.size() * 2);
 		for (Map.Entry<Point, Character> entry : field.entrySet()) {
 			String cells = switch (entry.getValue()) {

@@ -1,6 +1,9 @@
 package org.advent.year2024.day22;
 
 import org.advent.common.Utils;
+import org.advent.runner.AbstractDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,17 +11,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
-public class Day22 {
+public class Day22 extends AbstractDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day22.class, "input.txt");
-		long[] secrets = Utils.readLines(input).stream().mapToLong(Long::parseLong).toArray();
-		
-		System.out.println("Answer 1: " + part1(secrets));
-		System.out.println("Answer 2: " + part2(secrets));
+		new DayRunner(new Day22()).run("input.txt");
 	}
 	
-	private static long part1(long[] secrets) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 37327623, 23),
+				new ExpectedAnswers("input.txt", 19458130434L, 2130)
+		);
+	}
+	
+	long[] secrets;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		secrets = Utils.readLines(input).stream().mapToLong(Long::parseLong).toArray();
+	}
+	
+	@Override
+	public Object part1() {
 		long result = 0;
 		for (long secret : secrets) {
 			for (int i = 0; i < 2000; i++)
@@ -28,7 +44,8 @@ public class Day22 {
 		return result;
 	}
 	
-	private static long part2(long[] secrets) {
+	@Override
+	public Object part2() {
 		List<Map<Integer, Integer>> allPrices = new ArrayList<>();
 		for (long secret : secrets) {
 			Map<Integer, Integer> prices = new HashMap<>();
@@ -55,9 +72,9 @@ public class Day22 {
 		return totals.values().stream().mapToInt(i -> i).max().orElseThrow();
 	}
 	
-	static final long prune = 16777216;
+	final long prune = 16777216;
 	
-	static long nextSecret(long secret) {
+	long nextSecret(long secret) {
 		secret = (secret ^ (secret << 6)) % prune;
 		secret = (secret ^ (secret >> 5)) % prune;
 		secret = (secret ^ (secret << 11)) % prune;

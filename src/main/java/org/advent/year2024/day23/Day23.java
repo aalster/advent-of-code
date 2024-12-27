@@ -1,6 +1,9 @@
 package org.advent.year2024.day23;
 
 import org.advent.common.Utils;
+import org.advent.runner.AbstractDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -12,22 +15,34 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class Day23 {
+public class Day23 extends AbstractDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day23.class, "input.txt");
-		Map<String, Set<String>> connections = new HashMap<>();
+		new DayRunner(new Day23()).run("input.txt");
+	}
+	
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 7, "co,de,ka,ta"),
+				new ExpectedAnswers("input.txt", 1156, "bx,cx,dr,dx,is,jg,km,kt,li,lt,nh,uf,um")
+		);
+	}
+	
+	Map<String, Set<String>> connections = new HashMap<>();
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
 		for (String line : Utils.readLines(input)) {
 			String[] split = line.split("-");
 			connections.computeIfAbsent(split[0], k -> new HashSet<>()).add(split[1]);
 			connections.computeIfAbsent(split[1], k -> new HashSet<>()).add(split[0]);
 		}
-		
-		System.out.println("Answer 1: " + part1(connections));
-		System.out.println("Answer 2: " + part2(connections));
 	}
 	
-	private static long part1(Map<String, Set<String>> connections) {
+	@Override
+	public Object part1() {
 		Set<Set<String>> triples = new HashSet<>();
 		for (Map.Entry<String, Set<String>> entry : connections.entrySet())
 			if (entry.getKey().startsWith("t") && entry.getValue().size() > 1)
@@ -38,7 +53,8 @@ public class Day23 {
 		return triples.size();
 	}
 	
-	private static String part2(Map<String, Set<String>> connections) {
+	@Override
+	public Object part2() {
 		List<Set<String>> parties = new ArrayList<>();
 		for (String player : connections.keySet())
 			parties.add(new HashSet<>(List.of(player)));

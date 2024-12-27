@@ -27,14 +27,14 @@ public class YearRunner {
 			try {
 				AbstractDay day = dayClass.getDeclaredConstructor().newInstance();
 				if (prevYear == 0 || prevYear != day.getYear())
-					System.out.println(OutputUtils.white("Year " + day.getYear()));
+					System.out.println("\n" + OutputUtils.white("Year " + day.getYear()));
 				System.out.println(OutputUtils.white("  Day " + day.getDay()));
 				
-				new DayRunner(day).runForYear("input.txt");
+				new DayRunner(day).runForYear("example.txt");
 				
 				prevYear = day.getYear();
 			} catch (Exception e) {
-				System.err.println(e.getMessage());
+				System.out.println(OutputUtils.red(e.getMessage()));
 			}
 		}
 	}

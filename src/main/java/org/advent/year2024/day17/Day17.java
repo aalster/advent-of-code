@@ -2,6 +2,9 @@ package org.advent.year2024.day17;
 
 import lombok.ToString;
 import org.advent.common.Utils;
+import org.advent.runner.AbstractDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -11,11 +14,26 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 
-public class Day17 {
+public class Day17 extends AbstractDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day17.class, "input.txt");
-		Map<String, Long> initialRegisters = new HashMap<>();
+		new DayRunner(new Day17()).run("input.txt");
+	}
+	
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", null, null),
+				new ExpectedAnswers("input.txt", null, null)
+		);
+	}
+	
+	Map<String, Long> initialRegisters = new HashMap<>();
+	int[] program;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
 		while (input.hasNext()) {
 			String line = input.nextLine();
 			if (line.isEmpty())
@@ -23,20 +41,19 @@ public class Day17 {
 			String[] split = line.replace("Register ", "").split(": ");
 			initialRegisters.put(split[0], Long.parseLong(split[1]));
 		}
-		int[] program = Arrays.stream(input.nextLine().replace("Program: ", "").split(","))
+		program = Arrays.stream(input.nextLine().replace("Program: ", "").split(","))
 				.mapToInt(Integer::parseInt).toArray();
-		
-		System.out.println("Answer 1: " + part1(initialRegisters, program));
-		System.out.println("Answer 2: " + part2(program));
 	}
 	
-	private static String part1(Map<String, Long> initialRegisters, int[] program) {
+	@Override
+	public Object part1() {
 		return run(initialRegisters, program, false).stream()
 				.map(String::valueOf)
 				.collect(Collectors.joining(","));
 	}
 	
-	private static long part2(int[] program) {
+	@Override
+	public Object part2() {
 		/*
 			2,4,  1,1,  7,5,  4,0,  0,3,  1,6,  5,5,  3,0
 			
@@ -63,7 +80,7 @@ public class Day17 {
 		return find(program, program, 0);
 	}
 	
-	private static List<Long> run(Map<String, Long> initialRegisters, int[] program, boolean onlyFirstDigit) {
+	List<Long> run(Map<String, Long> initialRegisters, int[] program, boolean onlyFirstDigit) {
 		Registers reg = new Registers(initialRegisters);
 		
 		List<Long> output = new ArrayList<>();
@@ -94,7 +111,7 @@ public class Day17 {
 		return output;
 	}
 	
-	static long find(int[] program, int[] targetOutput, long subAnswer) {
+	long find(int[] program, int[] targetOutput, long subAnswer) {
 		if (targetOutput.length == 0)
 			return subAnswer;
 		

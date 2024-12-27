@@ -6,12 +6,14 @@ import org.advent.runner.ExpectedAnswers;
 import org.advent.runner.DayRunner;
 
 import java.util.List;
+import java.util.Scanner;
 
 public class DayTemplate extends AbstractDay {
 	
 	public static void main(String[] args) {
 		DayRunner runner = new DayRunner(new DayTemplate());
 //		runner.run("example.txt");
+//		runner.run("input.txt");
 		runner.runAll();
 	}
 	
@@ -27,7 +29,8 @@ public class DayTemplate extends AbstractDay {
 	
 	@Override
 	public void prepare(String file) {
-		lines = Utils.readLines(Utils.scanFileNearClass(getClass(), file));
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		lines = Utils.readLines(input);
 	}
 	
 	@Override

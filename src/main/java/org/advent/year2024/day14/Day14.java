@@ -1,76 +1,101 @@
 package org.advent.year2024.day14;
 
-import lombok.SneakyThrows;
+import org.advent.common.Pair;
 import org.advent.common.Point;
 import org.advent.common.Utils;
+import org.advent.runner.AbstractDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Day14 {
-	static final Data example = new Data("example.txt", 11, 7);
-	static final Data input = new Data("input.txt", 101, 103);
-	static final Data data = input;
+public class Day14 extends AbstractDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day14.class, data.file);
-		List<Robot> robots = Utils.readLines(input).stream().map(Robot::parse).map(Robot::makePositive).toList();
-		
-		System.out.println("Answer 1: " + part1(robots));
-		System.out.println("Answer 2: " + part2(robots));
+		new DayRunner(new Day14()).run("input.txt");
 	}
 	
-	private static long part1(List<Robot> robots) {
-		return safetyFactor(robots.stream().map(r -> r.move(100)).toList());
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 12, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("input.txt", 223020000, 7338)
+		);
 	}
 	
-	@SneakyThrows
-	private static long part2(List<Robot> robots) {
+	static Data data;
+	List<Robot> robots;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		data = switch (file) {
+			case "example.txt" -> new Data(11, 7);
+			case "input.txt" -> new Data(101, 103);
+			default -> throw new IllegalStateException("Unexpected value: " + file);
+		};
+		robots = Utils.readLines(input).stream().map(Robot::parse).map(Robot::makePositive).toList();
+	}
+	
+	@Override
+	public Object part1() {
+		return safetyFactor(robots.stream().map(r -> r.move(100)).toList(), 1);
+	}
+	
+	@Override
+	public Object part2() {
+		List<Robot> currentRobots = robots;
 		int seconds = 0;
-		// Подбором коэффициента пересматриваем все ситуации с наименьшим safetyFactor и находим визуально
-		int interestingSafetyFactor = (int) (minSafetyFactor(robots) * 1.12);
+		BigInteger minSafetyFactor = BigInteger.valueOf(Long.MAX_VALUE).pow(4);
+		int minSafetyFactorSeconds = 0;
 		while (seconds < data.width * data.height) {
 			seconds++;
-			robots = robots.stream().map(Robot::move).toList();
-			int safetyFactor = safetyFactor(robots);
-			if (safetyFactor < interestingSafetyFactor) {
-				Set<Point> positions = robots.stream().map(Robot::p).collect(Collectors.toSet());
-				System.out.println("\nSeconds: " + seconds + ", safety factor: " + safetyFactor);
-				Point.printField(positions, p -> positions.contains(p) ? '#' : '.');
-				Thread.sleep(500);
+			currentRobots = currentRobots.stream().map(Robot::move).toList();
+			BigInteger safetyFactor = safetyFactor(currentRobots, 2);
+			if (safetyFactor.compareTo(minSafetyFactor) < 0) {
+				minSafetyFactor = safetyFactor;
+				minSafetyFactorSeconds = seconds;
 			}
 		}
-		return 0;
+		
+//		int _minSafetyFactorSeconds = minSafetyFactorSeconds;
+//		Set<Point> positions = robots.stream()
+//				.map(r -> r.move(_minSafetyFactorSeconds))
+//				.map(Robot::p)
+//				.collect(Collectors.toSet());
+//		Point.printField(positions, p -> positions.contains(p) ? '#' : '.');
+		
+		return minSafetyFactorSeconds;
 	}
 	
-	static int minSafetyFactor(List<Robot> robots) {
-		int seconds = 0;
-		int minSafetyFactor = Integer.MAX_VALUE;
-		while (seconds < data.width * data.height) {
-			seconds++;
-			robots = robots.stream().map(Robot::move).toList();
-			minSafetyFactor = Math.min(minSafetyFactor, safetyFactor(robots));
-		}
-		return minSafetyFactor;
+	BigInteger safetyFactor(List<Robot> robots, int level) {
+		return safetyFactorRecursive(robots.stream().map(Robot::p).toList(), data.width, data.height, level);
 	}
 	
-	static int safetyFactor(List<Robot> robots) {
-		int quadrantWidth = data.width / 2;
-		int quadrantHeight = data.height / 2;
-		Map<String, List<Robot>> quadrants = robots.stream().collect(Collectors.groupingBy(
-				r -> (r.p.y() < quadrantHeight ? "T" : (r.p.y() >= data.height - quadrantHeight ? "B" : "C"))
-						+ (r.p.x() < quadrantWidth ? "L" : (r.p.x() >= data.width - quadrantWidth ? "R" : "C"))));
-		return Stream.of("TL", "TR", "BL", "BR")
-				.map(q -> quadrants.getOrDefault(q, List.of()))
-				.mapToInt(List::size)
-				.reduce(1, (l, r) -> l * r);
-	}
-	
-	record Data(String file, int width, int height) {
+	BigInteger safetyFactorRecursive(List<Point> positions, int width, int height, int level) {
+		int quadrantWidth = width / 2;
+		int quadrantHeight = height / 2;
+		Map<String, List<Point>> quadrants = positions.stream().collect(Collectors.groupingBy(
+				p -> (p.y() < quadrantHeight ? "T" : (p.y() == quadrantHeight ? "C" : "B"))
+						+ (p.x() < quadrantWidth ? "L" : (p.x() == quadrantWidth ? "C" : "R"))));
+		if (level <= 1)
+			return Stream.of("TL", "TR", "BL", "BR")
+					.map(q -> quadrants.getOrDefault(q, List.of()))
+					.map(p -> BigInteger.valueOf(p.size()))
+					.reduce(BigInteger.ONE, BigInteger::multiply);
+		return Stream.of(
+				Pair.of("TL", new Point(0, 0)),
+				Pair.of("TR", new Point(-quadrantWidth, 0)),
+				Pair.of("BL", new Point(0, -quadrantHeight)),
+				Pair.of("BR", new Point(-quadrantWidth, -quadrantHeight)))
+				.map(p -> quadrants.getOrDefault(p.left(), List.of()).stream().map(p.right()::shift).toList())
+				.map(p -> safetyFactorRecursive(p, quadrantWidth, quadrantHeight, level - 1))
+				.reduce(BigInteger.ONE, BigInteger::multiply);
 	}
 	
 	record Robot(Point p, Point v) {
@@ -91,5 +116,8 @@ public class Day14 {
 			String[] split = line.replace("p=", "").split(" v=");
 			return new Robot(Point.parse(split[0]), Point.parse(split[1]));
 		}
+	}
+	
+	record Data(int width, int height) {
 	}
 }
