@@ -20,14 +20,15 @@ import java.util.stream.Stream;
 public class Day16 extends AbstractDay {
 	
 	public static void main(String[] args) {
-		new DayRunner(new Day16()).run("input.txt");
+		new DayRunner(new Day16()).runAll();
 	}
 	
 	@Override
 	public List<ExpectedAnswers> expected() {
 		return List.of(
-				new ExpectedAnswers("example.txt", null, null),
-				new ExpectedAnswers("input.txt", null, null)
+				new ExpectedAnswers("example.txt", 7036, 45),
+				new ExpectedAnswers("example2.txt", 11048, 64),
+				new ExpectedAnswers("input.txt", 75416, 476)
 		);
 	}
 	

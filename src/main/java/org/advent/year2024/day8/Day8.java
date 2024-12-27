@@ -3,6 +3,9 @@ package org.advent.year2024.day8;
 import org.advent.common.Point;
 import org.advent.common.Rect;
 import org.advent.common.Utils;
+import org.advent.runner.AbstractDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.HashSet;
 import java.util.List;
@@ -10,17 +13,30 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 
-public class Day8 {
+public class Day8 extends AbstractDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day8.class, "input.txt");
-		Map<Character, List<Point>> field = Point.readField(Utils.readLines(input));
-		
-		System.out.println("Answer 1: " + part1(field));
-		System.out.println("Answer 2: " + part2(field));
+		new DayRunner(new Day8()).run("input.txt");
 	}
 	
-	private static long part1(Map<Character, List<Point>> field) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 14, 34),
+				new ExpectedAnswers("input.txt", 254, 951)
+		);
+	}
+	
+	Map<Character, List<Point>> field;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		field = Point.readField(Utils.readLines(input));
+	}
+	
+	@Override
+	public Object part1() {
 		Rect bounds = Point.bounds(field.get('.'));
 		Set<Point> antinodes = new HashSet<>();
 		for (Map.Entry<Character, List<Point>> entry : field.entrySet()) {
@@ -39,7 +55,8 @@ public class Day8 {
 		return antinodes.stream().filter(bounds::containsInclusive).count();
 	}
 	
-	private static long part2(Map<Character, List<Point>> field) {
+	@Override
+	public Object part2() {
 		Rect bounds = Point.bounds(field.get('.'));
 		Set<Point> antinodes = new HashSet<>();
 		for (Map.Entry<Character, List<Point>> entry : field.entrySet()) {

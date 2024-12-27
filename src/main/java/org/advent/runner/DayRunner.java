@@ -10,7 +10,7 @@ public class DayRunner {
 	
 	public void runAll() {
 		System.out.println(day);
-		day.expected().forEach(file -> run(file, true, true));
+		day.expected().forEach(f -> run(f, true, true));
 	}
 	
 	public void run(String file) {
@@ -18,7 +18,10 @@ public class DayRunner {
 	}
 	
 	void runForYear(String file) {
-		run(expected(file), false, true);
+		if (file == null)
+			day.expected().forEach(f -> run(f, true, true));
+		else
+			run(expected(file), false, true);
 	}
 	
 	public void run(String file, int part) {
@@ -33,20 +36,27 @@ public class DayRunner {
 		Timer timer = new Timer();
 		day.prepare(expected.file());
 		if (printInfo)
-			System.out.println("  " + OutputUtils.white(expected.file()) + " (prepare " + timer.stepFormatted() + "):");
+			System.out.println("    " + OutputUtils.white(expected.file()) + " (prepare " + timer.stepFormatted() + "):");
 		
-		runPart(expected.answer1(), day::part1, 1, timer, pad ? 4 : 0);
-		runPart(expected.answer2(), day::part2, 2, timer, pad ? 4 : 0);
+		runPart(expected.answer1(), day::part1, 1, timer, pad ? 6 : 0);
+		runPart(expected.answer2(), day::part2, 2, timer, pad ? 6 : 0);
 	}
 	
 	private void runPart(Object expected, Supplier<Object> part, int partNumber, Timer timer, int pad) {
 		if (expected == ExpectedAnswers.IGNORE)
 			return;
-		Object answer = part.get();
-		System.out.print(" ".repeat(pad) + "Answer " + partNumber + " " + timer.stepFormatted(7) + ": ");
-		boolean passes = passes(expected, answer);
-		System.out.println((passes ? "✅" : "❌") + OutputUtils.white(" " + answer)
-				+ (expected != null && !passes ? " Expected: " + expected : ""));
+		try {
+			Object answer = part.get();
+			String time = timer.stepFormatted(7);
+			boolean passes = passes(expected, answer);
+			System.out.println(" ".repeat(pad) + "Answer " + partNumber + " " + time + ": "
+					+ (passes ? "✅" : "❌") + OutputUtils.white(" " + answer)
+					+ (expected != null && !passes ? " Expected: " + expected : ""));
+		} catch (Exception e) {
+			String time = timer.stepFormatted(7);
+			System.out.println(" ".repeat(pad) + "Answer " + partNumber + " " + time + ": "
+					+ "❌" + OutputUtils.red("Error: " + e.getMessage()));
+		}
 	}
 	
 	private boolean passes(Object expected, Object answer) {

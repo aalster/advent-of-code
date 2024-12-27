@@ -1,22 +1,36 @@
 package org.advent.year2024.day9;
 
 import org.advent.common.Utils;
+import org.advent.runner.AbstractDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 
-public class Day9 {
+public class Day9 extends AbstractDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day9.class, "input.txt");
-		String line = input.nextLine();
-		
-		System.out.println("Answer 1: " + part1(line));
-		System.out.println("Answer 2: " + part2(line));
+		new DayRunner(new Day9()).run("input.txt");
 	}
 	
-	private static long part1(String line) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 1928, 2858),
+				new ExpectedAnswers("input.txt", 6463499258318L, 6493634986625L)
+		);
+	}
+	
+	String line;
+	
+	@Override
+	public void prepare(String file) {
+		line = Utils.scanFileNearClass(getClass(), file).nextLine();
+	}
+	
+	@Override
+	public Object part1() {
 		int[] numbers = line.chars().map(c -> c - '0').toArray();
 		ChecksumCounter counter = new ChecksumCounter();
 		
@@ -48,7 +62,8 @@ public class Day9 {
 		return counter.checksum;
 	}
 	
-	private static long part2(String line) {
+	@Override
+	public Object part2() {
 		int[] numbers = line.chars().map(c -> c - '0').toArray();
 		Object[] spaces = new Object[numbers.length];
 		for (int i = 0; i < numbers.length; i++)
@@ -107,6 +122,7 @@ public class Day9 {
 	
 	record File (int index, int size) {
 	}
+	
 	record EmptySpace(int remainingSize, List<File> movedFiles) {
 		EmptySpace addFile(File f) {
 			List<File> nextFiles = new ArrayList<>(movedFiles);

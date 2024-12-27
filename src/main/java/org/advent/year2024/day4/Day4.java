@@ -3,21 +3,38 @@ package org.advent.year2024.day4;
 import org.advent.common.DirectionExt;
 import org.advent.common.Point;
 import org.advent.common.Utils;
+import org.advent.runner.AbstractDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
-public class Day4 {
+public class Day4 extends AbstractDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day4.class, "input.txt");
-		Map<Point, Character> field = Point.readFieldMap(Utils.readLines(input));
-		
-		System.out.println("Answer 1: " + part1(field));
-		System.out.println("Answer 2: " + part2(field));
+		new DayRunner(new Day4()).run("input.txt");
 	}
 	
-	private static long part1(Map<Point, Character> field) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 18, 9),
+				new ExpectedAnswers("input.txt", 2297, 1745)
+		);
+	}
+	
+	Map<Point, Character> field;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		field = Point.readFieldMap(Utils.readLines(input));
+	}
+	
+	@Override
+	public Object part1() {
 		long result = 0;
 		char[] word = "XMAS".toCharArray();
 		
@@ -43,7 +60,8 @@ public class Day4 {
 		return result;
 	}
 	
-	private static long part2(Map<Point, Character> field) {
+	@Override
+	public Object part2() {
 		long result = 0;
 		
 		for (Map.Entry<Point, Character> entry : field.entrySet()) {
@@ -58,7 +76,7 @@ public class Day4 {
 		return result;
 	}
 	
-	static boolean msPair(Character a, Character b) {
+	boolean msPair(Character a, Character b) {
 		if (a == null || b == null)
 			return false;
 		if (a != 'M' && a != 'S' || b != 'M' && b != 'S')

@@ -1,6 +1,9 @@
 package org.advent.year2024.day5;
 
 import org.advent.common.Utils;
+import org.advent.runner.AbstractDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
@@ -13,26 +16,40 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 
-public class Day5 {
+public class Day5 extends AbstractDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day5.class, "input.txt");
-		List<Rule> rules = new ArrayList<>();
+		new DayRunner(new Day5()).run("input.txt");
+	}
+	
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 143, 123),
+				new ExpectedAnswers("input.txt", 5391, 6142)
+		);
+	}
+	
+	List<Rule> rules;
+	List<Update> updates;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		rules = new ArrayList<>();
 		while (input.hasNext()) {
 			String line = input.nextLine();
 			if (line.isEmpty())
 				break;
 			rules.add(Rule.parse(line));
 		}
-		List<Update> updates = new ArrayList<>();
+		updates = new ArrayList<>();
 		while (input.hasNext())
 			updates.add(Update.parse(input.nextLine()));
-		
-		System.out.println("Answer 1: " + part1(rules, updates));
-		System.out.println("Answer 2: " + part2(rules, updates));
 	}
 	
-	private static int part1(List<Rule> rules, List<Update> updates) {
+	@Override
+	public Object part1() {
 		Map<Integer, Set<Integer>> rulesMap = new HashMap<>();
 		for (Rule rule : rules)
 			rulesMap.computeIfAbsent(rule.left(), k -> new HashSet<>()).add(rule.right());
@@ -43,7 +60,8 @@ public class Day5 {
 				.sum();
 	}
 	
-	private static int part2(List<Rule> rules, List<Update> updates) {
+	@Override
+	public Object part2() {
 		Map<Integer, Set<Integer>> rulesMap = new HashMap<>();
 		for (Rule rule : rules)
 			rulesMap.computeIfAbsent(rule.left(), k -> new HashSet<>()).add(rule.right());

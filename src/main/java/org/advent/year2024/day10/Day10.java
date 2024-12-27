@@ -3,6 +3,9 @@ package org.advent.year2024.day10;
 import org.advent.common.Direction;
 import org.advent.common.Point;
 import org.advent.common.Utils;
+import org.advent.runner.AbstractDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -13,18 +16,40 @@ import java.util.Scanner;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-public class Day10 {
+public class Day10 extends AbstractDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day10.class, "input.txt");
-		Map<Point, Integer> field = Point.readFieldMap(Utils.readLines(input)).entrySet().stream()
-				.collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue() - '0'));
-		
-		System.out.println("Answer 1: " + solve(field, false));
-		System.out.println("Answer 2: " + solve(field, true));
+		new DayRunner(new Day10()).run("input.txt");
 	}
 	
-	private static long solve(Map<Point, Integer> field, boolean uniquePaths) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 36, 81),
+				new ExpectedAnswers("input.txt", 430, 928)
+		);
+	}
+	
+	Map<Point, Integer> field;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		field = Point.readFieldMap(Utils.readLines(input)).entrySet().stream()
+				.collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue() - '0'));
+	}
+	
+	@Override
+	public Object part1() {
+		return solve(false);
+	}
+	
+	@Override
+	public Object part2() {
+		return solve(true);
+	}
+	
+	long solve(boolean uniquePaths) {
 		Collector<Point, ?, Collection<Point>> collector = Collectors.toCollection(
 				uniquePaths ? ArrayList::new : HashSet::new);
 		

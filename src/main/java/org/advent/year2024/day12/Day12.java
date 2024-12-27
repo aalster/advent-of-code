@@ -3,6 +3,9 @@ package org.advent.year2024.day12;
 import org.advent.common.Direction;
 import org.advent.common.Point;
 import org.advent.common.Utils;
+import org.advent.runner.AbstractDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,25 +18,39 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Day12 {
+public class Day12 extends AbstractDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day12.class, "input.txt");
-		Map<Point, Character> field = Point.readFieldMap(Utils.readLines(input));
-		
-		System.out.println("Answer 1: " + part1(field));
-		System.out.println("Answer 2: " + part2(field));
+		new DayRunner(new Day12()).run("input.txt");
 	}
 	
-	private static long part1(Map<Point, Character> field) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 1930, 1206),
+				new ExpectedAnswers("input.txt", 1477924, 841934)
+		);
+	}
+	
+	Map<Point, Character> field;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		field = Point.readFieldMap(Utils.readLines(input));
+	}
+	
+	@Override
+	public Object part1() {
 		return findRegions(field).stream().mapToLong(r -> r.size() * perimeter(r)).sum();
 	}
 	
-	private static long part2(Map<Point, Character> field) {
+	@Override
+	public Object part2() {
 		return findRegions(field).stream().mapToLong(r -> r.size() * sides(r)).sum();
 	}
 	
-	static List<Set<Point>> findRegions(Map<Point, Character> field) {
+	List<Set<Point>> findRegions(Map<Point, Character> field) {
 		field = new HashMap<>(field);
 		List<Set<Point>> regions = new ArrayList<>();
 		
@@ -46,7 +63,7 @@ public class Day12 {
 		return regions;
 	}
 	
-	static Set<Point> getRegion(Map<Point, Character> field) {
+	Set<Point> getRegion(Map<Point, Character> field) {
 		Set<Point> region = new HashSet<>();
 		Point start = field.keySet().iterator().next();
 		Character type = field.get(start);
@@ -63,19 +80,19 @@ public class Day12 {
 		return region;
 	}
 	
-	static long perimeter(Set<Point> region) {
+	long perimeter(Set<Point> region) {
 		return region.stream().flatMap(p -> Direction.stream().map(p::shift)).filter(n -> !region.contains(n)).count();
 	}
 	
-	static long sides(Set<Point> region) {
+	long sides(Set<Point> region) {
 		return horizontalSides(region) + horizontalSides(rotate(region));
 	}
 	
-	static Set<Point> rotate(Set<Point> region) {
+	Set<Point> rotate(Set<Point> region) {
 		return region.stream().map(p -> new Point(-p.y(), p.x())).collect(Collectors.toSet());
 	}
 	
-	static long horizontalSides(Set<Point> region) {
+	long horizontalSides(Set<Point> region) {
 		Map<Integer, Map<Integer, List<HorizontalFence>>> fences = new HashMap<>();
 		region.stream()
 				.flatMap(p -> Stream.of(Direction.UP, Direction.DOWN)

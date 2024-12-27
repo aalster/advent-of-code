@@ -1,24 +1,49 @@
 package org.advent.year2024.day11;
 
 import org.advent.common.Utils;
+import org.advent.runner.AbstractDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
+import org.advent.year2024.day24.Day24;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.stream.Collectors;
 
-public class Day11 {
+public class Day11 extends AbstractDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day11.class, "input.txt");
-		String line = input.nextLine();
-		
-		System.out.println("Answer 1: " + solve(line, 25));
-		System.out.println("Answer 2: " + solve(line, 75));
+		new DayRunner(new Day24()).run("input.txt");
 	}
 	
-	private static long solve(String line, int blinks) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 55312, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("input.txt", 224529, 266820198587914L)
+		);
+	}
+	
+	String line;
+	
+	@Override
+	public void prepare(String file) {
+		line = Utils.scanFileNearClass(getClass(), file).nextLine();
+	}
+	
+	@Override
+	public Object part1() {
+		return solve(25);
+	}
+	
+	@Override
+	public Object part2() {
+		return solve(75);
+	}
+	
+	long solve(int blinks) {
 		Map<Long, Long> stones = Arrays.stream(line.split(" "))
 				.map(Long::parseLong)
 				.collect(Collectors.toMap(n -> n, n -> 1L));
@@ -46,7 +71,7 @@ public class Day11 {
 		return stones.values().stream().mapToLong(c -> c).sum();
 	}
 	
-	static int countDigits(long n) {
+	int countDigits(long n) {
 		int count = 0;
 		while (n > 0) {
 			n /= 10;
@@ -55,7 +80,7 @@ public class Day11 {
 		return count;
 	}
 	
-	static long tenPow(int n) {
+	long tenPow(int n) {
 		long result = 1;
 		while (n > 0) {
 			result *= 10;

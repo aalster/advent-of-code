@@ -1,30 +1,50 @@
 package org.advent.year2024.day13;
 
 import org.advent.common.Utils;
+import org.advent.runner.AbstractDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-public class Day13 {
+public class Day13 extends AbstractDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day13.class, "input.txt");
-		List<Machine> machines = new ArrayList<>();
-		while (input.hasNext())
-			machines.add(Machine.parse(input));
-		
-		System.out.println("Answer 1: " + part1(machines));
-		System.out.println("Answer 2: " + part2(machines));
+		new DayRunner(new Day13()).run("input.txt");
 	}
 	
-	private static long part1(List<Machine> machines) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 480, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("input.txt", 40069, 71493195288102L)
+		);
+	}
+	
+	List<Machine> machines;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		machines = new ArrayList<>();
+		while (input.hasNext())
+			machines.add(Machine.parse(input));
+	}
+	
+	@Override
+	public Object part1() {
 		return machines.stream().mapToLong(Machine::winCost).sum();
 	}
 	
-	private static long part2(List<Machine> machines) {
+	@Override
+	public Object part2() {
 		LongPoint prizeShift = new LongPoint(10000000000000L, 10000000000000L);
-		return part1(machines.stream().map(m -> new Machine(m.a, m.b, prizeShift.add(m.prize))).toList());
+		return machines.stream()
+				.map(m -> new Machine(m.a, m.b, prizeShift.add(m.prize)))
+				.mapToLong(Machine::winCost)
+				.sum();
 	}
 	
 	record Machine(LongPoint a, LongPoint b, LongPoint prize) {

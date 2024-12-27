@@ -24,8 +24,8 @@ public class Day20 extends AbstractDay {
 	@Override
 	public List<ExpectedAnswers> expected() {
 		return List.of(
-				new ExpectedAnswers("example.txt", null, null),
-				new ExpectedAnswers("input.txt", null, null)
+				new ExpectedAnswers("example.txt", 1, 285),
+				new ExpectedAnswers("input.txt", 1452, 999556)
 		);
 	}
 	

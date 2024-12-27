@@ -29,11 +29,12 @@ public class Day23 extends AbstractDay {
 		);
 	}
 	
-	Map<String, Set<String>> connections = new HashMap<>();
+	Map<String, Set<String>> connections;
 	
 	@Override
 	public void prepare(String file) {
 		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		connections = new HashMap<>();
 		for (String line : Utils.readLines(input)) {
 			String[] split = line.split("-");
 			connections.computeIfAbsent(split[0], k -> new HashSet<>()).add(split[1]);

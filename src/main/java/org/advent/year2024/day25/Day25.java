@@ -23,12 +23,15 @@ public class Day25 extends AbstractDay {
 		);
 	}
 	
-	List<Pins> locks = new ArrayList<>();
-	List<Pins> keys = new ArrayList<>();
+	List<Pins> locks;
+	List<Pins> keys;
 	
 	@Override
 	public void prepare(String file) {
 		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		
+		locks = new ArrayList<>();
+		keys = new ArrayList<>();
 		
 		List<String> lines = new ArrayList<>();
 		while (input.hasNext()) {

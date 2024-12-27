@@ -21,7 +21,7 @@ public abstract class AbstractDay {
 	
 	@Override
 	public String toString() {
-		return "Year " + year + ", Day " + day;
+		return "Year " + year + "\n  Day " + day;
 	}
 	
 	private static int findByPrefix(String[] packages, String prefix) {

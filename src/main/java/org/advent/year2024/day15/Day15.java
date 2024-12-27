@@ -17,14 +17,15 @@ import java.util.Set;
 public class Day15 extends AbstractDay {
 	
 	public static void main(String[] args) {
-		new DayRunner(new Day15()).run("input.txt");
+		new DayRunner(new Day15()).runAll();
 	}
 	
 	@Override
 	public List<ExpectedAnswers> expected() {
 		return List.of(
-				new ExpectedAnswers("example.txt", null, null),
-				new ExpectedAnswers("input.txt", null, null)
+				new ExpectedAnswers("example.txt", 10092, 9021),
+				new ExpectedAnswers("example2.txt", 2028, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("input.txt", 1383666, 1412866)
 		);
 	}
 	
@@ -47,48 +48,48 @@ public class Day15 extends AbstractDay {
 	
 	@Override
 	public Object part1() {
-		field = new HashMap<>(field);
-		Point current = findStart(field);
+		Map<Point, Character> currentField = new HashMap<>(field);
+		Point current = findStart(currentField);
 		
 		for (char c : moves.toCharArray()) {
 			Direction d = Direction.parseSymbol(c);
-			Point nextEmpty = nextEmpty(field, current, d);
+			Point nextEmpty = nextEmpty(currentField, current, d);
 			if (nextEmpty == null)
 				continue;
 			
 			Point nextMove = current.move(d);
 			if (!nextMove.equals(nextEmpty))
-				field.put(nextEmpty, 'O');
-			field.put(current, '.');
-			field.put(nextMove, '@');
+				currentField.put(nextEmpty, 'O');
+			currentField.put(current, '.');
+			currentField.put(nextMove, '@');
 			current = nextMove;
 		}
-		return gps(field);
+		return gps(currentField);
 	}
 	
 	@Override
 	public Object part2() {
-		field = widenField(field);
-		Point current = findStart(field);
+		Map<Point, Character> currentField = widenField(field);
+		Point current = findStart(currentField);
 		
 		for (char c : moves.toCharArray()) {
 			Direction d = Direction.parseSymbol(c);
-			Point nextEmpty = nextEmpty(field, current, d);
+			Point nextEmpty = nextEmpty(currentField, current, d);
 			if (nextEmpty == null)
 				continue;
 			
 			Point nextMove = current.move(d);
 			if (!nextMove.equals(nextEmpty)) {
-				Map<Point, Character> diff = diff(field, nextMove, d);
+				Map<Point, Character> diff = diff(currentField, nextMove, d);
 				if (diff == null)
 					continue;
-				field.putAll(diff);
+				currentField.putAll(diff);
 			}
-			field.put(current, '.');
-			field.put(nextMove, '@');
+			currentField.put(current, '.');
+			currentField.put(nextMove, '@');
 			current = nextMove;
 		}
-		return gps(field);
+		return gps(currentField);
 	}
 	
 	Point nextEmpty(Map<Point, Character> field, Point current, Direction d) {

@@ -1,41 +1,44 @@
 package org.advent.year2024.day7;
 
 import org.advent.common.Utils;
+import org.advent.runner.AbstractDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
-public class Day7 {
+public class Day7 extends AbstractDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day7.class, "input.txt");
-		List<Equation> equations = Utils.readLines(input).stream().map(Equation::parse).toList();
-		
-		System.out.println("Answer 1: " + part1(equations));
-		System.out.println("Answer 2: " + part2(equations));
+		new DayRunner(new Day7()).run("input.txt");
 	}
 	
-	private static long part1(List<Equation> equations) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 3749, 11387),
+				new ExpectedAnswers("input.txt", 8401132154762L, 95297119227552L)
+		);
+	}
+	
+	List<Equation> equations;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		equations = Utils.readLines(input).stream().map(Equation::parse).toList();
+	}
+	
+	@Override
+	public Object part1() {
 		return equations.stream().filter(Equation::canBeTrue).mapToLong(Equation::result).sum();
 	}
 	
-	private static long part2(List<Equation> equations) {
-		return equations.stream().filter(Equation::canBeTrue2).mapToLong(Equation::result).sum();
-	}
-	
-	static long concatenate(long left, long right) {
-		int rightDigitsMarker = 1;
-		while (rightDigitsMarker * 10L <= right)
-			rightDigitsMarker *= 10;
-		
-		while (rightDigitsMarker > 0) {
-			long digit = right / rightDigitsMarker;
-			left = left * 10 + digit;
-			right %= rightDigitsMarker;
-			rightDigitsMarker /= 10;
-		}
-		return left;
+	@Override
+	public Object part2() {
+		return equations.stream().filter(Equation::canBeTrueConcatenation).mapToLong(Equation::result).sum();
 	}
 	
 	record Equation(long result, int[] numbers) {
@@ -44,7 +47,7 @@ public class Day7 {
 			return canBeTrueRecursive(numbers[0], 1, false);
 		}
 		
-		boolean canBeTrue2() {
+		boolean canBeTrueConcatenation() {
 			return canBeTrueRecursive(numbers[0], 1, true);
 		}
 		
@@ -56,6 +59,20 @@ public class Day7 {
 			return canBeTrueRecursive(total * numbers[index], index + 1, useConcatenation)
 					|| (useConcatenation && canBeTrueRecursive(concatenate(total, numbers[index]), index + 1, true))
 					|| canBeTrueRecursive(total + numbers[index], index + 1, useConcatenation);
+		}
+		
+		long concatenate(long left, long right) {
+			int rightDigitsMarker = 1;
+			while (rightDigitsMarker * 10L <= right)
+				rightDigitsMarker *= 10;
+			
+			while (rightDigitsMarker > 0) {
+				long digit = right / rightDigitsMarker;
+				left = left * 10 + digit;
+				right %= rightDigitsMarker;
+				rightDigitsMarker /= 10;
+			}
+			return left;
 		}
 		
 		static Equation parse(String line) {

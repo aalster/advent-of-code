@@ -9,19 +9,27 @@ import java.util.stream.Stream;
 public class YearRunner {
 	
 	public static void main(String[] args) {
-		YearRunner runner = new YearRunner();
-		runner.runAll();
+//		new YearRunner().runAll("input.txt");
+		new YearRunner().runYear(2024);
 	}
 	
 	public void runAll() {
-		run(dayClasses().toList());
+		runAll(null);
+	}
+	
+	public void runAll(String file) {
+		run(dayClasses().toList(), file);
 	}
 	
 	public void runYear(int year) {
-		run(dayClasses().filter(c -> AbstractDay.year(c) == year).toList());
+		runYear(year, null);
 	}
 	
-	private void run(List<Class<? extends AbstractDay>> dayClasses) {
+	public void runYear(int year, String file) {
+		run(dayClasses().filter(c -> AbstractDay.year(c) == year).toList(), file);
+	}
+	
+	private void run(List<Class<? extends AbstractDay>> dayClasses, String file) {
 		int prevYear = 0;
 		for (Class<? extends AbstractDay> dayClass : dayClasses) {
 			try {
@@ -30,7 +38,7 @@ public class YearRunner {
 					System.out.println("\n" + OutputUtils.white("Year " + day.getYear()));
 				System.out.println(OutputUtils.white("  Day " + day.getDay()));
 				
-				new DayRunner(day).runForYear("example.txt");
+				new DayRunner(day).runForYear(file);
 				
 				prevYear = day.getYear();
 			} catch (Exception e) {

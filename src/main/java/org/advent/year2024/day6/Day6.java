@@ -4,6 +4,9 @@ import org.advent.common.Direction;
 import org.advent.common.Point;
 import org.advent.common.Rect;
 import org.advent.common.Utils;
+import org.advent.runner.AbstractDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -12,25 +15,41 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 
-public class Day6 {
+public class Day6 extends AbstractDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day6.class, "input.txt");
+		new DayRunner(new Day6()).run("input.txt");
+	}
+	
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 41, 6),
+				new ExpectedAnswers("input.txt", 4964, 1740)
+		);
+	}
+	
+	Rect bounds;
+	Set<Point> obstacles;
+	Point start;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
 		Map<Character, List<Point>> field = Point.readField(Utils.readLines(input));
-		Rect bounds = Point.bounds(field.get('.'));
-		Set<Point> obstacles = new HashSet<>(field.get('#'));
-		Point start = field.get('^').getFirst();
+		bounds = Point.bounds(field.get('.'));
+		obstacles = new HashSet<>(field.get('#'));
+		start = field.get('^').getFirst();
+	}
+	
+	@Override
+	public Object part1() {
+		return leaveFieldSteps(bounds, obstacles, new HashMap<>(), start, Direction.UP);
+	}
+	
+	@Override
+	public Object part2() {
 		Direction direction = Direction.UP;
-		
-		System.out.println("Answer 1: " + part1(bounds, obstacles, start, direction));
-		System.out.println("Answer 2: " + part2(bounds, obstacles, start, direction));
-	}
-	
-	private static long part1(Rect bounds, Set<Point> obstacles, Point start, Direction direction) {
-		return leaveFieldSteps(bounds, obstacles, new HashMap<>(), start, direction);
-	}
-	
-	private static long part2(Rect bounds, Set<Point> obstacles, Point start, Direction direction) {
 		Map<Point, Set<Direction>> visited = new HashMap<>();
 		Point current = start;
 		Set<Point> loopPlaces = new HashSet<>();

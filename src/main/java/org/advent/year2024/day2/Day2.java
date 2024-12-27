@@ -1,22 +1,36 @@
 package org.advent.year2024.day2;
 
 import org.advent.common.Utils;
+import org.advent.runner.AbstractDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.List;
-import java.util.Scanner;
 import java.util.stream.Stream;
 
-public class Day2 {
+public class Day2 extends AbstractDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day2.class, "input.txt");
-		List<String> lines = Utils.readLines(input);
-		
-		System.out.println("Answer 1: " + part1(lines));
-		System.out.println("Answer 2: " + part2(lines));
+		new DayRunner(new Day2()).run("input.txt");
 	}
 	
-	private static long part1(List<String> lines) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 2, 4),
+				new ExpectedAnswers("input.txt", 510, 553)
+		);
+	}
+	
+	List<String> lines;
+	
+	@Override
+	public void prepare(String file) {
+		lines = Utils.readLines(Utils.scanFileNearClass(getClass(), file));
+	}
+	
+	@Override
+	public Object part1() {
 		long count = 0;
 		for (String line : lines) {
 			int[] levels = Stream.of(line.split(" ")).mapToInt(Integer::parseInt).toArray();
@@ -35,7 +49,8 @@ public class Day2 {
 		return count;
 	}
 	
-	private static long part2(List<String> lines) {
+	@Override
+	public Object part2() {
 		long count = 0;
 		for (String line : lines) {
 			int[] levels = Stream.of(line.split(" ")).mapToInt(Integer::parseInt).toArray();
