@@ -4,7 +4,6 @@ import org.advent.common.Utils;
 import org.advent.runner.AbstractDay;
 import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
-import org.advent.year2024.day24.Day24;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -15,7 +14,7 @@ import java.util.stream.Collectors;
 public class Day11 extends AbstractDay {
 	
 	public static void main(String[] args) {
-		new DayRunner(new Day24()).run("input.txt");
+		new DayRunner(new Day11()).run("input.txt");
 	}
 	
 	@Override
