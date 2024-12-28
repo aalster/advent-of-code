@@ -78,15 +78,19 @@ public class OutputUtils {
 	public static final String CYAN_BACKGROUND_BRIGHT = "\033[0;106m";  // CYAN
 	public static final String WHITE_BACKGROUND_BRIGHT = "\033[0;107m";   // WHITE
 	
-	public static String white(String text) {
+	public static String white(Object text) {
 		return WHITE_BRIGHT + text + RESET;
 	}
 	
-	public static String red(String text) {
+	public static String green(Object text) {
+		return GREEN_BRIGHT + text + RESET;
+	}
+	
+	public static String red(Object text) {
 		return RED + text + RESET;
 	}
 	
-	public static String yellow(String text) {
+	public static String yellow(Object text) {
 		return YELLOW + text + RESET;
 	}
 	

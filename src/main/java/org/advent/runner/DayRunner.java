@@ -8,54 +8,56 @@ import java.util.function.Supplier;
 public class DayRunner {
 	private final AdventDay day;
 	
-	public void runAll() {
+	public boolean runAll() {
 		System.out.println(day);
-		day.expected().forEach(f -> run(f, true, true));
+		return day.expected().stream().allMatch(f -> run(f, true, true));
 	}
 	
-	public void run(String file) {
-		run(expected(file), false, false);
+	public boolean run(String file) {
+		return run(expected(file), false, false);
 	}
 	
-	void runForYear(String file) {
+	boolean runForYear(String file) {
 		if (file == null)
-			day.expected().forEach(f -> run(f, true, true));
+			return day.expected().stream().allMatch(f -> run(f, true, true));
 		else
-			run(expected(file), false, true);
+			return run(expected(file), false, true);
 	}
 	
-	public void run(String file, int part) {
+	public boolean run(String file, int part) {
 		ExpectedAnswers expected = expected(file);
 		expected = new ExpectedAnswers(expected.file(),
 				part == 1 ? expected.answer1() : ExpectedAnswers.IGNORE,
 				part == 2 ? expected.answer2() : ExpectedAnswers.IGNORE);
-		run(expected, false, false);
+		return run(expected, false, false);
 	}
 	
-	public void run(ExpectedAnswers expected, boolean printInfo, boolean pad) {
+	public boolean run(ExpectedAnswers expected, boolean printInfo, boolean pad) {
 		Timer timer = new Timer();
 		day.prepare(expected.file());
 		if (printInfo)
 			System.out.println("    " + OutputUtils.white(expected.file()) + " (prepare " + timer.stepFormatted() + "):");
 		
-		runPart(expected.answer1(), day::part1, 1, timer, pad ? 6 : 0);
-		runPart(expected.answer2(), day::part2, 2, timer, pad ? 6 : 0);
+		return runPart(expected.answer1(), day::part1, 1, timer, pad ? 6 : 0)
+				&& runPart(expected.answer2(), day::part2, 2, timer, pad ? 6 : 0);
 	}
 	
-	private void runPart(Object expected, Supplier<Object> part, int partNumber, Timer timer, int pad) {
+	private boolean runPart(Object expected, Supplier<Object> part, int partNumber, Timer timer, int pad) {
 		if (expected == ExpectedAnswers.IGNORE)
-			return;
+			return true;
 		try {
 			Object answer = part.get();
 			String time = timer.stepFormatted(7);
 			boolean passes = passes(expected, answer);
 			System.out.println(" ".repeat(pad) + "Answer " + partNumber + " " + time + ": "
-					+ (passes ? "✅" : "❌") + " " + OutputUtils.white("" + answer)
+					+ (passes ? "✅" : "❌") + " " + OutputUtils.white(answer)
 					+ (expected != null && !passes ? " Expected: " + expected : ""));
+			return passes;
 		} catch (Exception e) {
 			String time = timer.stepFormatted(7);
 			System.out.println(" ".repeat(pad) + "Answer " + partNumber + " " + time + ": "
 					+ "❌ " + OutputUtils.red("Error: " + e.getMessage()));
+			return false;
 		}
 	}
 	
