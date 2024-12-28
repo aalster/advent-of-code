@@ -2,32 +2,50 @@ package org.advent.year2023.day24;
 
 import org.advent.common.Pair;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
-public class Day24 {
-	static final double EPS = 0.00001;
-	static final TestData example = new TestData("example.txt", 7, 27);
-	static final TestData input = new TestData("input.txt", 200000000000000L, 400000000000000L);
-	static final TestData test = input;
+public class Day24 extends AdventDay {
 	
 	public static void main(String[] args) {
-//		ExprEvaluator util = new ExprEvaluator();
-//		IExpr result = util.eval("Solve({2*x == 5 + 4*y, x + y == 10}, {x, y})");
-//		System.out.println(result.toString());
-//		if (true)
-//			return;
-		
-		Scanner input = Utils.scanFileNearClass(Day24.class, test.file());
-		List<String> lines = Utils.readLines(input);
-		
-		System.out.println("Answer 1: " + part1(lines, test.min(), test.max()));
-		System.out.println("Answer 2: " + part2(lines));
+		new DayRunner(new Day24()).runAll();
 	}
 	
-	private static long part1(List<String> lines, long min, long max) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 2, 47),
+				new ExpectedAnswers("input.txt", 15558, 765636044333842L)
+		);
+	}
+	
+	List<String> lines;
+	long min;
+	long max;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		lines = Utils.readLines(input);
+		min = switch (file) {
+			case "example.txt" -> 7;
+			case "input.txt" -> 200000000000000L;
+			default -> throw new IllegalStateException("Unexpected value: " + file);
+		};
+		max = switch (file) {
+			case "example.txt" -> 27;
+			case "input.txt" -> 400000000000000L;
+			default -> throw new IllegalStateException("Unexpected value: " + file);
+		};
+	}
+	
+	@Override
+	public Object part1() {
 		Hailstone[] hailstones = lines.stream().map(Hailstone::parse).toArray(Hailstone[]::new);
 		long result = 0;
 		
@@ -49,7 +67,8 @@ public class Day24 {
 	}
 	
 	// Взято с https://github.com/SimonBaars/AdventOfCode-Java
-	private static long part2(List<String> lines) {
+	@Override
+	public Object part2() {
 		Hailstone3D[] hailstones = lines.stream().map(Hailstone3D::parse).toArray(Hailstone3D[]::new);
 		
 		int attempts = 1;
@@ -70,7 +89,7 @@ public class Day24 {
 		return 0;
 	}
 	
-	static void findRockPosition(Hailstone3D h1, Hailstone3D h2, Hailstone3D h3) {
+	void findRockPosition(Hailstone3D h1, Hailstone3D h2, Hailstone3D h3) {
 		System.out.println("\nVisit https://live.sympy.org/\n");
 		Hailstone3D[] hailstones = new Hailstone3D[] {h1, h2, h3};
 		for (int i = 0; i < hailstones.length; i++) {
@@ -196,8 +215,5 @@ public class Day24 {
 			double[] array = Arrays.stream(line.split(",")).mapToDouble(Double::parseDouble).toArray();
 			return new DoublePoint3D(array[0], array[1], array[2]);
 		}
-	}
-	
-	record TestData(String file, long min, long max) {
 	}
 }

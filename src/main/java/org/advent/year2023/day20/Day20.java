@@ -4,36 +4,42 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.advent.common.NumbersAdventUtils;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 import org.apache.commons.lang3.StringUtils;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Day20 {
+public class Day20 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day20.class, "input.txt");
-		List<String> lines = new ArrayList<>();
-		while (input.hasNext()) {
-			lines.add(input.nextLine());
-		}
-		
-		System.out.println("Answer 1: " + part1(parseModules(lines)));
-		System.out.println("Answer 2: " + part2(parseModules(lines)));
+		new DayRunner(new Day20()).runAll();
 	}
 	
-	private static Map<String, Module> parseModules(List<String> lines) {
-		Map<String, Module> modules = new HashMap<>();
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 32000000, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("example2.txt", 11687500, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("input.txt", 861743850, 247023644760071L)
+		);
+	}
+	
+	Map<String, Module> modules;
+	
+	@Override
+	public void prepare(String file) {
+		List<String> lines = Utils.readLines(Utils.scanFileNearClass(getClass(), file));
+		modules = new HashMap<>();
 		for (String line : lines) {
 			Module module = Module.parse(line);
 			modules.put(module.getName(), module);
@@ -43,10 +49,10 @@ public class Day20 {
 		modules.put(button.getName(), button);
 		modules.put(output.getName(), output);
 		modules.values().forEach(m -> m.init(modules.values()));
-		return modules;
 	}
 	
-	private static long part1(Map<String, Module> modules) {
+	@Override
+	public Object part1() {
 		long lowPulses = 0;
 		long highPulses = 0;
 		
@@ -65,7 +71,8 @@ public class Day20 {
 		return lowPulses * highPulses;
 	}
 	
-	private static BigInteger part2(Map<String, Module> modules) {
+	@Override
+	public Object part2() {
 		ConjunctionModule endConjunction = modules.values().stream()
 				.filter(m -> m instanceof ConjunctionModule)
 				.filter(m -> m.getDestinations().contains("rx"))
@@ -85,9 +92,6 @@ public class Day20 {
 				pulses = pulses.stream()
 						.flatMap(p -> modules.getOrDefault(p.destination(), OutputModule.INSTANCE).nextPulses(p))
 						.toList();
-				
-//				if (pulses.stream().anyMatch(p -> !p.high() && p.destination().equals("rx")))
-//					return n;
 				
 				for (Map.Entry<String, Boolean> e : endConjunction.lastSignals.entrySet()) {
 					if (e.getValue() && endConjunctionInputRepeats.get(e.getKey()) == 0) {

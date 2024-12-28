@@ -2,6 +2,9 @@ package org.advent.year2023.day19;
 
 import org.advent.common.Pair;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -15,11 +18,27 @@ import java.util.Scanner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Day19 {
+public class Day19 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day19.class, "input.txt");
-		Map<String, Workflow> workflows = new HashMap<>();
+		new DayRunner(new Day19()).runAll();
+	}
+	
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 19114, 167409079868000L),
+				new ExpectedAnswers("input.txt", 374873, 122112157518711L)
+		);
+	}
+	
+	Map<String, Workflow> workflows;
+	List<Part> parts;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		workflows = new HashMap<>();
 		while (input.hasNext()) {
 			String line = input.nextLine();
 			if (line.isEmpty())
@@ -27,25 +46,19 @@ public class Day19 {
 			Workflow workflow = Workflow.parse(line);
 			workflows.put(workflow.name(), workflow);
 		}
-		List<Part> parts = new ArrayList<>();
-		while (input.hasNext()) {
-			parts.add(Part.parse(input.nextLine()));
-		}
-		
-		System.out.println("Answer 1: " + part1(workflows, parts));
-		System.out.println("Answer 2: " + part2(workflows));
+		parts = Utils.readLines(input).stream().map(Part::parse).toList();
 	}
 	
-	private static long part1(Map<String, Workflow> workflows, List<Part> parts) {
-		long result = 0;
-		for (Part part : parts) {
-			if (isAccepted(part, workflows))
-				result += Arrays.stream(part.values).sum();
-		}
-		return result;
+	@Override
+	public Object part1() {
+		return parts.stream()
+				.filter(part -> isAccepted(part, workflows))
+				.mapToLong(part -> Arrays.stream(part.values).sum())
+				.sum();
 	}
 	
-	private static BigInteger part2(Map<String, Workflow> workflows) {
+	@Override
+	public Object part2() {
 		PartRange initial = new PartRange(new Range[]{new Range(1, 4000), new Range(1, 4000), new Range(1, 4000), new Range(1, 4000)});
 		List<PartRange> accepted = new ArrayList<>();
 		List<Pair<PartRange, String>> parts = List.of(Pair.of(initial, "in"));
@@ -60,7 +73,7 @@ public class Day19 {
 		return accepted.stream().map(PartRange::combinations).reduce(BigInteger.ZERO, BigInteger::add);
 	}
 	
-	static boolean isAccepted(Part part, Map<String, Workflow> workflows) {
+	boolean isAccepted(Part part, Map<String, Workflow> workflows) {
 		String name = "in";
 		while (true) {
 			name = workflows.get(name).run(part);

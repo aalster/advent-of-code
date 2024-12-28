@@ -3,6 +3,9 @@ package org.advent.year2023.day22;
 import org.advent.common.Point3D;
 import org.advent.common.Rect;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -13,17 +16,30 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class Day22 {
+public class Day22 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day22.class, "input.txt");
-		List<Brick> bricks = Utils.readLines(input).stream().map(Brick::parse).toList();
-		
-		System.out.println("Answer 1: " + part1(bricks));
-		System.out.println("Answer 2: " + part2(bricks));
+		new DayRunner(new Day22()).runAll();
 	}
 	
-	private static long part1(List<Brick> bricks) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 5, 7),
+				new ExpectedAnswers("input.txt", 512, 98167)
+		);
+	}
+	
+	List<Brick> bricks;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		bricks = Utils.readLines(input).stream().map(Brick::parse).toList();
+	}
+	
+	@Override
+	public Object part1() {
 		BrickRelations relations = brickRelations(bricks);
 		
 		Set<String> singleSupports = relations.supportedBy().values().stream()
@@ -33,7 +49,8 @@ public class Day22 {
 		return bricks.stream().filter(brick -> !singleSupports.contains(brick.name())).count();
 	}
 	
-	private static long part2(List<Brick> bricks) {
+	@Override
+	public Object part2() {
 		BrickRelations relations = brickRelations(bricks);
 		
 		Set<String> singleSupports = relations.supportedBy().values().stream()
@@ -46,7 +63,7 @@ public class Day22 {
 				.sum();
 	}
 	
-	private static BrickRelations brickRelations(List<Brick> bricks) {
+	BrickRelations brickRelations(List<Brick> bricks) {
 		List<Brick> flying = new ArrayList<>(bricks);
 		List<Brick> settled = new ArrayList<>();
 		Map<String, List<String>> supports = new HashMap<>();
@@ -68,7 +85,7 @@ public class Day22 {
 		return new BrickRelations(supports, supportedBy);
 	}
 	
-	static int countFallen(String brick, BrickRelations relations) {
+	int countFallen(String brick, BrickRelations relations) {
 		Set<String> fallen = new HashSet<>();
 		Set<String> current = Set.of(brick);
 		
@@ -82,14 +99,14 @@ public class Day22 {
 		return fallen.size() - 1;
 	}
 	
-	static List<Brick> findSupports(List<Brick> settled, Brick lowest) {
+	List<Brick> findSupports(List<Brick> settled, Brick lowest) {
 		Rect shadow = lowest.shadow();
 		List<Brick> intersections = settled.stream().filter(b -> b.shadow().intersectsInclusive(shadow)).toList();
 		int maxZ = intersections.stream().mapToInt(Brick::topZ).max().orElse(0);
 		return intersections.stream().filter(b -> b.topZ() == maxZ).toList();
 	}
 	
-	static List<Brick> lowest(List<Brick> bricks) {
+	List<Brick> lowest(List<Brick> bricks) {
 		List<Brick> lowest = new ArrayList<>();
 		int minZ = Integer.MAX_VALUE;
 		for (Brick brick : bricks) {

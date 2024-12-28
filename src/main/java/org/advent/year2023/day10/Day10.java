@@ -4,39 +4,54 @@ import org.advent.common.Direction;
 import org.advent.common.Pair;
 import org.advent.common.Point;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Day10 {
+public class Day10 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day10.class, "input.txt");
-		List<String> lines = new ArrayList<>();
-		while (input.hasNext()) {
-			lines.add(input.nextLine());
-		}
-		
-		System.out.println("Answer 1: " + part1(lines));
-		System.out.println("Answer 2: " + part2(lines));
+		new DayRunner(new Day10()).runAll();
 	}
 	
-	private static long part1(List<String> lines) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 4, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("example2.txt", 8, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("example3.txt", ExpectedAnswers.IGNORE, 4),
+				new ExpectedAnswers("example4.txt", ExpectedAnswers.IGNORE, 8),
+				new ExpectedAnswers("example5.txt", ExpectedAnswers.IGNORE, 10),
+				new ExpectedAnswers("input.txt", 6820, 337)
+		);
+	}
+	
+	List<String> lines;
+	
+	@Override
+	public void prepare(String file) {
+		lines = Utils.readLines(Utils.scanFileNearClass(getClass(), file));
+	}
+	
+	@Override
+	public Object part1() {
 		Field field = Field.parse(lines);
 		Map<Point, Integer> steps = walkField(field);
 		return steps.values().stream().mapToInt(i -> i).max().orElse(0);
 	}
 	
-	private static long part2(List<String> lines) {
+	@Override
+	public Object part2() {
 		Field field = Field.parse(lines);
 		Set<Point> loop = walkField(field).keySet();
 		Map<Point, Cell> fieldCells = field.field();
@@ -86,7 +101,7 @@ public class Day10 {
 		return enclosedCells.size();
 	}
 	
-	private static Map<Point, Integer> walkField(Field field) {
+	Map<Point, Integer> walkField(Field field) {
 		Cell start = field.start();
 		Set<Cell> cells = Set.of(start);
 		Map<Point, Integer> steps = new HashMap<>(Map.of(start.position(), 0));
@@ -108,18 +123,6 @@ public class Day10 {
 					.filter(Objects::nonNull)
 					.peek(cell -> steps.put(cell.position(), step))
 					.collect(Collectors.toSet());
-		}
-		
-		void print(Set<Point> highlighted) {
-			int maxX = Point.maxX(field.keySet());
-			int maxY = Point.maxY(field.keySet());
-			for (int y = 0; y <= maxY; y++) {
-				for (int x = 0; x <= maxX; x++) {
-					Point position = new Point(x, y);
-					System.out.print(highlighted.contains(position) ? 'X' : field.get(position).symbol());
-				}
-				System.out.println();
-			}
 		}
 		
 		static Field parse(List<String> lines) {
@@ -156,7 +159,7 @@ public class Day10 {
 		}
 	}
 	
-	private record Cell(Point position, char symbol, Set<Direction> directions) {
+	record Cell(Point position, char symbol, Set<Direction> directions) {
 		
 		static Cell parse(Point position, char symbol) {
 			Set<Direction> directions = switch (symbol) {
@@ -170,9 +173,5 @@ public class Day10 {
 			};
 			return new Cell(position, symbol, directions);
 		}
-	}
-	
-	private enum Location {
-		OUT, IN, ON_LOOP
 	}
 }

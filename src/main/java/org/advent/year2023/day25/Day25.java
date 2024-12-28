@@ -2,6 +2,9 @@ package org.advent.year2023.day25;
 
 import org.advent.common.Pair;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
@@ -18,16 +21,30 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Day25 {
+public class Day25 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day25.class, "input.txt");
-		List<String> lines = Utils.readLines(input);
-		
-		System.out.println("Answer 1: " + part1(lines));
+		new DayRunner(new Day25()).runAll();
 	}
 	
-	private static long part1(List<String> lines) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 54, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("input.txt", 591890, ExpectedAnswers.IGNORE)
+		);
+	}
+	
+	List<String> lines;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		lines = Utils.readLines(input);
+	}
+	
+	@Override
+	public Object part1() {
 		Map<String, Set<String>> connections = new HashMap<>();
 		for (String line : lines) {
 			String[] split = line.split(":");
@@ -73,7 +90,12 @@ public class Day25 {
 		return 0;
 	}
 	
-	static Map<String, Set<String>> removeConnection(Map<String, Set<String>> connections, Pair<String, String> remove) {
+	@Override
+	public Object part2() {
+		return null;
+	}
+	
+	Map<String, Set<String>> removeConnection(Map<String, Set<String>> connections, Pair<String, String> remove) {
 		Map<String, Set<String>> result = new HashMap<>();
 		for (Map.Entry<String, Set<String>> entry : connections.entrySet())
 			result.put(entry.getKey(), new HashSet<>(entry.getValue()));
@@ -82,7 +104,7 @@ public class Day25 {
 		return result;
 	}
 	
-	static List<Set<String>> splitByGroups(Map<String, Set<String>> connections) {
+	List<Set<String>> splitByGroups(Map<String, Set<String>> connections) {
 		Set<String> groupsToCheck = new HashSet<>(connections.keySet());
 		List<Set<String>> groups = new ArrayList<>();
 		
@@ -102,7 +124,7 @@ public class Day25 {
 		return groups;
 	}
 	
-	static Path shortestPath(Map<String, Set<String>> connections, String start, String end) {
+	Path shortestPath(Map<String, Set<String>> connections, String start, String end) {
 		List<Path> currents = List.of(new Path(start, Set.of()));
 		while (!currents.isEmpty()) {
 			Optional<Path> result = currents.stream().filter(p -> p.current.equals(end)).findAny();

@@ -5,18 +5,38 @@ import org.advent.common.Pair;
 import org.advent.common.Point;
 import org.advent.common.Rect;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Day17 {
+public class Day17 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day17.class, "input.txt");
-		Map<Point, Integer> field = new HashMap<>();
+		new DayRunner(new Day17()).runAll();
+	}
+	
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 102, 94),
+				new ExpectedAnswers("example2.txt", ExpectedAnswers.IGNORE, 71),
+				new ExpectedAnswers("input.txt", 694, 829)
+		);
+	}
+	
+	Map<Point, Integer> field;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		field = new HashMap<>();
 		int y = 0;
 		while (input.hasNext()) {
 			String line = input.nextLine();
@@ -24,20 +44,19 @@ public class Day17 {
 				field.put(new Point(x, y), line.charAt(x) - '0');
 			y++;
 		}
-		
-		System.out.println("Answer 1: " + part1(field));
-		System.out.println("Answer 2: " + part2(field));
 	}
 	
-	private static long part1(Map<Point, Integer> field) {
+	@Override
+	public Object part1() {
 		return solve(field, 0, 3);
 	}
 	
-	private static long part2(Map<Point, Integer> field) {
+	@Override
+	public Object part2() {
 		return solve(field, 4, 10);
 	}
 	
-	private static long solve(Map<Point, Integer> field, int minForwardSteps, int maxForwardSteps) {
+	long solve(Map<Point, Integer> field, int minForwardSteps, int maxForwardSteps) {
 		Point start = new Point(0, 0);
 		Point end = new Point(Point.maxX(field.keySet()), Point.maxY(field.keySet()));
 		Rect bounds = new Rect(start, end);

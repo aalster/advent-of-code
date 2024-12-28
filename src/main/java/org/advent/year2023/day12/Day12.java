@@ -1,50 +1,61 @@
 package org.advent.year2023.day12;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 import org.apache.commons.lang3.ArrayUtils;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Scanner;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class Day12 {
+public class Day12 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day12.class, "input.txt");
-		List<String> lines = new ArrayList<>();
-		while (input.hasNext()) {
-			lines.add(input.nextLine());
-		}
-		
-		System.out.println("Answer 1: " + part1(lines));
-		System.out.println("Answer 2: " + part2(lines));
+		new DayRunner(new Day12()).runAll();
 	}
 	
-	private static long part1(List<String> lines) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 21, 525152),
+				new ExpectedAnswers("input.txt", 7191, 6512849198636L)
+		);
+	}
+	
+	List<String> lines;
+	
+	@Override
+	public void prepare(String file) {
+		lines = Utils.readLines(Utils.scanFileNearClass(getClass(), file));
+	}
+	
+	@Override
+	public Object part1() {
 		return solve(lines, 1);
 	}
 	
-	private static long part2(List<String> lines) {
+	@Override
+	public Object part2() {
 		return solve(lines, 5);
 	}
 	
-	private static long solve(List<String> lines, int copies) {
+	long solve(List<String> lines, int copies) {
 		long result = 0;
 		long start = System.currentTimeMillis();
 		int i = 0;
 		for (String line : lines) {
 			ConditionsRecord record = ConditionsRecord.parse(line, copies);
 			long variants = record.countVariants();
-			System.out.println(i++ + " (" + (System.currentTimeMillis() - start) + ") - " + line + ": " + variants);
+//			System.out.println(i++ + " (" + (System.currentTimeMillis() - start) + ") - " + line + ": " + variants);
 			result += variants;
 		}
 		return result;
 	}
 	
-	private record ConditionsRecord(int[] conditions, List<Integer> sizes, int nonEmptyCount, int sizesSum) {
+	record ConditionsRecord(int[] conditions, List<Integer> sizes, int nonEmptyCount, int sizesSum) {
 		static int EMPTY = 0;
 		static int DAMAGED = 1;
 		static int UNKNOWN = 2;
@@ -92,10 +103,8 @@ public class Day12 {
 					return sizes.size() == 1 ? 1 : 0;
 				
 				int[] newCondition = ArrayUtils.subarray(conditions, firstDamaged + nextSize + 1, conditions.length);
-				ConditionsRecord invariant = new ConditionsRecord(newCondition, sizes.subList(1, sizes.size()),
-						nonEmptyCount - nextSize, sizesSum - nextSize);
-//				System.out.println("Invariant: " + this + " -> " + invariant);
-				return invariant.countVariants();
+				return new ConditionsRecord(newCondition, sizes.subList(1, sizes.size()),
+						nonEmptyCount - nextSize, sizesSum - nextSize).countVariants();
 			}
 			
 			int[] left = ArrayUtils.clone(conditions);
@@ -106,7 +115,7 @@ public class Day12 {
 					+ new ConditionsRecord(right, sizes, nonEmptyCount, sizesSum).countVariants();
 		}
 		
-		private long splitAndCount(int splitCondition) {
+		long splitAndCount(int splitCondition) {
 			int[] conditionsLeft = ArrayUtils.subarray(conditions, 0, splitCondition);
 			int[] conditionsRight = ArrayUtils.subarray(conditions, splitCondition + 1, conditions.length);
 			long result = 0;
@@ -118,12 +127,6 @@ public class Day12 {
 				result += left.countVariants() * right.countVariants();
 			}
 			return result;
-		}
-		
-		@Override
-		public String toString() {
-			return Arrays.stream(conditions).mapToObj(v -> v == EMPTY ? "." : v == DAMAGED ? "#" : "?").collect(Collectors.joining())
-					+ " " + sizes.stream().map(String::valueOf).collect(Collectors.joining(", "));
 		}
 		
 		static ConditionsRecord parse(String line, int copies) {

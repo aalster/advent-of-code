@@ -4,6 +4,9 @@ import org.advent.common.BigPoint;
 import org.advent.common.Direction;
 import org.advent.common.Pair;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -13,11 +16,27 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class Day11 {
+public class Day11 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day11.class, "input.txt");
-		Set<BigPoint> galaxies = new HashSet<>();
+		new DayRunner(new Day11()).runAll();
+	}
+	
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 374, 8410),
+				new ExpectedAnswers("input.txt", 9591768, 746962097860L)
+		);
+	}
+	
+	Set<BigPoint> galaxies;
+	int expand;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		galaxies = new HashSet<>();
 		int y = 0;
 		while (input.hasNext()) {
 			String line = input.nextLine();
@@ -27,20 +46,24 @@ public class Day11 {
 			}
 			y++;
 		}
-		
-		System.out.println("Answer 1: " + part1(galaxies));
-		System.out.println("Answer 2: " + part2(galaxies));
+		expand = switch (file) {
+			case "example.txt" -> 100;
+			case "input.txt" -> 1_000_000;
+			default -> throw new IllegalStateException("Unexpected value: " + file);
+		};
 	}
 	
-	private static BigInteger part1(Set<BigPoint> galaxies) {
+	@Override
+	public Object part1() {
 		return solve(expand(galaxies, BigInteger.valueOf(2)));
 	}
 	
-	private static BigInteger part2(Set<BigPoint> galaxies) {
-		return solve(expand(galaxies, BigInteger.valueOf(1_000_000)));
+	@Override
+	public Object part2() {
+		return solve(expand(galaxies, BigInteger.valueOf(expand)));
 	}
 	
-	private static BigInteger solve(Set<BigPoint> galaxies) {
+	BigInteger solve(Set<BigPoint> galaxies) {
 		galaxies = new HashSet<>(galaxies);
 		List<Pair<BigPoint, BigPoint>> pairs = new ArrayList<>();
 		while (!galaxies.isEmpty()) {
@@ -54,7 +77,7 @@ public class Day11 {
 		return result;
 	}
 	
-	private static Set<BigPoint> expand(Set<BigPoint> galaxies, BigInteger expansion) {
+	Set<BigPoint> expand(Set<BigPoint> galaxies, BigInteger expansion) {
 		BigInteger expansionDelta = expansion.subtract(BigInteger.ONE);
 		
 		BigInteger x = BigPoint.maxX(galaxies);
@@ -79,5 +102,4 @@ public class Day11 {
 		}
 		return galaxies;
 	}
-	
 }

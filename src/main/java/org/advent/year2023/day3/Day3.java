@@ -3,6 +3,9 @@ package org.advent.year2023.day3;
 import org.advent.common.DirectionExt;
 import org.advent.common.Point;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,21 +17,30 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Day3 {
+public class Day3 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day3.class, "input.txt");
-		List<String> lines = new ArrayList<>();
-		while (input.hasNext()) {
-			lines.add(input.nextLine());
-		}
-		char[][] field = lines.stream().map(String::toCharArray).toArray(char[][]::new);
-		
-		System.out.println("Answer 1: " + part1(field));
-		System.out.println("Answer 2: " + part2(field));
+		new DayRunner(new Day3()).runAll();
 	}
 	
-	private static long part1(char[][] field) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 4361, 467835),
+				new ExpectedAnswers("input.txt", 554003, 87263515)
+		);
+	}
+	
+	char[][] field;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		field = Utils.readLines(input).stream().map(String::toCharArray).toArray(char[][]::new);
+	}
+	
+	@Override
+	public Object part1() {
 		List<PartNumber> numbers = parseNumbers(field);
 		List<Symbol> symbols = parseSymbols(field);
 		
@@ -42,7 +54,8 @@ public class Day3 {
 				.sum();
 	}
 	
-	private static long part2(char[][] field) {
+	@Override
+	public Object part2() {
 		List<PartNumber> numbers = parseNumbers(field);
 		List<Symbol> symbols = parseSymbols(field);
 		
@@ -54,7 +67,7 @@ public class Day3 {
 				.sum();
 	}
 	
-	private static List<PartNumber> parseNumbers(char[][] field) {
+	List<PartNumber> parseNumbers(char[][] field) {
 		List<PartNumber> numbers = new ArrayList<>();
 		
 		for (int y = 0; y < field.length; y++) {
@@ -82,7 +95,7 @@ public class Day3 {
 		return numbers;
 	}
 	
-	private static List<Symbol> parseSymbols(char[][] field) {
+	List<Symbol> parseSymbols(char[][] field) {
 		List<Symbol> symbols = new ArrayList<>();
 		
 		for (int y = 0; y < field.length; y++) {
@@ -97,20 +110,20 @@ public class Day3 {
 		return symbols;
 	}
 	
-	private record PartNumber(long value, Set<Point> position) {
+	record PartNumber(long value, Set<Point> position) {
 		
-		public boolean containsAny(Collection<Point> points) {
+		boolean containsAny(Collection<Point> points) {
 			return points.stream().anyMatch(position::contains);
 		}
 	}
 	
-	private record Symbol(char value, Point position) {
+	record Symbol(char value, Point position) {
 		
-		public Stream<Point> adjacentPoints() {
+		Stream<Point> adjacentPoints() {
 			return Arrays.stream(DirectionExt.values()).map(d -> d.shift(position));
 		}
 
-		public List<PartNumber> adjacentParts(List<PartNumber> numbers) {
+		List<PartNumber> adjacentParts(List<PartNumber> numbers) {
 			Set<Point> adjacentPoints = adjacentPoints().collect(Collectors.toSet());
 			return numbers.stream().filter(n -> n.containsAny(adjacentPoints)).toList();
 		}

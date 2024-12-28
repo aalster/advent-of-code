@@ -1,29 +1,47 @@
 package org.advent.year2023.day15;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
-public class Day15 {
+public class Day15 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day15.class, "input.txt");
-		String line = input.nextLine();
-		
-		System.out.println("Answer 1: " + part1(line));
-		System.out.println("Answer 2: " + part2(line));
+		new DayRunner(new Day15()).runAll();
 	}
 	
-	private static long part1(String line) {
-		return Arrays.stream(line.split(",")).mapToLong(Day15::hash).sum();
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 1320, 145),
+				new ExpectedAnswers("input.txt", 506869, 271384)
+		);
 	}
 	
-	private static long part2(String line) {
+	String line;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		line = input.nextLine();
+	}
+	
+	@Override
+	public Object part1() {
+		return Arrays.stream(line.split(",")).mapToLong(this::hash).sum();
+	}
+	
+	@Override
+	public Object part2() {
 		Map<Integer, Map<String, Integer>> boxes = new HashMap<>();
 		Arrays.stream(line.split(",")).forEach(value -> {
 			String label = StringUtils.substringBefore(StringUtils.substringBefore(value, "="), "-");
@@ -49,7 +67,7 @@ public class Day15 {
 		return result;
 	}
 	
-	private static int hash(String value) {
+	int hash(String value) {
 		int hash = 0;
 		for (int i = 0; i < value.length(); i++) {
 			hash += value.charAt(i);

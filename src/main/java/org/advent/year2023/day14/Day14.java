@@ -2,38 +2,48 @@ package org.advent.year2023.day14;
 
 import org.advent.common.Point;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.IntSummaryStatistics;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Day14 {
+public class Day14 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day14.class, "input.txt");
-		List<String> lines = new ArrayList<>();
-		while (input.hasNext()) {
-			lines.add(input.nextLine());
-		}
-		
-		System.out.println("Answer 1: " + part1(lines));
-		System.out.println("Answer 2: " + part2(lines));
+		new DayRunner(new Day14()).runAll();
 	}
 	
-	private static long part1(List<String> lines) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 136, 64),
+				new ExpectedAnswers("input.txt", 110779, 86069)
+		);
+	}
+	
+	List<String> lines;
+	
+	@Override
+	public void prepare(String file) {
+		lines = Utils.readLines(Utils.scanFileNearClass(getClass(), file));
+	}
+	
+	@Override
+	public Object part1() {
 		return Field.parse(lines).tiltUp().countLoadUp();
 	}
 	
-	private static long part2(List<String> lines) {
+	@Override
+	public Object part2() {
 		Field field = Field.parse(lines);
 		int totalCycles = 1_000_000_000;
 		Map<Field, Integer> cyclesInfo = new LinkedHashMap<>();
@@ -41,7 +51,6 @@ public class Day14 {
 			field = field.cycle();
 			Integer prev = cyclesInfo.put(field, i);
 			if (prev != null && i < totalCycles / 2) {
-				System.out.println("Repeating pattern: " + prev + " = " + i);
 				int repeatDistance = i - prev;
 				i += repeatDistance * ((totalCycles - i) / repeatDistance - 1);
 			}
@@ -49,7 +58,7 @@ public class Day14 {
 		return field.countLoadUp();
 	}
 	
-	private record Field(Set<Point> squares, Set<Point> spheres) {
+	record Field(Set<Point> squares, Set<Point> spheres) {
 		
 		Field cycle() {
 			return tiltUp().rotateRight()
@@ -92,19 +101,6 @@ public class Day14 {
 					.mapToLong(Point::y)
 					.map(y -> maxY - y + 1)
 					.sum();
-		}
-		
-		void print() {
-			IntSummaryStatistics xStats = Stream.of(squares, spheres).flatMap(Collection::stream).mapToInt(Point::x).summaryStatistics();
-			IntSummaryStatistics yStats = Stream.of(squares, spheres).flatMap(Collection::stream).mapToInt(Point::y).summaryStatistics();
-			System.out.println();
-			for (int y = yStats.getMin(); y <= yStats.getMax(); y++) {
-				for (int x = xStats.getMin(); x <= xStats.getMax(); x++) {
-					Point point = new Point(x, y);
-					System.out.print(squares.contains(point) ? '#' : spheres.contains(point) ? 'O' : '.');
-				}
-				System.out.println();
-			}
 		}
 		
 		static Field parse(List<String> lines) {

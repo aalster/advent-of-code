@@ -10,7 +10,9 @@ public class DayRunner {
 	
 	public boolean runAll() {
 		System.out.println(day);
-		return day.expected().stream().allMatch(f -> run(f, true, true));
+		return day.expected().stream()
+				.map(f -> run(f, true, true))
+				.reduce(true, (a, b) -> a && b);
 	}
 	
 	public boolean run(String file) {
@@ -18,10 +20,12 @@ public class DayRunner {
 	}
 	
 	boolean runForYear(String file) {
-		if (file == null)
-			return day.expected().stream().allMatch(f -> run(f, true, true));
-		else
+		if (file != null)
 			return run(expected(file), false, true);
+		
+		return day.expected().stream()
+				.map(f -> run(f, true, true))
+				.reduce(true, (a, b) -> a && b);
 	}
 	
 	public boolean run(String file, int part) {
@@ -38,8 +42,9 @@ public class DayRunner {
 		if (printInfo)
 			System.out.println("    " + OutputUtils.white(expected.file()) + " (prepare " + timer.stepFormatted() + "):");
 		
-		return runPart(expected.answer1(), day::part1, 1, timer, pad ? 6 : 0)
-				&& runPart(expected.answer2(), day::part2, 2, timer, pad ? 6 : 0);
+		boolean part1Passed = runPart(expected.answer1(), day::part1, 1, timer, pad ? 6 : 0);
+		boolean part2Passed = runPart(expected.answer2(), day::part2, 2, timer, pad ? 6 : 0);
+		return part1Passed && part2Passed;
 	}
 	
 	private boolean runPart(Object expected, Supplier<Object> part, int partNumber, Timer timer, int pad) {

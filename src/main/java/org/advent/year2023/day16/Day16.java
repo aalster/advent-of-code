@@ -3,37 +3,48 @@ package org.advent.year2023.day16;
 import org.advent.common.Direction;
 import org.advent.common.Point;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Day16 {
+public class Day16 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day16.class, "input.txt");
-		List<String> lines = new ArrayList<>();
-		while (input.hasNext()) {
-			lines.add(input.nextLine());
-		}
-		
-		System.out.println("Answer 1: " + part1(lines));
-		System.out.println("Answer 2: " + part2(lines));
+		new DayRunner(new Day16()).runAll();
 	}
 	
-	private static long part1(List<String> lines) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 46, 51),
+				new ExpectedAnswers("input.txt", 7951, 8148)
+		);
+	}
+	
+	List<String> lines;
+	
+	@Override
+	public void prepare(String file) {
+		lines = Utils.readLines(Utils.scanFileNearClass(getClass(), file));
+	}
+	
+	@Override
+	public Object part1() {
 		Field field = Field.parse(lines);
 		return countLights(field, new Light(new Point(0, 0), Direction.RIGHT));
 	}
 	
-	private static long part2(List<String> lines) {
+	@Override
+	public Object part2() {
 		Field field = Field.parse(lines);
 		long maxLightsCount = 0;
 		for (int x = 0; x <= field.maxX(); x++) {
@@ -49,7 +60,7 @@ public class Day16 {
 		return maxLightsCount;
 	}
 	
-	private static long countLights(Field field, Light start) {
+	long countLights(Field field, Light start) {
 		Set<Light> currentLights = Set.of(start);
 		Set<Light> allLights = new HashSet<>(currentLights);
 		while (!currentLights.isEmpty()) {
@@ -63,13 +74,11 @@ public class Day16 {
 	
 	record Field(Map<Point, Mirror> field, int maxX, int maxY) {
 		
-		private Stream<Light> next(Collection<Light> lights) {
-			return lights.stream()
-					.flatMap(this::next)
-					.filter(l -> inBounds(l.position()));
+		Stream<Light> next(Collection<Light> lights) {
+			return lights.stream().flatMap(this::next).filter(l -> inBounds(l.position()));
 		}
 		
-		private Stream<Light> next(Light light) {
+		Stream<Light> next(Light light) {
 			Mirror mirror = field.get(light.position());
 			return mirror == null
 					? Stream.of(new Light(light.position().shift(light.direction()), light.direction()))

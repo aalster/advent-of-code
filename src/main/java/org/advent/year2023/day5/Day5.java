@@ -1,6 +1,9 @@
 package org.advent.year2023.day5;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -11,14 +14,30 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.stream.Stream;
 
-public class Day5 {
-	
-	public static final String STARTING_RESOURCE = "seed";
+public class Day5 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day5.class, "input.txt");
-		long[] seeds = Arrays.stream(input.nextLine().split(": ")[1].split(" ")).mapToLong(Long::parseLong).toArray();
-		Map<String, Mapping> mappings = new HashMap<>();
+		new DayRunner(new Day5()).runAll();
+	}
+	
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 35, 46),
+				new ExpectedAnswers("input.txt", 165788812, 1928058)
+		);
+	}
+	
+	
+	static final String STARTING_RESOURCE = "seed";
+	long[] seeds;
+	Map<String, Mapping> mappings;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		seeds = Arrays.stream(input.nextLine().split(": ")[1].split(" ")).mapToLong(Long::parseLong).toArray();
+		mappings = new HashMap<>();
 		List<String> lines = new ArrayList<>();
 		while (input.hasNext()) {
 			String line = input.nextLine();
@@ -34,23 +53,22 @@ public class Day5 {
 		}
 		Mapping mapping = Mapping.parse(lines);
 		mappings.put(mapping.sourceCategory(), mapping);
-		
-		System.out.println("Answer 1: " + part1(seeds, mappings));
-		System.out.println("Answer 2: " + part2(seeds, mappings));
 	}
 	
-	private static long part1(long[] seeds, Map<String, Mapping> mappings) {
+	@Override
+	public Object part1() {
 		return solve(Resource.ofSinglesSeed(seeds), mappings);
 	}
 	
-	private static long part2(long[] seeds, Map<String, Mapping> mappings) {
+	@Override
+	public Object part2() {
 		List<Range> ranges = new ArrayList<>();
 		for (int i = 0; i < seeds.length; i += 2)
 			ranges.add(new Range(seeds[i], seeds[i + 1]));
 		return solve(new Resource(STARTING_RESOURCE, ranges), mappings);
 	}
 	
-	private static long solve(Resource resource, Map<String, Mapping> mappings) {
+	static long solve(Resource resource, Map<String, Mapping> mappings) {
 		while (true) {
 			Mapping mapping = mappings.get(resource.name());
 			if (mapping == null)
@@ -60,15 +78,15 @@ public class Day5 {
 		return resource.ranges().stream().mapToLong(Range::sourceStart).min().orElse(0);
 	}
 	
-	private record Resource(String name, List<Range> ranges) {
+	record Resource(String name, List<Range> ranges) {
 		static Resource ofSinglesSeed(long[] values) {
 			return new Resource(STARTING_RESOURCE, Arrays.stream(values).mapToObj(v -> new Range(v, 1)).toList());
 		}
 	}
 	
-	private record Mapping(String sourceCategory, String destinationCategory, List<RangeMapping> rangesMapping) {
+	record Mapping(String sourceCategory, String destinationCategory, List<RangeMapping> rangesMapping) {
 		
-		private Stream<Range> nextRanges(Range resource) {
+		Stream<Range> nextRanges(Range resource) {
 			List<RangeMapping> overlapped = rangesMapping.stream().filter(r -> r.overlaps(resource)).toList();
 			List<Range> nextRanges = new ArrayList<>();
 			Range shrinkedResource = resource;
@@ -86,7 +104,7 @@ public class Day5 {
 			return nextRanges.stream();
 		}
 		
-		public Resource nextResource(Resource resource) {
+		Resource nextResource(Resource resource) {
 			if (!resource.name().equals(sourceCategory))
 				throw new IllegalArgumentException("Bad resource type");
 			List<Range> values = resource.ranges().stream().flatMap(this::nextRanges).toList();
@@ -115,28 +133,28 @@ public class Day5 {
 		}
 	}
 	
-	private record Range(long sourceStart, long length) {
-		public long endExclusive() {
+	record Range(long sourceStart, long length) {
+		long endExclusive() {
 			return sourceStart + length;
 		}
-		public boolean overlaps(Range other) {
+		boolean overlaps(Range other) {
 			return sourceStart < other.endExclusive() && other.sourceStart < endExclusive();
 		}
-		public Range overlapping(Range other) {
+		Range overlapping(Range other) {
 			long overlappingStart = Math.max(sourceStart, other.sourceStart);
 			long overlappingEnd = Math.min(endExclusive(), other.endExclusive());
 			return new Range(overlappingStart, overlappingEnd - overlappingStart);
 		}
-		public Range shift(long delta) {
+		Range shift(long delta) {
 			return new Range(sourceStart + delta, length);
 		}
-		public static Range ofLimits(long start, long endExclusive) {
+		static Range ofLimits(long start, long endExclusive) {
 			return new Range(start, endExclusive - start);
 		}
 	}
 	
-	private record RangeMapping(Range range, long delta) {
-		public boolean overlaps(Range source) {
+	record RangeMapping(Range range, long delta) {
+		boolean overlaps(Range source) {
 			return source.overlaps(range);
 		}
 	}

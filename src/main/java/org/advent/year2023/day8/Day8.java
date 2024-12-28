@@ -4,35 +4,55 @@ import lombok.Data;
 import org.advent.common.NumbersAdventUtils;
 import org.advent.common.Pair;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class Day8 {
+public class Day8 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day8.class, "input.txt");
-		int[] instructions = input.nextLine().chars().map(c -> c == 'L' ? 0 : 1).toArray();
+		new DayRunner(new Day8()).runAll();
+	}
+	
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 2, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("example2.txt", 6, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("example3.txt", ExpectedAnswers.IGNORE, 6),
+				new ExpectedAnswers("input.txt", 12737, 9064949303801L)
+		);
+	}
+	
+	int[] instructions;
+	Map<String, Pair<String, String>> directions;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		instructions = input.nextLine().chars().map(c -> c == 'L' ? 0 : 1).toArray();
 		input.nextLine();
 		
 		Pattern pattern = Pattern.compile("(.{3}) = \\((.{3}), (.{3})\\)");
-		Map<String, Pair<String, String>> directions = new HashMap<>();
+		directions = new HashMap<>();
 		while (input.hasNext()) {
 			Matcher matcher = pattern.matcher(input.nextLine());
 			if (!matcher.find())
 				continue;
 			directions.put(matcher.group(1), Pair.of(matcher.group(2), matcher.group(3)));
 		}
-		
-		System.out.println("Answer 1: " + part1(instructions, directions));
-		System.out.println("Answer 2: " + part2(instructions, directions));
 	}
 	
-	private static long part1(int[] instructions, Map<String, Pair<String, String>> directions) {
+	@Override
+	public Object part1() {
 		String start = "AAA";
 		if (!directions.containsKey(start)) {
 			System.out.println("Test input invalid");
@@ -41,7 +61,8 @@ public class Day8 {
 		return countSteps(instructions, directions, start, "ZZZ"::equals);
 	}
 	
-	private static long part2(int[] instructions, Map<String, Pair<String, String>> directions) {
+	@Override
+	public Object part2() {
 		int[] counts = directions.keySet().stream()
 				.filter(s -> s.endsWith("A"))
 				.mapToInt(s -> countSteps(instructions, directions, s, str -> str.endsWith("Z")))
@@ -49,7 +70,7 @@ public class Day8 {
 		return NumbersAdventUtils.lcm(counts);
 	}
 	
-	private static int countSteps(int[] instructions, Map<String, Pair<String, String>> directions, String start, Predicate<String> endChecker) {
+	int countSteps(int[] instructions, Map<String, Pair<String, String>> directions, String start, Predicate<String> endChecker) {
 		CircularIterator iterator = new CircularIterator(instructions);
 		String current = start;
 		int steps = 0;
@@ -62,7 +83,7 @@ public class Day8 {
 	}
 	
 	@Data
-	private static class CircularIterator {
+	static class CircularIterator {
 		private final int[] data;
 		private int prevIndex = -1;
 		

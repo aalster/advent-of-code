@@ -4,6 +4,9 @@ import org.advent.common.Direction;
 import org.advent.common.Pair;
 import org.advent.common.Point;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -15,17 +18,43 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Day23 {
+public class Day23 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day23.class, "input.txt");
-		Field field = Field.parseField(Utils.readLines(input));
-		
-		System.out.println("Answer 1: " + part1(field));
-		System.out.println("Answer 2: " + part2(field));
+		new DayRunner(new Day23()).runAll();
 	}
 	
-	private static long part1(Field field) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 94, 154),
+				new ExpectedAnswers("input.txt", 2254, 6394)
+		);
+	}
+	
+	Field field;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		field = Field.parseField(Utils.readLines(input));
+	}
+	
+	@Override
+	public Object part1() {
+		return solve(field);
+	}
+	
+	@Override
+	public Object part2() {
+		Set<Character> slopeChars = Set.of('^', '>', 'v', '<');
+		Map<Point, Character> points = field.points().entrySet().stream()
+				.collect(Collectors.toMap(Map.Entry::getKey,
+						e -> slopeChars.contains(e.getValue()) ? '.' : e.getValue()));
+		return solve(new Field(points, field.start(), field.end()));
+	}
+	
+	int solve(Field field) {
 		Set<Point> forks = new HashSet<>(field.findForks());
 		forks.addAll(List.of(field.start(), field.end()));
 		
@@ -36,15 +65,7 @@ public class Day23 {
 		return findMaxPathRecursive(trailsMap, field.start(), field.end(), Set.of());
 	}
 	
-	private static long part2(Field field) {
-		Set<Character> slopeChars = Set.of('^', '>', 'v', '<');
-		Map<Point, Character> points = field.points().entrySet().stream()
-				.collect(Collectors.toMap(Map.Entry::getKey,
-						e -> slopeChars.contains(e.getValue()) ? '.' : e.getValue()));
-		return part1(new Field(points, field.start(), field.end()));
-	}
-	
-	private static int findMaxPathRecursive(Map<Point, List<Trail>> trailsMap, Point current, Point end, Set<Point> visited) {
+	int findMaxPathRecursive(Map<Point, List<Trail>> trailsMap, Point current, Point end, Set<Point> visited) {
 		if (current.equals(end))
 			return 0;
 		

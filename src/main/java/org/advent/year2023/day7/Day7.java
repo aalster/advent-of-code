@@ -1,8 +1,10 @@
 package org.advent.year2023.day7;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -11,28 +13,39 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 
-public class Day7 {
+public class Day7 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day7.class, "input.txt");
-		List<String> lines = new ArrayList<>();
-		while (input.hasNext()) {
-			lines.add(input.nextLine());
-		}
-		
-		System.out.println("Answer 1: " + part1(lines));
-		System.out.println("Answer 2: " + part2(lines));
+		new DayRunner(new Day7()).runAll();
 	}
 	
-	private static long part1(List<String> data) {
-		return solve(data, null);
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 6440, 5905),
+				new ExpectedAnswers("input.txt", 248217452, 245576185)
+		);
 	}
 	
-	private static long part2(List<String> data) {
-		return solve(data, 'J');
+	List<String> lines;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		lines = Utils.readLines(input);
 	}
 	
-	private static long solve(List<String> data, Character joker) {
+	@Override
+	public Object part1() {
+		return solve(lines, null);
+	}
+	
+	@Override
+	public Object part2() {
+		return solve(lines, 'J');
+	}
+	
+	static long solve(List<String> data, Character joker) {
 		List<Round> rounds = data.stream().map(value -> Round.parse(value, joker)).sorted(Comparator.comparing(Round::hand)).toList();
 		long result = 0;
 		long index = 1;
@@ -43,14 +56,14 @@ public class Day7 {
 		return result;
 	}
 	
-	private record Round(Hand hand, int bid) {
+	record Round(Hand hand, int bid) {
 		static Round parse(String value, Character joker) {
 			String[] split = value.split(" ");
 			return new Round(Hand.parse(split[0], joker), Integer.parseInt(split[1]));
 		}
 	}
 	
-	private record Hand(int[] cards, int rank) implements Comparable<Hand> {
+	record Hand(int[] cards, int rank) implements Comparable<Hand> {
 		
 		@Override
 		public int compareTo(Hand other) {
@@ -64,6 +77,14 @@ public class Day7 {
 			}
 			return 0;
 		}
+		
+		static Map<Integer, Integer> cardsMapping = Map.of(
+				'A', 14,
+				'K', 13,
+				'Q', 12,
+				'J', 11,
+				'T', 10
+		).entrySet().stream().collect(Collectors.toMap(e -> (int) e.getKey(), Map.Entry::getValue));
 		
 		static Hand parse(String value, Character joker) {
 			int jokerCode = joker == null ? -1 : cardsMapping.getOrDefault((int) joker, joker - '0');
@@ -93,12 +114,4 @@ public class Day7 {
 			};
 		}
 	}
-	
-	static Map<Integer, Integer> cardsMapping = Map.of(
-			'A', 14,
-			'K', 13,
-			'Q', 12,
-			'J', 11,
-			'T', 10
-	).entrySet().stream().collect(Collectors.toMap(e -> (int) e.getKey(), Map.Entry::getValue));
 }

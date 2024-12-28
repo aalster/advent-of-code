@@ -2,8 +2,10 @@ package org.advent.year2023.day1;
 
 import org.advent.common.Pair;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -12,26 +14,37 @@ import java.util.Scanner;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class Day1 {
+public class Day1 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day1.class, "input.txt");
-		List<String> lines = new ArrayList<>();
-		while (input.hasNext()) {
-			lines.add(input.nextLine());
-		}
-		System.out.println("Answer 1: " + part1(lines));
-		System.out.println("Answer 2: " + part2(lines));
+		new DayRunner(new Day1()).runAll();
 	}
 	
-	private static long part1(List<String> data) {
-		Map<String, Integer> digits = IntStream.range(0, 10).boxed().collect(Collectors.toMap(i -> "" + i, i -> i));
-		return calculate(data, digits);
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 142, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("example2.txt", ExpectedAnswers.IGNORE, 281),
+				new ExpectedAnswers("input.txt", 54877, 54100)
+		);
 	}
 	
-	private static long part2(List<String> data) {
-		Map<String, Integer> digits = IntStream.range(0, 10).boxed().collect(Collectors.toMap(i -> "" + i, i -> i));
-		digits = new HashMap<>(digits);
+	List<String> lines;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		lines = Utils.readLines(input);
+	}
+	
+	@Override
+	public Object part1() {
+		return calculate(lines, IntStream.range(0, 10).boxed().collect(Collectors.toMap(i -> "" + i, i -> i)));
+	}
+	
+	@Override
+	public Object part2() {
+		Map<String, Integer> digits = new HashMap<>(IntStream.range(0, 10).boxed().collect(Collectors.toMap(i -> "" + i, i -> i)));
 		digits.putAll(Map.ofEntries(
 				Map.entry("zero", 0),
 				Map.entry("one", 1),
@@ -44,18 +57,17 @@ public class Day1 {
 				Map.entry("eight", 8),
 				Map.entry("nine", 9)
 		));
-		return calculate(data, digits);
+		return calculate(lines, digits);
 	}
 	
-	private static long calculate(List<String> data, Map<String, Integer> digits) {
+	long calculate(List<String> data, Map<String, Integer> digits) {
 		long result = 0;
-		for (String line : data) {
+		for (String line : data)
 			result += first(line, digits) * 10L + last(line, digits);
-		}
 		return result;
 	}
 	
-	private static int first(String src, Map<String, Integer> digits) {
+	int first(String src, Map<String, Integer> digits) {
 		return digits.entrySet().stream()
 				.map(entry -> Pair.of(entry.getValue(), indexOf(src, entry.getKey())))
 				.filter(pair -> pair.right() >= 0)
@@ -64,7 +76,7 @@ public class Day1 {
 				.orElse(0);
 	}
 	
-	private static int last(String src, Map<String, Integer> digits) {
+	int last(String src, Map<String, Integer> digits) {
 		return digits.entrySet().stream()
 				.map(entry -> Pair.of(entry.getValue(), lastIndexOf(src, entry.getKey())))
 				.filter(pair -> pair.right() >= 0)
@@ -73,7 +85,7 @@ public class Day1 {
 				.orElse(0);
 	}
 	
-	private static int indexOf(String src, String search) {
+	int indexOf(String src, String search) {
 		if (src.length() < search.length())
 			return -1;
 		char[] srcChars = src.toCharArray();
@@ -90,7 +102,7 @@ public class Day1 {
 		return -1;
 	}
 	
-	private static int lastIndexOf(String src, String search) {
+	int lastIndexOf(String src, String search) {
 		if (src.length() < search.length())
 			return -1;
 		char[] srcChars = src.toCharArray();

@@ -2,44 +2,46 @@ package org.advent.year2023.day9;
 
 import lombok.Data;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class Day9 {
+public class Day9 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day9.class, "input.txt");
-		List<String> lines = new ArrayList<>();
-		while (input.hasNext()) {
-			lines.add(input.nextLine());
-		}
-		
-		System.out.println("Answer 1: " + part1(lines));
-		System.out.println("Answer 2: " + part2(lines));
+		new DayRunner(new Day9()).runAll();
 	}
 	
-	private static long part1(List<String> lines) {
-		long result = 0;
-		for (String line : lines) {
-			Sequence sequence = Sequence.parse(line);
-			result += sequence.get(sequence.size());
-		}
-		return result;
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 114, 2),
+				new ExpectedAnswers("input.txt", 1708206096, 1050)
+		);
 	}
 	
-	private static long part2(List<String> lines) {
-		long result = 0;
-		for (String line : lines) {
-			Sequence sequence = Sequence.parse(line);
-			result += sequence.get(-1);
-		}
-		return result;
+	List<String> lines;
+	
+	@Override
+	public void prepare(String file) {
+		lines = Utils.readLines(Utils.scanFileNearClass(getClass(), file));
+	}
+	
+	@Override
+	public Object part1() {
+		return lines.stream().map(Sequence::parse).mapToLong(sequence -> sequence.get(sequence.size())).sum();
+	}
+	
+	@Override
+	public Object part2() {
+		return lines.stream().map(Sequence::parse).mapToLong(sequence -> sequence.get(-1)).sum();
 	}
 	
 	@Data
@@ -90,7 +92,8 @@ public class Day9 {
 		}
 		
 		static Sequence parse(String line) {
-			return new Sequence(Arrays.stream(line.split(" ")).map(Integer::parseInt).collect(Collectors.toCollection(ArrayList::new)));
+			return new Sequence(Arrays.stream(line.split(" ")).map(Integer::parseInt)
+					.collect(Collectors.toCollection(ArrayList::new)));
 		}
 	}
 }

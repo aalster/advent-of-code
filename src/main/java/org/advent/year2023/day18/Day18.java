@@ -5,6 +5,9 @@ import org.advent.common.Direction;
 import org.advent.common.Pair;
 import org.advent.common.Point;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigInteger;
@@ -16,28 +19,39 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class Day18 {
+public class Day18 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day18.class, "input.txt");
-		List<String> lines = new ArrayList<>();
-		while (input.hasNext()) {
-			lines.add(input.nextLine());
-		}
-		
-		System.out.println("Answer 1: " + part1(lines));
-		System.out.println("Answer 2: " + part2(lines));
+		new DayRunner(new Day18()).runAll();
 	}
 	
-	private static long part1(List<String> lines) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 62, 952408144115L),
+				new ExpectedAnswers("input.txt", 47139, 173152345887206L)
+		);
+	}
+	
+	List<String> lines;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		lines = Utils.readLines(input);
+	}
+	
+	@Override
+	public Object part1() {
 		return solveNaive(lines.stream().map(Move::parse1).toList());
 	}
 	
-	private static BigInteger part2(List<String> lines) {
+	@Override
+	public Object part2() {
 		return solveFast(lines.stream().map(Move::parse2).toList());
 	}
 	
-	private static int solveNaive(List<Move> moves) {
+	int solveNaive(List<Move> moves) {
 		Set<Point> path = new HashSet<>();
 		Point current = new Point(0, 0);
 		path.add(current);
@@ -70,7 +84,7 @@ public class Day18 {
 		return path.size() + inside.size();
 	}
 	
-	private static BigInteger solveFast(List<Move> moves) {
+	BigInteger solveFast(List<Move> moves) {
 		// https://en.wikipedia.org/wiki/Shoelace_formula
 		List<BigPoint> edges = new ArrayList<>();
 		BigInteger perimeter = BigInteger.ZERO;
