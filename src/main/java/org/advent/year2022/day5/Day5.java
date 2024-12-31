@@ -1,6 +1,9 @@
 package org.advent.year2022.day5;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
@@ -10,12 +13,28 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class Day5 {
+public class Day5 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day5.class,"input.txt");
+		new DayRunner(new Day5()).runAll();
+	}
+	
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", "CMZ", "MCD"),
+				new ExpectedAnswers("input.txt", "ZSQVCCJLL", "QZFJRWHGS")
+		);
+	}
+	
+	List<Stack<String>> stacks;
+	List<Move> moves;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
 		
-		List<Stack<String>> stacks = new ArrayList<>();
+		stacks = new ArrayList<>();
 		while (input.hasNext()) {
 			String line = input.nextLine();
 			if (line.isEmpty())
@@ -38,27 +57,23 @@ public class Day5 {
 				index++;
 			}
 		}
-		
-		List<Move> moves = new ArrayList<>();
-		while (input.hasNext())
-			moves.add(Move.parse(input.nextLine()));
-		
-		System.out.println("Answer 1: " + part1(stacks, moves));
-		System.out.println("Answer 2: " + part2(stacks, moves));
+		moves = Utils.readLines(input).stream().map(Move::parse).toList();
 	}
 	
-	private static String part1(List<Stack<String>> stacks, List<Move> moves) {
-		stacks = stacks.stream().map(Stack::copy).toList();
+	@Override
+	public Object part1() {
+		List<Stack<String>> stacksCopy = stacks.stream().map(Stack::copy).toList();
 		for (Move move : moves)
-			stacks.get(move.from()).moveTo(stacks.get(move.to()), move.count());
-		return stacks.stream().map(Stack::getTop).collect(Collectors.joining());
+			stacksCopy.get(move.from()).moveTo(stacksCopy.get(move.to()), move.count());
+		return stacksCopy.stream().map(Stack::getTop).collect(Collectors.joining());
 	}
 	
-	private static String part2(List<Stack<String>> stacks, List<Move> moves) {
-		stacks = stacks.stream().map(Stack::copy).toList();
+	@Override
+	public Object part2() {
+		List<Stack<String>> stacksCopy = stacks.stream().map(Stack::copy).toList();
 		for (Move move : moves)
-			stacks.get(move.from()).moveToOrdered(stacks.get(move.to()), move.count());
-		return stacks.stream().map(Stack::getTop).collect(Collectors.joining());
+			stacksCopy.get(move.from()).moveToOrdered(stacksCopy.get(move.to()), move.count());
+		return stacksCopy.stream().map(Stack::getTop).collect(Collectors.joining());
 	}
 	
 	static class Stack<T> {

@@ -1,21 +1,37 @@
 package org.advent.year2022.day2;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.List;
 import java.util.Scanner;
 
-public class Day2 {
+public class Day2 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day2.class,"input.txt");
-		List<String> lines = Utils.readLines(input);
-		
-		System.out.println("Answer 1: " + part1(lines));
-		System.out.println("Answer 2: " + part2(lines));
+		new DayRunner(new Day2()).runAll();
 	}
 	
-	public static long part1(List<String> lines) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 15, 12),
+				new ExpectedAnswers("input.txt", 11873, 12014)
+		);
+	}
+	
+	List<String> lines;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		lines = Utils.readLines(input);
+	}
+	
+	@Override
+	public Object part1() {
 		long score = 0;
 		for (String line : lines) {
 			String[] split = line.split(" ");
@@ -26,7 +42,8 @@ public class Day2 {
 		return score;
 	}
 	
-	public static long part2(List<String> lines) {
+	@Override
+	public Object part2() {
 		long score = 0;
 		for (String line : lines) {
 			String[] split = line.split(" ");
@@ -40,7 +57,7 @@ public class Day2 {
 	enum Shape {
 		ROCK, PAPER, SCISSORS;
 		
-		public Outcome roundOutcome(Shape shape) {
+		Outcome roundOutcome(Shape shape) {
 			int win = (score() - shape.score() + 3) % 3;
 			return switch (win) {
 				case 0 -> Outcome.DRAW;
@@ -49,11 +66,11 @@ public class Day2 {
 			};
 		}
 		
-		public int score() {
+		int score() {
 			return ordinal() + 1;
 		}
 		
-		public static Shape parse(String name) {
+		static Shape parse(String name) {
 			return switch (name) {
 				case "A", "X" -> ROCK;
 				case "B", "Y" -> PAPER;
@@ -90,15 +107,15 @@ public class Day2 {
 			}
 		};
 		
-		public Shape against(Shape shape) {
+		Shape against(Shape shape) {
 			throw new UnsupportedOperationException();
 		}
 		
-		public int score() {
+		int score() {
 			return ordinal() * 3;
 		}
 		
-		public static Outcome parse(String name) {
+		static Outcome parse(String name) {
 			return switch (name) {
 				case "X" -> Outcome.LOOSE;
 				case "Y" -> Outcome.DRAW;

@@ -1,6 +1,9 @@
 package org.advent.year2022.day6;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -8,19 +11,43 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.function.Function;
 
-public class Day6 {
+public class Day6 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day6.class,"input.txt");
-		List<String> lines = Utils.readLines(input);
-		
-		for (String line : lines)
-			System.out.println("Answer 1: " + solve(line, 4));
-		for (String line : lines)
-			System.out.println("Answer 2: " + solve(line, 14));
+		new DayRunner(new Day6()).runAll();
 	}
 	
-	private static int solve(String line, int size) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 5, 23),
+				new ExpectedAnswers("example2.txt", 6, 23),
+				new ExpectedAnswers("example3.txt", 10, 29),
+				new ExpectedAnswers("example4.txt", 11, 26),
+				new ExpectedAnswers("example5.txt", ExpectedAnswers.IGNORE, 19),
+				new ExpectedAnswers("input.txt", 1100, 2421)
+		);
+	}
+	
+	String line;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		line = input.nextLine();
+	}
+	
+	@Override
+	public Object part1() {
+		return solve(line, 4);
+	}
+	
+	@Override
+	public Object part2() {
+		return solve(line, 14);
+	}
+	
+	int solve(String line, int size) {
 		if (line.length() < size)
 			return 0;
 		

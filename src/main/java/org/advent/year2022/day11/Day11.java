@@ -1,6 +1,9 @@
 package org.advent.year2022.day11;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
@@ -17,10 +20,25 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class Day11 {
+public class Day11 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day11.class, "input.txt");
+		new DayRunner(new Day11()).runAll();
+	}
+	
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 10605, 2713310158L),
+				new ExpectedAnswers("input.txt", 110220, 19457438264L)
+		);
+	}
+	
+	Map<Integer, Monkey> monkeys;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
 		Pattern pattern = Pattern.compile("""
 				Monkey (\\d+):
 				  Starting items: (.+)
@@ -30,17 +48,24 @@ public class Day11 {
 				    If false: throw to monkey (\\d+)""");
 		
 		Matcher matcher = pattern.matcher(String.join("\n", Utils.readLines(input)));
-		Map<Integer, Monkey> monkeys = new HashMap<>();
+		monkeys = new HashMap<>();
 		while (matcher.find()) {
 			Monkey monkey = Monkey.parse(matcher.toMatchResult());
 			monkeys.put(monkey.id(), monkey);
 		}
-		
-		System.out.println("Answer 1: " + solve(monkeys, 20, 3));
-		System.out.println("Answer 2: " + solve(monkeys, 10000, 1));
 	}
 	
-	private static long solve(Map<Integer, Monkey> monkeys, int rounds, int divisor) {
+	@Override
+	public Object part1() {
+		return solve(20, 3);
+	}
+	
+	@Override
+	public Object part2() {
+		return solve(10000, 1);
+	}
+	
+	long solve(int rounds, int divisor) {
 		Map<Integer, Integer> stats = new HashMap<>();
 		Game game = new Game(copyMonkeys(monkeys), divisor);
 		int testsMultiple = game.testsMultiple();
@@ -56,7 +81,7 @@ public class Day11 {
 				.orElse(0);
 	}
 	
-	private static Map<Integer, Monkey> copyMonkeys(Map<Integer, Monkey> monkeys) {
+	Map<Integer, Monkey> copyMonkeys(Map<Integer, Monkey> monkeys) {
 		return monkeys.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().copy()));
 	}
 	

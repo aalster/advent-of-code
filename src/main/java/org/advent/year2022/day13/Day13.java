@@ -1,6 +1,9 @@
 package org.advent.year2022.day13;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -11,22 +14,35 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class Day13 {
+public class Day13 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day13.class, "input.txt");
-		List<Element> elements = new ArrayList<>();
+		new DayRunner(new Day13()).runAll();
+	}
+	
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 13, 140),
+				new ExpectedAnswers("input.txt", 5366, 23391)
+		);
+	}
+	
+	List<Element> elements;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		elements = new ArrayList<>();
 		while (input.hasNext()) {
 			String line = input.nextLine();
 			if (!line.isEmpty())
 				elements.add(Element.parse(line));
 		}
-		
-		System.out.println("Answer 1: " + part1(elements));
-		System.out.println("Answer 2: " + part2(elements));
 	}
 	
-	private static int part1(List<Element> elements) {
+	@Override
+	public Object part1() {
 		int result = 0;
 		int pair = 1;
 		Iterator<Element> iterator = elements.iterator();
@@ -42,7 +58,8 @@ public class Day13 {
 		return result;
 	}
 	
-	private static int part2(List<Element> elements) {
+	@Override
+	public Object part2() {
 		Set<Element> dividers = Set.of(divider(2), divider(6));
 		
 		elements = new ArrayList<>(elements);
@@ -59,7 +76,7 @@ public class Day13 {
 		return result;
 	}
 	
-	static ListElement divider(int value) {
+	ListElement divider(int value) {
 		return new ListElement(List.of(new ListElement(List.of(new NumberElement(value)))));
 	}
 	

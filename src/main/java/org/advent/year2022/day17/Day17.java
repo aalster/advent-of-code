@@ -1,360 +1,162 @@
 package org.advent.year2022.day17;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import org.advent.common.Direction;
 import org.advent.common.Point;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Scanner;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-public class Day17 {
+public class Day17 extends AdventDay {
 	
-	static final boolean preview = false;
-	static final int fieldWidth = 7;
-	static final int heightLimit = 1000;
-	static final int heightThreshold = heightLimit + 200;
-	static final int totalFiguresCount1 = 2022;
-	static final long totalFiguresCount2 = 1_000_000_000_000L;
-	
-	public static void main(String[] args) throws Exception {
-		Scanner input = Utils.scanFileNearClass(Day17.class, "input.txt");
-		Wind wind = new Wind(input.nextLine());
-		Field field = Field.create(fieldWidth);
-		FigureFactory figureFactory = new FigureFactory();
-		
-		List<WindLoopStats> loopStats = new ArrayList<>();
-		int currentLoop = 0;
-		
-		long figuresCount = 0;
-		long heightCutoff = 0;
-		
-		long startTime = System.currentTimeMillis();
-		List<Long> delays = new ArrayList<>();
-		
-		for (long step = 0; ; step++) {
-			
-			if (currentLoop < wind.loop()) {
-				loopStats.add(new WindLoopStats(heightCutoff + field.rockHeight, figuresCount, wind.step, figureFactory.currentShape));
-				currentLoop = wind.loop();
-				
-				if (loopStats.size() == 20) {
-					for (WindLoopStats stats : loopStats)
-						System.out.println(stats);
-					
-					WindLoopStats firstLoopStats = loopStats.get(0);
-					
-					Set<Long> otherLoopsDelta = new HashSet<>();
-					for (int i = 1; i < loopStats.size() - 1; i++)
-						otherLoopsDelta.add(loopStats.get(i + 1).rockHeight - loopStats.get(i).rockHeight);
-					if (otherLoopsDelta.size() != 1)
-						throw new RuntimeException("Prediction failed: " + otherLoopsDelta);
-					
-					WindLoopStats second = loopStats.get(1);
-					WindLoopStats third = loopStats.get(2);
-					WindLoopStats loop = new WindLoopStats(
-							third.rockHeight - second.rockHeight,
-							third.figureCount - second.figureCount,
-							third.windStep - second.windStep,
-							third.figureStep - second.figureStep
-					);
-					
-					while (figuresCount + loop.figureStep + 1000 <= totalFiguresCount2) {
-						figuresCount += loop.figureCount;
-						heightCutoff += loop.rockHeight;
-						wind.step += loop.windStep;
-						figureFactory.currentShape += loop.figureStep;
-					}
-				}
-			}
-			
-			
-//			if (wind.step % wind.directions.length() == 0) {
-//				System.out.println("Interesting figures: " + figuresCount + ", Height: " + (heightCutoff + field.rockHeight));
-//				field.drawField(20);
-//				Thread.sleep(1000);
-//			}
-			
-			if (field.fallingFigure == null) {
-				heightCutoff += field.limitHeight(heightThreshold, heightLimit);
-				
-				if (figuresCount == totalFiguresCount1) {
-					System.out.println("Answer 1: " + (heightCutoff + field.rockHeight));
-//					Thread.sleep(1000);
-				}
-				
-				if (figuresCount >= totalFiguresCount2)
-					break;
-				field.addFallingFigure(figureFactory.nextFigure());
-				figuresCount++;
-				
-//				if (preview) {
-//					field.drawField(20);
-//					Thread.sleep(800);
-//				}
-				
-				if (figuresCount % 10000000 == 0) {
-					long now = System.currentTimeMillis();
-					long delay = now - startTime;
-					delays.add(delay);
-					System.out.println("\n\nStep: " + step + ", Figures: " + figuresCount + " - " + (100f * figuresCount / totalFiguresCount2) + "%");
-					System.out.println("Delay: " + delay + ". Average: " + delays.stream().mapToLong(d -> d).average().orElse(0));
-					startTime = now;
-//				    field.drawField();
-				}
-			}
-			field.wind(wind.nextDirection());
-			if (preview) {
-				System.out.println("\n");
-				field.drawField(20);
-				Thread.sleep(500);
-			}
-			field.fall();
-			if (preview) {
-				System.out.println("\n");
-				field.drawField(20);
-				Thread.sleep(500);
-			}
-		}
-//		field.drawField();
-		System.out.println("Answer 2: " + (heightCutoff + field.rockHeight));
+	public static void main(String[] args) {
+		new DayRunner(new Day17()).runAll();
 	}
 	
-	record WindLoopStats(long rockHeight, long figureCount, long windStep, long figureStep) {
-	
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 3068, 1514285714288L),
+				new ExpectedAnswers("input.txt", 3171, 1586627906921L)
+		);
 	}
 	
-	@AllArgsConstructor
-	static class Field {
-		int width;
-		int rockHeight;
-		List<Cell[]> cells;
-		FallingFigure fallingFigure;
-		
-		private void wind(int windDirection) {
-			Point next = fallingFigure.position.shift(windDirection, 0);
-			Figure figure = fallingFigure.figure;
-			if (next.x() < 0 || width <= next.x() + figure.width)
-				return;
-			if (next.y() <= rockHeight && figure.intersectsCell(next, cells, Cell.ROCK))
-				return;
-			
-			fallingFigure.setPosition(next);
-		}
-		
-		private void fall() {
-			Point position = fallingFigure.position;
-			Point next = position.shift(0, -1);
-			Figure figure = fallingFigure.figure;
-			if (next.y() <= rockHeight) {
-				if (next.y() < 0 || figure.intersectsCell(next, cells, Cell.ROCK)) {
-					figure.draw(position, cells, Cell.ROCK);
-					rockHeight = Math.max(rockHeight, position.y() + figure.height + 1);
-					fallingFigure = null;
-					return;
-				}
-			}
-			fallingFigure.setPosition(next);
-		}
-		
-		int limitHeight(int thresholdHeight, int limit) {
-			if (height() <= thresholdHeight)
-				return 0;
-			
-			int cutoff = height() - limit;
-			List<Cell[]> subList = cells.subList(cutoff, height() - 1);
-			cells = new ArrayList<>(thresholdHeight + 10);
-			cells.addAll(subList);
-			rockHeight -= cutoff;
-			return cutoff;
-		}
-		
-		void drawField(int rows) {
-			if (fallingFigure != null)
-				fallingFigure.figure.draw(fallingFigure.position, cells, Cell.FALLING_ROCK);
-			int lastRow = rows > 0 ? Math.max(cells.size() - 1 - rows, 0) : 0;
-			for (int y = cells.size() - 1; y >= lastRow; y--) {
-				Cell[] row = cells.get(y);
-				System.out.print("|");
-				for (Cell cell : row)
-					System.out.print(cell.symbol);
-				System.out.println("|");
-			}
-			System.out.println("+" + "-".repeat(width) + "+");
-			if (fallingFigure != null)
-				fallingFigure.figure.draw(fallingFigure.position, cells, Cell.EMPTY);
-		}
-		
-		int height() {
-			return cells.size();
-		}
-		
-		int rockHeight() {
-			int rowHeight = height() - 1;
-			while (rowHeight >= 0) {
-				Cell[] row = cells.get(rowHeight);
-				for (Cell cell : row)
-					if (cell == Cell.ROCK)
-						return rowHeight + 1;
-				rowHeight--;
-			}
-			return 0;
-		}
-		
-		void addFallingFigure(Figure figure) {
-			Point position = new Point(2, rockHeight + 3);
-			fallingFigure = new FallingFigure(figure, position);
-			int newHeight = position.y() + figure.height;
-			while (height() <= newHeight)
-				cells.add(createEmptyRow(width));
-		}
-		
-		static Field create(int width) {
-			List<Cell[]> cells = new ArrayList<>();
-			for (int i = 0; i < width; i++)
-				cells.add(createEmptyRow(width));
-			return new Field(width, 0, cells, null);
-		}
-		
-		static Cell[] createEmptyRow(int width) {
-			Cell[] row = new Cell[width];
-			Arrays.fill(row, Cell.EMPTY);
-			return row;
-		}
+	List<String> rockLines;
+	String windLine;
+	
+	@SneakyThrows
+	@Override
+	public void prepare(String file) {
+		rockLines = Utils.readLines(Utils.scanFileNearClass(getClass(), "rocks.txt"));
+		windLine = Utils.scanFileNearClass(getClass(), file).nextLine();
 	}
 	
-	@AllArgsConstructor
-	static class FallingFigure {
-		final Figure figure;
-		Point position;
-		
-		void setPosition(Point position) {
-			this.position = position;
-		}
+	@Override
+	public Object part1() {
+		RocksFactory rocksFactory = new RocksFactory(rockLines);
+		WindFactory windFactory = new WindFactory(windLine);
+		Set<Point> fallen = play(Set.of(), rocksFactory, windFactory, 2022);
+		return Point.maxY(fallen) + 1;
 	}
 	
-	record Figure(
-			List<Point> relationalPoints,
-			int width,
-			int height
-	) {
-		Figure(List<Point> relationalPoints) {
-			this(relationalPoints, calcWidth(relationalPoints), calcHeight(relationalPoints));
-		}
+	@Override
+	public Object part2() {
+		RocksFactory rocksFactory = new RocksFactory(rockLines);
+		WindFactory windFactory = new WindFactory(windLine);
+		long target = 1000000000000L;
 		
-		void draw(Point position, List<Cell[]> cells, Cell c) {
-			for (Point point : relationalPoints)
-				cells.get(position.y() + point.y())[position.x() + point.x()] = c;
-		}
+		Set<Point> fallen = Set.of();
 		
-		boolean intersectsCell(Point position, List<Cell[]> cells, Cell c) {
-			for (Point point : relationalPoints)
-				if (cells.get(position.y() + point.y())[position.x() + point.x()] == c)
-					return true;
-			return false;
-		}
-		
-		static int calcWidth(List<Point> points) {
-			return points.stream().mapToInt(Point::x).max().orElse(0);
-		}
-		
-		static int calcHeight(List<Point> points) {
-			return points.stream().mapToInt(Point::y).max().orElse(0);
-		}
-	}
-	
-	static class FigureFactory {
-		static final Figure[] shapes = new Figure[] {horizontal(), cross(), corner(), vertical(), cube()};
-		long currentShape = -1;
-		
-		Figure nextFigure() {
-			currentShape++;
-			return shapes[(int) (currentShape % shapes.length)];
-		}
-		
-		static Figure horizontal() {
-			return new Figure(List.of(
-					new Point(0, 0),
-					new Point(1, 0),
-					new Point(2, 0),
-					new Point(3, 0)
-			));
-		}
-		
-		static Figure cross() {
-			return new Figure(List.of(
-					new Point(1, 0),
-					new Point(0, 1),
-					new Point(1, 1),
-					new Point(2, 1),
-					new Point(1, 2)
-			));
-		}
-		
-		static Figure corner() {
-			return new Figure(List.of(
-					new Point(0, 0),
-					new Point(1, 0),
-					new Point(2, 0),
-					new Point(2, 1),
-					new Point(2, 2)
-			));
-		}
-		
-		static Figure vertical() {
-			return new Figure(List.of(
-					new Point(0, 0),
-					new Point(0, 1),
-					new Point(0, 2),
-					new Point(0, 3)
-			));
-		}
-		
-		static Figure cube() {
-			return new Figure(List.of(
-					new Point(0, 0),
-					new Point(1, 0),
-					new Point(0, 1),
-					new Point(1, 1)
-			));
-		}
-	}
-	
-	@Getter
-	@RequiredArgsConstructor
-	enum Cell {
-		EMPTY('.'),
-		ROCK('#'),
-		FALLING_ROCK('@');
-		
-		final char symbol;
-	}
-	
-	@RequiredArgsConstructor
-	static class Wind {
-		final String directions;
-		long step = -1;
-		
-		int nextDirection() {
+		int cycle;
+		int cycleHeight;
+		Map<HeadState, Stats> heads = new HashMap<>();
+		int step = 0;
+		while (true) {
+			fallen = play(fallen, rocksFactory, windFactory, 1);
 			step++;
-			return directions.charAt((int) (step % directions.length())) == '<' ? -1 : 1;
-		}
-		
-		String peekNextDirections(int count) {
-			StringBuilder result = new StringBuilder(count);
-			for (int i = 1; i <= count; i++) {
-				result.append(directions.charAt((int) ((step + i) % directions.length())));
+			
+			HeadState head = HeadState.of(fallen, rocksFactory, windFactory);
+			Stats cycleStart = heads.get(head);
+			if (cycleStart != null) {
+				cycle = step - cycleStart.step;
+				cycleHeight = Point.maxY(fallen) - cycleStart.maxY;
+				break;
 			}
-			return result.toString();
+			heads.put(head, new Stats(Point.maxY(fallen), step));
+		}
+		target -= step;
+		
+		fallen = play(fallen, rocksFactory, windFactory, (int) (target % cycle));
+		target -= target % cycle;
+		
+		return Point.maxY(fallen) + 1 + (target / cycle) * cycleHeight;
+	}
+	
+	private Set<Point> play(Set<Point> initial, RocksFactory rocksFactory, WindFactory windFactory, int rocksCount) {
+		Set<Point> fallen = new HashSet<>(initial);
+		
+		int height = fallen.isEmpty() ? 0 : Point.maxY(fallen) + 1;
+		
+		for (int i = 0; i < rocksCount; i++) {
+			Point startingPosition = new Point(2, 3 + height);
+			List<Point> rock = rocksFactory.nextRock().stream().map(startingPosition::shift).toList();
+			while (true) {
+				Direction wind = windFactory.nextDirection();
+				List<Point> windedRock = rock.stream().map(wind::shift).toList();
+				if (windedRock.stream().noneMatch(p -> p.x() < 0 || 6 < p.x() || fallen.contains(p)))
+					rock = windedRock;
+				
+				List<Point> loweredRock = rock.stream().map(Direction.UP::shift).toList();
+				if (loweredRock.stream().anyMatch(p -> p.y() < 0 || fallen.contains(p)))
+					break;
+				rock = loweredRock;
+			}
+			fallen.addAll(rock);
+			height = Math.max(height, Point.maxY(fallen) + 1);
+			// Периодически удаляем точки, которые не повлияют на результат
+			if (i % 100 == 0) {
+				int skipHeight = height - HeadState.headStateSize;
+				fallen.removeIf(p -> p.y() < skipHeight);
+			}
+		}
+		return fallen;
+	}
+	
+	static class RocksFactory {
+		final List<List<Point>> rocks;
+		int step = -1;
+		
+		public RocksFactory(List<String> lines) {
+			rocks = Utils.splitByEmptyLine(lines).stream()
+					.map(r -> Point.readField(r.reversed()).get('#'))
+					.toList();
 		}
 		
-		int loop() {
-			return (int) (step / directions.length());
+		List<Point> nextRock() {
+			step = (step + 1) % rocks.size();
+			return rocks.get(step);
 		}
+		
+	}
+	
+	static class WindFactory {
+		final Direction[] directions;
+		int step = -1;
+		
+		public WindFactory(String line) {
+			directions = line.chars().mapToObj(c -> c == '<' ? Direction.LEFT : Direction.RIGHT).toArray(Direction[]::new);
+		}
+		
+		Direction nextDirection() {
+			step = (step + 1) % directions.length;
+			return directions[step];
+		}
+	}
+	
+	record HeadState(Set<Point> head, int rockStep, int windStep) {
+		static final int headStateSize = 50;
+		
+		static HeadState of(Set<Point> fallen, RocksFactory rocksFactory, WindFactory windFactory) {
+			return new HeadState(head(fallen), rocksFactory.step, windFactory.step);
+		}
+		
+		static Set<Point> head(Set<Point> fallen) {
+			int headY = Point.maxY(fallen) - headStateSize;
+			return fallen.stream()
+					.filter(p -> headY < p.y())
+					.map(p -> p.shift(0, -headY))
+					.collect(Collectors.toSet());
+		}
+	}
+	
+	record Stats(int maxY, int step) {
 	}
 }

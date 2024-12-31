@@ -1,25 +1,41 @@
 package org.advent.year2022.day8;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 import java.util.function.IntUnaryOperator;
 
-public class Day8 {
+public class Day8 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day8.class, "input.txt");
-		Grid grid = new Grid();
-		while (input.hasNext())
-			grid.addRow(input.nextLine().chars().map(c -> c - '0').boxed().toList());
-		
-		System.out.println("Answer 1: " + part1(grid));
-		System.out.println("Answer 2: " + part2(grid));
+		new DayRunner(new Day8()).runAll();
 	}
 	
-	private static int part1(Grid grid) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 21, 8),
+				new ExpectedAnswers("input.txt", 1688, 410400)
+		);
+	}
+	
+	Grid grid;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		grid = new Grid();
+		while (input.hasNext())
+			grid.addRow(input.nextLine().chars().map(c -> c - '0').boxed().toList());
+	}
+	
+	@Override
+	public Object part1() {
 		int count = 0;
 		for (int row = 0; row < grid.rows(); row++)
 			for (int column = 0; column < grid.columns(); column++)
@@ -27,7 +43,8 @@ public class Day8 {
 		return count;
 	}
 	
-	private static int part2(Grid grid) {
+	@Override
+	public Object part2() {
 		int maxDistance = 0;
 		for (int row = 0; row < grid.rows(); row++) {
 			for (int column = 0; column < grid.columns(); column++) {

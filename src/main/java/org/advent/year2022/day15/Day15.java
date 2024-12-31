@@ -2,6 +2,9 @@ package org.advent.year2022.day15;
 
 import org.advent.common.Point;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -14,31 +17,65 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class Day15 {
-	static final int example1Y = 10;
-	static final int target1Y = 2000000;
-	static final int example2MaxX = 20;
-	static final int example2MaxY = 20;
-	static final int target2MaxX = 4000000;
-	static final int target2MaxY = 4000000;
+public class Day15 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Data example = Data.parse(Utils.scanFileNearClass(Day15.class, "example.txt"));
-		Data input = Data.parse(Utils.scanFileNearClass(Day15.class, "input.txt"));
-		System.out.println("Example 1: " + part1(example, example1Y));
-		System.out.println("Example 2: " + part2(example, example2MaxX, example2MaxY));
-		System.out.println("Answer 1: " + part1(input, target1Y));
-		System.out.println("Answer 2: " + part2(input, target2MaxX, target2MaxY));
+		new DayRunner(new Day15()).runAll();
 	}
 	
-	static long part1(Data data, int targetY) {
-		RangeList rangeList = new RangeList(data.sensors().stream()
-				.map(s -> s.rowCoverRange(targetY))
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 26, 56000011),
+				new ExpectedAnswers("input.txt", 5403290, 10291582906626L)
+		);
+	}
+	
+	List<Sensor> sensors;
+	Set<Point> beacons;
+	int part1TargetY;
+	int part2TargetMax;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		Pattern pattern = Pattern.compile("Sensor at x=(.+), y=(.+): closest beacon is at x=(.+), y=(.+)");
+		sensors = new ArrayList<>();
+		beacons = new HashSet<>();
+		while (input.hasNext()) {
+			Matcher matcher = pattern.matcher(input.nextLine());
+			if (!matcher.find())
+				continue;
+			int x = Integer.parseInt(matcher.group(1));
+			int y = Integer.parseInt(matcher.group(2));
+			int bx = Integer.parseInt(matcher.group(3));
+			int by = Integer.parseInt(matcher.group(4));
+			Point beacon = new Point(bx, by);
+			beacons.add(beacon);
+			sensors.add(new Sensor(new Point(x, y), beacon));
+		}
+		
+		part1TargetY = switch (file) {
+			case "example.txt" -> 10;
+			case "input.txt" -> 2000000;
+			default -> throw new IllegalStateException("Unexpected value: " + file);
+		};
+		part2TargetMax = switch (file) {
+			case "example.txt" -> 20;
+			case "input.txt" -> 4000000;
+			default -> throw new IllegalStateException("Unexpected value: " + file);
+		};
+	}
+	
+	@Override
+	public Object part1() {
+		RangeList rangeList = new RangeList(sensors.stream()
+				.map(s -> s.rowCoverRange(part1TargetY))
 				.filter(Objects::nonNull)
 				.toList());
 		
-		Set<Integer> targetBeacons = data.beacons().stream()
-				.filter(b -> b.y() == targetY)
+		Set<Integer> targetBeacons = beacons.stream()
+				.filter(b -> b.y() == part1TargetY)
 				.mapToInt(Point::x)
 				.boxed()
 				.collect(Collectors.toSet());
@@ -48,40 +85,20 @@ public class Day15 {
 				.count();
 	}
 	
-	static long part2(Data data, int targetMaxX, int targetMaxY) {
-		Set<Point> unreachablePoints = data.sensors().parallelStream()
+	@Override
+	public Object part2() {
+		Set<Point> unreachablePoints = sensors.parallelStream()
 				.flatMap(s -> s.unreachablePerimeter().stream())
-				.filter(p -> 0 <= p.x() && p.x() <= targetMaxX)
-				.filter(p -> 0 <= p.y() && p.y() <= targetMaxY)
-				.filter(p -> data.sensors().stream().noneMatch(s -> s.covers(p)))
-				.filter(p -> !data.beacons().contains(p))
+				.filter(p -> 0 <= p.x() && p.x() <= part2TargetMax)
+				.filter(p -> 0 <= p.y() && p.y() <= part2TargetMax)
+				.filter(p -> sensors.stream().noneMatch(s -> s.covers(p)))
+				.filter(p -> !beacons.contains(p))
 				.collect(Collectors.toSet());
 		if (!unreachablePoints.isEmpty()) {
 			Point point = unreachablePoints.iterator().next();
-			return (long) point.x() * target2MaxX + point.y();
+			return (long) point.x() * 4000000 + point.y();
 		}
 		return 0;
-	}
-	
-	record Data(List<Sensor> sensors, Set<Point> beacons) {
-		static Data parse(Scanner input) {
-			Pattern pattern = Pattern.compile("Sensor at x=(.+), y=(.+): closest beacon is at x=(.+), y=(.+)");
-			List<Sensor> sensors = new ArrayList<>();
-			Set<Point> beacons = new HashSet<>();
-			while (input.hasNext()) {
-				Matcher matcher = pattern.matcher(input.nextLine());
-				if (!matcher.find())
-					continue;
-				int x = Integer.parseInt(matcher.group(1));
-				int y = Integer.parseInt(matcher.group(2));
-				int bx = Integer.parseInt(matcher.group(3));
-				int by = Integer.parseInt(matcher.group(4));
-				Point beacon = new Point(bx, by);
-				beacons.add(beacon);
-				sensors.add(new Sensor(new Point(x, y), beacon));
-			}
-			return new Data(sensors, beacons);
-		}
 	}
 	
 	record RangeList(List<Range> ranges) {

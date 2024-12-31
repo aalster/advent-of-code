@@ -3,6 +3,9 @@ package org.advent.year2022.day16;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -21,10 +24,25 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public class Day16 {
+public class Day16 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day16.class, "input.txt");
+		new DayRunner(new Day16()).runAll();
+	}
+	
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 1651, 1707),
+				new ExpectedAnswers("input.txt", 2077, 2741)
+		);
+	}
+	
+	GameEngine gameEngine;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
 		Pattern pattern = Pattern.compile("Valve (.+) has flow rate=(.+); tunnels? leads? to valves? (.+)");
 		Map<String, Valve> valves = new LinkedHashMap<>();
 		while (input.hasNext()) {
@@ -34,14 +52,18 @@ public class Day16 {
 				valves.put(valve.name(), valve);
 			}
 		}
-		
-		GameEngine gameEngine = new GameEngine(valves, PathService.computeAllPaths(valves));
-		Valve start = valves.get("AA");
-		
-		System.out.println("Answer 1: " + gameEngine.maxPressure(start, 1, 30));
-		System.out.println("Answer 2: " + gameEngine.maxPressure(start, 2, 26));
+		gameEngine = new GameEngine(valves, PathService.computeAllPaths(valves));
 	}
 	
+	@Override
+	public Object part1() {
+		return gameEngine.maxPressure(gameEngine.allValves.get("AA"), 1, 30);
+	}
+	
+	@Override
+	public Object part2() {
+		return gameEngine.maxPressure(gameEngine.allValves.get("AA"), 2, 26);
+	}
 	
 	record Valve(String name, int rate, List<String> availableValves) {
 		
@@ -120,8 +142,7 @@ public class Day16 {
 		private int releasedPressure;
 		
 		void incPressure() {
-			int sum = openValves.stream().mapToInt(Valve::rate).sum();
-			releasedPressure += sum;
+			releasedPressure += openValves.stream().mapToInt(Valve::rate).sum();
 		}
 		
 		void openValve(Valve valve) {

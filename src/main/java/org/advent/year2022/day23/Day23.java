@@ -4,22 +4,39 @@ import lombok.Data;
 import org.advent.common.DirectionExt;
 import org.advent.common.Point;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class Day23 {
+public class Day23 extends AdventDay {
 	
-	static final boolean debug = false;
+	public static void main(String[] args) {
+		new DayRunner(new Day23()).runAll();
+	}
 	
-	public static void main(String[] args) throws Exception {
-		Scanner input = Utils.scanFileNearClass(Day23.class, "input.txt");
-		Set<Point> elvesPoints = new HashSet<>();
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 110, 20),
+				new ExpectedAnswers("input.txt", 4138, 1010)
+		);
+	}
+	
+	Set<Point> elvesPoints;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		elvesPoints = new HashSet<>();
 		int y = 0;
 		while (input.hasNext()) {
 			char[] charArray = input.nextLine().toCharArray();
@@ -30,18 +47,21 @@ public class Day23 {
 			}
 			y++;
 		}
-		
-		System.out.println("Answer 1: " + moveElves(elvesPoints, 10));
-		System.out.println("Answer 2: " + moveElves(elvesPoints, Integer.MAX_VALUE));
 	}
 	
-	private static int moveElves(Set<Point> elvesPoints, int rounds) throws Exception {
+	@Override
+	public Object part1() {
+		return moveElves(10);
+	}
+	
+	@Override
+	public Object part2() {
+		return moveElves(Integer.MAX_VALUE);
+	}
+	
+	int moveElves(int rounds) {
 		MovementCheck[] checks = MovementCheck.initial();
 		Map<Point, Elf> elves = elvesPoints.stream().collect(Collectors.toMap(p -> p, Elf::new));
-		if (debug) {
-			printField(elves, 0);
-			Thread.sleep(1000);
-		}
 		for (int round = 0; round < rounds; round++) {
 			elves.values().forEach(e -> e.setNextPosition(null));
 			Map<Point, Integer> counts = new HashMap<>(elves.size() * 2);
@@ -61,27 +81,13 @@ public class Day23 {
 			}
 			elves = map;
 			
-			if (debug) {
-				printField(elves, round + 1);
-				Thread.sleep(1000);
-			}
 			if (moves <= 0)
 				return round + 1;
 		}
 		return countEmptyCells(elves);
 	}
 	
-	private static void printField(Map<Point, Elf> elves, int round) {
-		System.out.println(round <= 0 ? "\n== Initial State ==" : "\n== End of Round " + round + " ==");
-		for (int y = -2; y < 10; y++) {
-			for (int x = -3; x < 11; x++) {
-				System.out.print(elves.containsKey(new Point(x, y)) ? '#' : '.');
-			}
-			System.out.println();
-		}
-	}
-	
-	private static int countEmptyCells(Map<Point, Elf> elves) {
+	int countEmptyCells(Map<Point, Elf> elves) {
 		int minX = Integer.MAX_VALUE;
 		int maxX = Integer.MIN_VALUE;
 		int minY = Integer.MAX_VALUE;

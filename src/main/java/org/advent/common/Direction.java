@@ -1,5 +1,6 @@
 package org.advent.common;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.util.stream.Stream;
@@ -11,7 +12,8 @@ public enum Direction {
 	DOWN(2, new Point(0, 1)),
 	LEFT(3, new Point(-1, 0));
 	
-	private final int index;
+	@Getter
+	private final int indexClockwise;
 	private final Point p;
 	
 	public Point shift(Point point) {
@@ -31,15 +33,19 @@ public enum Direction {
 	}
 	
 	public Direction rotate(Direction direction) {
-		return values()[(index + direction.index) % 4];
+		return values()[(indexClockwise + direction.indexClockwise) % 4];
 	}
 	
 	public String presentation() {
+		return String.valueOf(presentationChar());
+	}
+	
+	public char presentationChar() {
 		return switch (this) {
-			case UP -> "^";
-			case LEFT -> "<";
-			case RIGHT -> ">";
-			case DOWN -> "v";
+			case UP -> '^';
+			case LEFT -> '<';
+			case RIGHT -> '>';
+			case DOWN -> 'v';
 		};
 	}
 	

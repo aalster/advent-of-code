@@ -2,51 +2,68 @@ package org.advent.year2022.day22;
 
 import org.advent.common.Direction;
 import org.advent.common.FieldBounds;
-import org.advent.common.Pair;
 import org.advent.common.Point;
+import org.advent.common.Rect;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public class Day22 {
+public class Day22 extends AdventDay {
 	
-	public static void main(String[] args) throws Exception {
-		Scanner input = Utils.scanFileNearClass(Day22.class, "input.txt");
-		Set<Point> field = new HashSet<>();
-		Set<Point> walls = new HashSet<>();
-		int row = 0;
-		while (input.hasNext()) {
-			String line = input.nextLine();
-			if (line.isEmpty())
-				break;
-			for (int col = 0; col < line.length(); col++) {
-				char c = line.charAt(col);
-				if (c == ' ')
-					continue;
-				field.add(new Point(col, row));
-				if (c == '#')
-					walls.add(new Point(col, row));
-			}
-			row++;
-		}
-		List<Object> actions = parseActions(input.nextLine());
-		
-		System.out.println("Answer 1: " + part1(field, walls, actions));
-		// Вторая часть решена через костыль
-		System.out.println("Answer 2: " + part2(field, walls, actions));
+	public static void main(String[] args) {
+		new DayRunner(new Day22()).runAll();
 	}
 	
-	private static int part1(Set<Point> field, Set<Point> walls, List<Object> actions) {
-		FieldBounds bounds = FieldBounds.ofField(field);
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 6032, 5031),
+				new ExpectedAnswers("input.txt", 31568, 36540)
+		);
+	}
+	
+	Set<Point> allPoints;
+	Set<Point> walls;
+	List<Object> actions;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		List<List<String>> lists = Utils.splitByEmptyLine(Utils.readLines(input));
+		Map<Character, List<Point>> field = Point.readField(lists.getFirst());
+		allPoints = Stream.of(field.get('.'), field.get('#')).flatMap(List::stream).collect(Collectors.toSet());
+		walls = new HashSet<>(field.get('#'));
+		
+		Matcher matcher = Pattern.compile("\\d+|L|R").matcher(lists.getLast().getFirst());
+		actions = new ArrayList<>();
+		while (matcher.find()) {
+			String group = matcher.group();
+			actions.add(switch (group) {
+				case "L" -> Direction.LEFT;
+				case "R" -> Direction.RIGHT;
+				default -> Integer.parseInt(group);
+			});
+		}
+	}
+	
+	@Override
+	public Object part1() {
+		FieldBounds bounds = FieldBounds.ofField(allPoints);
 		Point position = bounds.rowMin(0);
 		Direction direction = Direction.RIGHT;
 		
@@ -64,94 +81,64 @@ public class Day22 {
 				}
 			}
 		}
-		System.out.println(position + ", " + direction);
-		return (position.y() + 1) * 1000 + (position.x() + 1) * 4 + directionId(direction);
+		return new State(position, direction).password();
 	}
 	
-	private static int part2(Set<Point> field, Set<Point> walls, List<Object> actions) throws Exception {
-		Point topLeftCorner = new Point(field.stream().filter(p -> p.y() == 0).mapToInt(Point::x).min().orElseThrow(), 0);
-		
-		int side = (int) Math.sqrt(field.size() / 6f);
-		if (side * side * 6 != field.size())
-			throw new RuntimeException("Not a cube");
-		
-		Map<FaceType, Face> faces = splitByFace2(field, topLeftCorner, side);
-		Location location = new Location(topLeftCorner, Direction.RIGHT, FaceType.TOP);
+	@Override
+	public Object part2() {
+		Map<FaceType, Face> faces = findFaces(allPoints).stream().collect(Collectors.toMap(Face::type, f -> f));
+		Point start = new Point(allPoints.stream().filter(p -> p.y() == 0).mapToInt(Point::x).min().orElseThrow(), 0);
+		State state = new State(start, Direction.RIGHT);
+		Face face = faces.values().stream().filter(f -> f.contains(start)).findFirst().orElseThrow();
 		
 		for (Object action : actions) {
-			
 			if (action instanceof Direction d) {
-				location = location.rotate(d);
+				state = state.turn(d);
 				continue;
 			}
 			if (action instanceof Integer steps) {
 				for (int step = 0; step < steps; step++) {
-//					printField(field, walls, location.position(), location.direction());
-//					Thread.sleep(2000);
+					State next = state.move();
 					
-					Location next = location.move();
-					Face currentFace = faces.get(location.face());
-					if (!currentFace.points().contains(next.position())) {
-						Face nextFace = faces.get(currentFace.neighbors().get(location.direction()));
-						int delta = currentFace.leavingDelta(location.position(), location.direction());
-						Direction enteringDirection = nextFace.enteringDirection(currentFace.type());
-						Point nextPosition = nextFace.enteringPoint(delta, enteringDirection);
-						next = new Location(nextPosition, enteringDirection.reverse(), nextFace.type());
+					Face nextFace = face;
+					if (!face.contains(next.position)) {
+						nextFace = faces.get(face.neighbor(state.direction));
+						if (!nextFace.contains(next.position))
+							next = face.jumpToFace(state, nextFace);
 					}
-					if (walls.contains(next.position()))
+					
+					if (walls.contains(next.position))
 						break;
-					location = next;
+					face = nextFace;
+					state = next;
 				}
 			}
 		}
-		System.out.println(location);
-		return (location.position().y() + 1) * 1000 + (location.position().x() + 1) * 4 + directionId(location.direction());
+		return state.password();
 	}
 	
-	static void printField(Set<Point> emptyPoints, Set<Point> walls, Point position, Direction direction) {
-		System.out.println("\nField:");
-		for (int y = 0; y < 12; y++) {
-			for (int x = 0; x < 16; x++) {
-				Point point = new Point(x, y);
-				System.out.print(position.equals(point) ? direction.presentation() :
-						walls.contains(point) ? "#" : emptyPoints.contains(point) ? "." : " ");
-			}
-			System.out.println();
+	record State(Point position, Direction direction) {
+		
+		State move() {
+			return new State(position.move(direction), direction);
 		}
-	}
-	
-	private static List<Object> parseActions(String line) {
-		List<Object> actions = new ArrayList<>();
-		int steps = 0;
-		for (char c : line.toCharArray()) {
-			if ('0' <= c && c <= '9') {
-				steps = steps * 10 + (c - '0');
-			} else {
-				actions.add(steps);
-				steps = 0;
-				actions.add(c == 'L' ? Direction.LEFT : Direction.RIGHT);
-			}
+		
+		State turn(Direction d) {
+			return new State(position, direction.rotate(d));
 		}
-		if (steps > 0)
-			actions.add(steps);
-		return actions;
-	}
-	
-	private static int directionId(Direction direction) {
-		return switch (direction) {
-			case RIGHT -> 0;
-			case DOWN -> 1;
-			case LEFT -> 2;
-			case UP -> 3;
-		};
+		
+		static Direction[] directions = new Direction[] {Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP};
+		int password() {
+			return (position.y() + 1) * 1000 + (position.x() + 1) * 4 + ArrayUtils.indexOf(directions, direction);
+		}
 	}
 	
 	enum FaceType {
 		FRONT,
-		LEFT,
-		RIGHT,
 		TOP,
+		RIGHT,
 		BOTTOM,
+		LEFT,
 		BACK;
 		
 		FaceType[] neighborsClockwise() {
@@ -165,206 +152,133 @@ public class Day22 {
 			};
 		}
 		
-		FaceType neighbor(Direction direction) {
+		Direction neighborOrientation(FaceType neighbor) {
 			return switch (this) {
-				case TOP -> switch (direction) {
-					case UP -> BACK;
-					case RIGHT -> RIGHT;
-					case DOWN -> FRONT;
-					case LEFT -> LEFT;
+				case TOP -> switch (neighbor) {
+					case BACK, FRONT -> Direction.UP;
+					case RIGHT -> Direction.LEFT;
+					case LEFT -> Direction.RIGHT;
+					default -> throw new IllegalStateException("Unexpected value: " + neighbor);
 				};
-				case FRONT -> switch (direction) {
-					case UP -> TOP;
-					case RIGHT -> RIGHT;
-					case DOWN -> BOTTOM;
-					case LEFT -> LEFT;
+				
+				case FRONT -> Direction.UP;
+				
+				case BOTTOM -> switch (neighbor) {
+					case FRONT, BACK -> Direction.UP;
+					case RIGHT -> Direction.RIGHT;
+					case LEFT -> Direction.LEFT;
+					default -> throw new IllegalStateException("Unexpected value: " + neighbor);
 				};
-				case BOTTOM -> switch (direction) {
-					case UP -> FRONT;
-					case RIGHT -> RIGHT;
-					case DOWN -> BACK;
-					case LEFT -> LEFT;
+				
+				case BACK -> switch (neighbor) {
+					case BOTTOM, TOP -> Direction.UP;
+					case RIGHT, LEFT -> Direction.DOWN;
+					default -> throw new IllegalStateException("Unexpected value: " + neighbor);
 				};
-				case BACK -> switch (direction) {
-					case UP -> BOTTOM;
-					case RIGHT -> RIGHT;
-					case DOWN -> TOP;
-					case LEFT -> LEFT;
+				
+				case LEFT -> switch (neighbor) {
+					case TOP -> Direction.LEFT;
+					case FRONT -> Direction.UP;
+					case BOTTOM -> Direction.RIGHT;
+					case BACK -> Direction.DOWN;
+					default -> throw new IllegalStateException("Unexpected value: " + neighbor);
 				};
-				case LEFT -> switch (direction) {
-					case UP -> TOP;
-					case RIGHT -> FRONT;
-					case DOWN -> BOTTOM;
-					case LEFT -> BACK;
-				};
-				case RIGHT -> switch (direction) {
-					case UP -> TOP;
-					case RIGHT -> BACK;
-					case DOWN -> BOTTOM;
-					case LEFT -> FRONT;
+				
+				case RIGHT -> switch (neighbor) {
+					case TOP -> Direction.RIGHT;
+					case FRONT -> Direction.UP;
+					case BOTTOM -> Direction.LEFT;
+					case BACK -> Direction.DOWN;
+					default -> throw new IllegalStateException("Unexpected value: " + neighbor);
 				};
 			};
 		}
+		
+		FaceType neighbor(Direction direction) {
+			return neighborsClockwise()[direction.getIndexClockwise()];
+		}
+		
+		Direction neighborDirection(FaceType neighbor) {
+			return Direction.values()[ArrayUtils.indexOf(neighborsClockwise(), neighbor)];
+		}
 	}
 	
-	record Face(
-			FaceType type,
-			Set<Point> points,
-			int minX,
-			int maxX,
-			int minY,
-			int maxY,
-			Map<Direction, FaceType> neighbors
-	) {
+	record Face(FaceType type, Set<Point> points, Direction orientation, Rect bounds) {
+		
+		Face(FaceType type, Set<Point> points, Direction faceDirection) {
+			this(type, points, faceDirection, Point.bounds(points));
+		}
+		
+		FaceType neighbor(Direction direction) {
+			return type.neighbor(direction.rotate(orientation.mirror()));
+		}
+		
+		Direction neighborOrientation(FaceType neighbor) {
+			return type.neighborOrientation(neighbor).rotate(orientation);
+		}
+		
+		boolean contains(Point point) {
+			return bounds.containsInclusive(point);
+		}
+		
+		State jumpToFace(State state, Face nextFace) {
+			int leavingDelta = leavingDelta(state.position, state.direction);
+			Direction nextDirection = nextFace.type.neighborDirection(type).reverse().rotate(nextFace.orientation);
+			return new State(nextFace.enteringPosition(leavingDelta, nextDirection), nextDirection);
+		}
 		
 		int leavingDelta(Point from, Direction leavingTo) {
 			return switch (leavingTo) {
-				case UP -> from.x() - minX;
-				case RIGHT -> from.y() - minY;
-				case DOWN -> maxX - from.x();
-				case LEFT -> maxY - from.y();
+				case UP -> from.x() - bounds.minX();
+				case RIGHT -> from.y() - bounds.minY();
+				case DOWN -> bounds.maxX() - from.x();
+				case LEFT -> bounds.maxY() - from.y();
 			};
 		}
 		
-		Direction enteringDirection(FaceType enteringFrom) {
-			for (Map.Entry<Direction, FaceType> entry : neighbors.entrySet())
-				if (entry.getValue() == enteringFrom)
-					return entry.getKey();
-			throw new NullPointerException();
-		}
-		
-		Point enteringPoint(int enteringDelta, Direction enteringFrom) {
-			return switch (enteringFrom) {
-				case UP -> new Point(maxX - enteringDelta, minY);
-				case RIGHT -> new Point(maxX, maxY - enteringDelta);
-				case DOWN -> new Point(minX + enteringDelta, maxY);
-				case LEFT -> new Point(minX, minY + enteringDelta);
+		Point enteringPosition(int enteringDelta, Direction moveDirection) {
+			return switch (moveDirection) {
+				case UP -> new Point(bounds.minX() + enteringDelta, bounds.maxY());
+				case RIGHT -> new Point(bounds.minX(), bounds.minY() + enteringDelta);
+				case DOWN -> new Point(bounds.maxX() - enteringDelta, bounds.minY());
+				case LEFT -> new Point(bounds.maxX(), bounds.maxY() - enteringDelta);
 			};
 		}
+	}
+	
+	List<Face> findFaces(Collection<Point> field) {
+		int side = (int) Math.sqrt(field.size() / 6f);
+		if (side * side * 6 != field.size())
+			throw new RuntimeException("Not a cube");
 		
-		static Face create(FaceType type, Map<FaceType, Set<Point>> allPoints, int side) {
-			Set<Point> points = allPoints.get(type);
-			int minX = Integer.MAX_VALUE;
-			int maxX = Integer.MIN_VALUE;
-			int minY = Integer.MAX_VALUE;
-			int maxY = Integer.MIN_VALUE;
-			
-			for (Point point : points) {
-				if (point.x() < minX)
-					minX = point.x();
-				if (maxX < point.x())
-					maxX = point.x();
-				if (point.y() < minY)
-					minY = point.y();
-				if (maxY < point.y())
-					maxY = point.y();
-			}
-			
-			Point anyPoint = points.iterator().next();
-			Direction anyPointDirection = Direction.UP;
-			FaceType anyPointFace = null;
-			while (anyPointFace == null) {
-				anyPointDirection = anyPointDirection.rotate(Direction.RIGHT);
-				Point checkPoint = anyPoint.move(anyPointDirection, side);
-				for (Map.Entry<FaceType, Set<Point>> entry : allPoints.entrySet()) {
-					if (entry.getValue().contains(checkPoint)) {
-						anyPointFace = entry.getKey();
-						break;
+		List<Set<Point>> facesPoints = new ArrayList<>(field.stream().collect(Collectors.groupingBy(
+				p1 -> new Point(p1.x() / side, p1.y() / side), Collectors.toSet())).values());
+		
+		Point topLeftCorner = field.stream().min(Comparator.comparing(Point::y).thenComparing(Point::x)).orElseThrow();
+		Set<Point> topFacePoints = facesPoints.stream().filter(p -> p.contains(topLeftCorner)).findAny().orElseThrow();
+		
+		Face topFace = new Face(FaceType.TOP, topFacePoints, Direction.UP);
+		facesPoints.remove(topFace.points);
+		
+		List<Face> faces = new ArrayList<>();
+		faces.add(topFace);
+		
+		while (!facesPoints.isEmpty()) {
+			pointsLoop: for (Set<Point> currentPoints : facesPoints) {
+				Point sample = currentPoints.iterator().next();
+				for (Direction direction : Direction.values()) {
+					Point moved = sample.move(direction, side);
+					for (Face face : faces) {
+						if (face.contains(moved)) {
+							FaceType currentType = face.neighbor(direction.reverse());
+							faces.add(new Face(currentType, currentPoints, face.neighborOrientation(currentType)));
+							facesPoints.remove(currentPoints);
+							break pointsLoop;
+						}
 					}
 				}
 			}
-			Map<Direction, FaceType> neighbors = new HashMap<>();
-			neighbors.put(anyPointDirection, anyPointFace);
-			
-			FaceType[] neighborsClockwise = type.neighborsClockwise();
-			
-			for (int i = ArrayUtils.indexOf(neighborsClockwise, anyPointFace) + 1; i < 7; i++) {
-				anyPointDirection = anyPointDirection.rotate(Direction.RIGHT);
-				neighbors.put(anyPointDirection, neighborsClockwise[i % 4]);
-			}
-			
-			return new Face(type, points, minX, maxX, minY, maxY, neighbors);
 		}
-	}
-	
-	record Location (
-		Point position,
-		Direction direction,
-		FaceType face
-	) {
-		Location move() {
-			return new Location(position.move(direction), direction, face);
-		}
-		Location rotate(Direction direction) {
-			return new Location(position, this.direction.rotate(direction), face);
-		}
-	}
-	
-//	static Map<FaceType, Face> splitByFace(Set<Point> points, Point topLeftCorner, int side) {
-//		Map<FaceType, Set<Point>> faces = Arrays.stream(FaceType.values()).collect(Collectors.toMap(f -> f, f -> new HashSet<>()));
-//		for (Point point : points)
-//			faces.get(getFace(topLeftCorner, point, side)).add(point);
-//		return Arrays.stream(FaceType.values()).collect(Collectors.toMap(f -> f, f -> Face.create(f, faces, side)));
-//	}
-//
-//	static FaceType getFace(Point topLeftCorner, Point target, int side) {
-//		int dx = (target.x() / side * side - topLeftCorner.x()) / side;
-//		int dy = (target.y() / side * side - topLeftCorner.y()) / side;
-//
-//		if (dx < -2 || 3 <= dx)
-//			throw new RuntimeException("Such dx not supported");
-//
-//		if (dx == -1)
-//			return FaceType.LEFT;
-//		if (dx == 1)
-//			return FaceType.RIGHT;
-//
-//		if (dx != 0)
-//			dy += 2;
-//
-//		return switch (dy % 4) {
-//			case 0 -> FaceType.TOP;
-//			case 1 -> FaceType.FRONT;
-//			case 2 -> FaceType.BOTTOM;
-//			case 3 -> FaceType.BACK;
-//			default -> throw new IllegalArgumentException();
-//		};
-//	}
-	
-	static Map<FaceType, Face> splitByFace2(Set<Point> points, Point topLeftCorner, int side) {
-		points = new HashSet<>(points);
-		Map<FaceType, Set<Point>> pointsByFace = new HashMap<>();
-		
-		List<Pair<FaceType, Point>> checks = new ArrayList<>();
-		checks.add(Pair.of(FaceType.TOP, topLeftCorner));
-		while (!points.isEmpty() && !checks.isEmpty()) {
-			Pair<FaceType, Point> pair = checks.remove(0);
-			if (!points.contains(pair.right()))
-				continue;
-			
-			pointsByFace.put(pair.left(), removeSameFace(points, pair.right(), side));
-			
-			if (pair.left() == FaceType.LEFT) {
-				// Вставил костыль, т. к. замучился
-				checks.add(Pair.of(FaceType.BACK, pair.right().move(Direction.DOWN, side)));
-			} else {
-				for (Direction direction : Direction.values())
-					checks.add(Pair.of(pair.left().neighbor(direction), pair.right().move(direction, side)));
-			}
-		}
-		
-		return Arrays.stream(FaceType.values()).collect(Collectors.toMap(f -> f, f -> Face.create(f, pointsByFace, side)));
-	}
-	
-	static Set<Point> removeSameFace(Set<Point> points, Point example, int side) {
-		int minX = example.x() / side * side;
-		int minY = example.y() / side * side;
-		int maxX = minX + side;
-		int maxY = minY + side;
-		Set<Point> sidePoints = points.stream()
-				.filter(p -> minX <= p.x() && p.x() < maxX && minY <= p.y() && p.y() < maxY)
-				.collect(Collectors.toSet());
-		points.removeAll(sidePoints);
-		return sidePoints;
+		return faces;
 	}
 }

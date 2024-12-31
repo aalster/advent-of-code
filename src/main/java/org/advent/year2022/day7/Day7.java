@@ -3,6 +3,9 @@ package org.advent.year2022.day7;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
@@ -12,10 +15,25 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.function.IntPredicate;
 
-public class Day7 {
+public class Day7 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day7.class,"input.txt");
+		new DayRunner(new Day7()).runAll();
+	}
+	
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 95437, 24933642),
+				new ExpectedAnswers("input.txt", 1391690, 5469168)
+		);
+	}
+	
+	File root;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
 		File current = File.createRoot();
 		while (input.hasNext()) {
 			String line = input.nextLine();
@@ -25,33 +43,30 @@ public class Day7 {
 				current.addContent(line);
 		}
 		
-		File root = current.root();
+		root = current.root();
 		root.countSize();
-		
-		System.out.println("Answer 1: " + part1(root));
-		
-		int minFileSize = part2(root);
-		System.out.println("Answer 2: " + minFileSize);
 	}
 	
-	private static int part1(File root) {
+	@Override
+	public Object part1() {
 		return filterFiles(root, size -> size <= 100000).stream().mapToInt(File::getSize).sum();
 	}
 	
-	private static int part2(File root) {
+	@Override
+	public Object part2() {
 		int space = 70000000;
 		int requiredSpace = 30000000;
 		int deletionSize = requiredSpace - space + root.getSize();
 		return filterFiles(root, size -> size >= deletionSize).stream().mapToInt(File::getSize).min().orElse(0);
 	}
 	
-	static List<File> filterFiles(File root, IntPredicate filter) {
+	List<File> filterFiles(File root, IntPredicate filter) {
 		List<File> largeFiles = new ArrayList<>();
 		filterFiles(root, filter, largeFiles);
 		return largeFiles;
 	}
 	
-	static void filterFiles(File current, IntPredicate filter, List<File> largeFiles) {
+	void filterFiles(File current, IntPredicate filter, List<File> largeFiles) {
 		if (current.isDir() && filter.test(current.getSize()))
 			largeFiles.add(current);
 		for (File nested : current.getNested().values())

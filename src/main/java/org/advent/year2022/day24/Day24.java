@@ -4,21 +4,43 @@ import org.advent.common.Direction;
 import org.advent.common.FieldBounds;
 import org.advent.common.Point;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Day24 {
+public class Day24 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day24.class, "input.txt");
+		new DayRunner(new Day24()).runAll();
+	}
+	
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 18, 54),
+				new ExpectedAnswers("input.txt", 314, 896)
+		);
+	}
+	
+	Map<Direction, Set<Point>> blizzards;
+	Point start;
+	Point exit;
+	FieldBounds bounds;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
 		Set<Point> field = new HashSet<>();
-		Map<Direction, Set<Point>> blizzards = Direction.stream().collect(Collectors.toMap(d -> d, d -> new HashSet<>()));
+		blizzards = Direction.stream().collect(Collectors.toMap(d -> d, d -> new HashSet<>()));
 		int y = 0;
 		while (input.hasNext()) {
 			char[] charArray = input.nextLine().toCharArray();
@@ -34,26 +56,25 @@ public class Day24 {
 			y++;
 		}
 		
-		Point start = field.stream().reduce((l, r) -> l.y() < r.y() ? l : r).orElseThrow();
-		Point exit = field.stream().reduce((l, r) -> l.y() > r.y() ? l : r).orElseThrow();
-		FieldBounds bounds = FieldBounds.ofField(field);
-		
-		System.out.println("Answer 1: " + part1(blizzards, start, exit, bounds));
-		System.out.println("Answer 2: " + part2(blizzards, start, exit, bounds));
+		start = field.stream().reduce((l, r) -> l.y() < r.y() ? l : r).orElseThrow();
+		exit = field.stream().reduce((l, r) -> l.y() > r.y() ? l : r).orElseThrow();
+		bounds = FieldBounds.ofField(field);
 	}
 	
-	private static int part1(Map<Direction, Set<Point>> blizzards, Point start, Point exit, FieldBounds bounds) {
+	@Override
+	public Object part1() {
 		return trip(new State(0, blizzards, Set.of(start)), exit, bounds).steps();
 	}
 	
-	private static int part2(Map<Direction, Set<Point>> blizzards, Point start, Point exit, FieldBounds bounds) {
+	@Override
+	public Object part2() {
 		State trip = trip(new State(0, blizzards, Set.of(start)), exit, bounds);
 		trip = trip(trip.resetBranches(Set.of(exit)), start, bounds);
 		trip = trip(trip.resetBranches(Set.of(start)), exit, bounds);
 		return trip.steps();
 	}
 	
-	private static State trip(State state, Point target, FieldBounds bounds) {
+	State trip(State state, Point target, FieldBounds bounds) {
 		while (!state.branches.contains(target))
 			state = state.next(bounds);
 		return state;

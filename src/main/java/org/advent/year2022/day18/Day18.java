@@ -3,9 +3,13 @@ package org.advent.year2022.day18;
 import org.advent.common.IntPair;
 import org.advent.common.Point3D;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.function.Function;
@@ -16,20 +20,41 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public class Day18 {
+public class Day18 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day18.class, "input.txt");
-		Grid3D grid = new Grid3D();
-		while (input.hasNext()) {
-			grid.add(Point3D.parse(input.nextLine()));
-		}
-		System.out.println("Answer 1: " + countSides(grid));
-		grid.cells.addAll(getTrappedPoints(grid));
-		System.out.println("Answer 2: " + countSides(grid));
+		new DayRunner(new Day18()).runAll();
 	}
 	
-	static Collection<Point3D> getTrappedPoints(Grid3D grid) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 64, 58),
+				new ExpectedAnswers("input.txt", 4314, 2444)
+		);
+	}
+	
+	Set<Point3D> points;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		points = Utils.readLines(input).stream().map(Point3D::parse).collect(Collectors.toSet());
+	}
+	
+	@Override
+	public Object part1() {
+		return countSides(new Grid3D(points));
+	}
+	
+	@Override
+	public Object part2() {
+		Grid3D grid = new Grid3D(points);
+		grid.cells.addAll(getTrappedPoints(grid));
+		return countSides(grid);
+	}
+	
+	Collection<Point3D> getTrappedPoints(Grid3D grid) {
 		int minX = grid.min(Point3D::x);
 		int maxX = grid.max(Point3D::x);
 		int minY = grid.min(Point3D::y);
@@ -69,7 +94,7 @@ public class Day18 {
 		return innerPoints;
 	}
 	
-	static int countSides(Grid3D grid) {
+	int countSides(Grid3D grid) {
 		int minX = grid.min(Point3D::x);
 		int maxX = grid.max(Point3D::x);
 		int minY = grid.min(Point3D::y);
@@ -101,7 +126,7 @@ public class Day18 {
 		return xSides + ySides + zSides;
 	}
 	
-	private static int countSidesForDirection(Grid3D grid, Stream<IntPair> pairStream, Function<IntPair, Point3D> pointCreator,
+	int countSidesForDirection(Grid3D grid, Stream<IntPair> pairStream, Function<IntPair, Point3D> pointCreator,
 	                                          Predicate<Point3D> loopCondition, UnaryOperator<Point3D> cursorShifter) {
 		return pairStream
 				.mapToInt(pair -> {
@@ -119,7 +144,7 @@ public class Day18 {
 				.sum();
 	}
 	
-	private static Stream<IntPair> getIntPairStream(int minLeft, int maxLeft, int minRight, int maxRight) {
+	Stream<IntPair> getIntPairStream(int minLeft, int maxLeft, int minRight, int maxRight) {
 		return IntStream.rangeClosed(minRight, maxRight)
 				.boxed()
 				.flatMap(right -> IntStream.rangeClosed(minLeft, maxLeft).mapToObj(left -> new IntPair(left, right)));
@@ -127,13 +152,6 @@ public class Day18 {
 	
 	
 	record Grid3D(Set<Point3D> cells) {
-		Grid3D() {
-			this(new HashSet<>());
-		}
-		
-		void add(Point3D p) {
-			cells.add(p);
-		}
 		
 		boolean contains(Point3D p) {
 			return cells().contains(p);

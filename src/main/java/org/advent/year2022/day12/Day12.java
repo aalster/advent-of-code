@@ -2,6 +2,9 @@ package org.advent.year2022.day12;
 
 import lombok.Data;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,23 +13,36 @@ import java.util.Objects;
 import java.util.Scanner;
 import java.util.stream.Stream;
 
-public class Day12 {
+public class Day12 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day12.class, "input.txt");
+		new DayRunner(new Day12()).runAll();
+	}
+	
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 31, 29),
+				new ExpectedAnswers("input.txt", 484, 478)
+		);
+	}
+	
+	Cell[][] cells;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
 		List<Cell[]> rows = new ArrayList<>();
 		int y = 0;
 		while (input.hasNext()) {
 			rows.add(Cell.parseRow(y, input.nextLine()));
 			y++;
 		}
-		Cell[][] cells = rows.toArray(Cell[][]::new);
-		
-		System.out.println("Answer 1: " + part1(cells));
-		System.out.println("Answer 2: " + part2(cells));
+		cells = rows.toArray(Cell[][]::new);
 	}
 	
-	private static int part1(Cell[][] cells) {
+	@Override
+	public Object part1() {
 		Grid grid = new Grid(Cell.copy(cells), false);
 		
 		Cell start = grid.findStart();
@@ -43,7 +59,8 @@ public class Day12 {
 		return end.getSteps();
 	}
 	
-	private static int part2(Cell[][] cells) {
+	@Override
+	public Object part2() {
 		Grid grid = new Grid(Cell.copy(cells), true);
 		
 		List<Cell> lowest = grid.findLowest();

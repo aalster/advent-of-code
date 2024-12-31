@@ -1,6 +1,9 @@
 package org.advent.year2022.day21;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.HashMap;
@@ -10,17 +13,30 @@ import java.util.Scanner;
 import java.util.UUID;
 import java.util.function.LongBinaryOperator;
 
-public class Day21 {
+public class Day21 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day21.class, "input.txt");
-		List<String> lines = Utils.readLines(input);
-		
-		System.out.println("Answer 1: " + part1(lines));
-		System.out.println("Answer 2: " + part2(lines));
+		new DayRunner(new Day21()).runAll();
 	}
 	
-	private static long part1(List<String> lines) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 152, 301),
+				new ExpectedAnswers("input.txt", 268597611536314L, 3451534022348L)
+		);
+	}
+	
+	List<String> lines;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		lines = Utils.readLines(input);
+	}
+	
+	@Override
+	public Object part1() {
 		Map<String, Monkey> monkeys = new HashMap<>();
 		for (String line : lines) {
 			Monkey monkey = Monkey.parse(line);
@@ -29,7 +45,8 @@ public class Day21 {
 		return monkeys.get("root").answer(monkeys);
 	}
 	
-	private static long part2(List<String> lines) {
+	@Override
+	public Object part2() {
 		Map<String, Monkey> monkeys = new HashMap<>();
 		for (String line : lines) {
 			if (line.startsWith("root"))
@@ -46,14 +63,14 @@ public class Day21 {
 				if (simplified != null) {
 					continueSimplifying = true;
 					monkeys.put(monkey.name(), simplified);
-					System.out.println(monkey.name() + ": " + monkey.view(monkeys) + " -> " + simplified.value());
+//					System.out.println(monkey.name() + ": " + monkey.view(monkeys) + " -> " + simplified.value());
 					break;
 				}
 			}
 		}
 		
 		Monkey root = monkeys.get("root");
-		System.out.println("\nRoot:\n" + root.view(monkeys));
+//		System.out.println("\nRoot:\n" + root.view(monkeys));
 		
 		boolean continueSimplifyingRoot = true;
 		while (continueSimplifyingRoot) {
@@ -61,7 +78,7 @@ public class Day21 {
 				break;
 			root = root.simplifyEquality(monkeys);
 			
-			System.out.println("  => " + root.view(monkeys));
+//			System.out.println("  => " + root.view(monkeys));
 			
 			continueSimplifyingRoot = false;
 			Monkey simplifyLeft = monkeys.get(root.left()).simplify(monkeys);
@@ -74,11 +91,11 @@ public class Day21 {
 				continueSimplifyingRoot = true;
 				monkeys.put(simplifyRight.name(), simplifyRight);
 			}
-			if (continueSimplifyingRoot)
-				System.out.println("  => " + root.view(monkeys));
+//			if (continueSimplifyingRoot)
+//				System.out.println("  => " + root.view(monkeys));
 		}
 		
-		System.out.println("\nRoot:\n" + root.view(monkeys));
+//		System.out.println("\nRoot:\n" + root.view(monkeys));
 		return monkeys.get(root.right()).value();
 	}
 	

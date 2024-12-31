@@ -3,8 +3,10 @@ package org.advent.year2022.day14;
 import lombok.RequiredArgsConstructor;
 import org.advent.common.Point;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.IntSummaryStatistics;
 import java.util.Iterator;
@@ -12,16 +14,36 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.stream.Stream;
 
-public class Day14 {
+public class Day14 extends AdventDay {
 	
-	public static void main(String[] args) throws Exception {
-		Scanner input = Utils.scanFileNearClass(Day14.class, "input.txt");
-		List<Path> rockPaths = new ArrayList<>();
-		while (input.hasNext())
-			rockPaths.add(Path.parse(input.nextLine()));
-		
-		System.out.println("Answer 1: " + solve(rockPaths, false));
-		System.out.println("Answer 2: " + solve(rockPaths, true));
+	public static void main(String[] args) {
+		new DayRunner(new Day14()).runAll();
+	}
+	
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 24, 93),
+				new ExpectedAnswers("input.txt", 779, 27426)
+		);
+	}
+	
+	List<Path> rockPaths;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		rockPaths = Utils.readLines(input).stream().map(Path::parse).toList();
+	}
+	
+	@Override
+	public Object part1() {
+		return solve(rockPaths, false);
+	}
+	
+	@Override
+	public Object part2() {
+		return solve(rockPaths, true);
 	}
 	
 	private static long solve(List<Path> rockPaths, boolean addRockLine) {
