@@ -70,9 +70,7 @@ public class Day22 extends AdventDay {
 		for (Object action : actions) {
 			if (action instanceof Direction d) {
 				direction = direction.rotate(d);
-				continue;
-			}
-			if (action instanceof Integer steps) {
+			} else if (action instanceof Integer steps) {
 				for (int step = 0; step < steps; step++) {
 					Point next = bounds.moveWrappingAround(position, direction);
 					if (walls.contains(next))
@@ -205,8 +203,8 @@ public class Day22 extends AdventDay {
 	
 	record Face(FaceType type, Set<Point> points, Direction orientation, Rect bounds) {
 		
-		Face(FaceType type, Set<Point> points, Direction faceDirection) {
-			this(type, points, faceDirection, Point.bounds(points));
+		Face(FaceType type, Set<Point> points, Direction orientation) {
+			this(type, points, orientation, Point.bounds(points));
 		}
 		
 		FaceType neighbor(Direction direction) {
