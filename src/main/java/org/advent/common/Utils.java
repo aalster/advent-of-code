@@ -5,9 +5,12 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
+import java.util.Set;
 
 public class Utils {
 	
@@ -50,6 +53,12 @@ public class Utils {
 				lines = List.of();
 			}
 		}
+		return result;
+	}
+	
+	public static <T> Set<T> combineToSet(Collection<T> collection, Collection<T> other) {
+		Set<T> result = new HashSet<>(collection);
+		result.addAll(other);
 		return result;
 	}
 }

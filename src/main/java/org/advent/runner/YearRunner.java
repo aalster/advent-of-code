@@ -2,6 +2,7 @@ package org.advent.runner;
 
 import org.reflections.Reflections;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
@@ -10,8 +11,8 @@ public class YearRunner {
 	
 	public static void main(String[] args) {
 //		new YearRunner().runAll();
+		new YearRunner().runYear(2023);
 //		new YearRunner().runAll("input.txt");
-		new YearRunner().runYear(2022);
 	}
 	
 	public void runAll() {
@@ -31,9 +32,8 @@ public class YearRunner {
 	}
 	
 	private void run(List<Class<? extends AdventDay>> dayClasses, String file) {
-		int passedCount = 0;
 		int prevYear = 0;
-		Timer timer = new Timer();
+		List<PuzzleResultStats> stats = new ArrayList<>();
 		for (Class<? extends AdventDay> dayClass : dayClasses) {
 			try {
 				AdventDay day = dayClass.getDeclaredConstructor().newInstance();
@@ -41,19 +41,15 @@ public class YearRunner {
 					System.out.println("\n" + OutputUtils.white("Year " + day.getYear()));
 				System.out.println(OutputUtils.white("  Day " + day.getDay()));
 				
-				boolean passed = new DayRunner(day).runForYear(file);
-				if (passed)
-					passedCount++;
+				stats.add(new DayRunner(day).runForYear(file));
 				
 				prevYear = day.getYear();
 			} catch (Exception e) {
 				System.out.println(OutputUtils.red(e.getMessage()));
 			}
 		}
-		int failedCount = dayClasses.size() - passedCount;
-		System.out.println("\n" + OutputUtils.white("Finished after " + timer.time() / 1000 + "s.") +
-				" Days passed: " + OutputUtils.green(passedCount) + "." +
-				" Failed: " + (failedCount > 0 ? OutputUtils.red(failedCount) : failedCount) + ".");
+		System.out.println();
+		PuzzleResultStats.combineAll(stats.stream()).print();
 	}
 	
 	private Stream<Class<? extends AdventDay>> dayClasses() {

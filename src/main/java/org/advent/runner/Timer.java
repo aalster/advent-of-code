@@ -15,12 +15,15 @@ public class Timer {
 	}
 	
 	public String stepFormatted(int width) {
-		long time = time();
+		return formatTime(time(), width);
+	}
+	
+	public static String formatTime(long time, int width) {
 		String text = time + "ms";
 		return pad(colored(time, text), width - text.length());
 	}
 	
-	private String colored(long time, String text) {
+	private static String colored(long time, String text) {
 		if (time < 500)
 			return text;
 		if (time < 2000)
@@ -28,7 +31,7 @@ public class Timer {
 		return OutputUtils.red(text);
 	}
 	
-	private String pad(String text, int padding) {
+	private static String pad(String text, int padding) {
 		if (padding <= 0)
 			return text;
 		return " ".repeat(padding) + text;
