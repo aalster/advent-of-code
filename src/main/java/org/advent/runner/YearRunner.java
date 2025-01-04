@@ -10,8 +10,8 @@ import java.util.stream.Stream;
 public class YearRunner {
 	
 	public static void main(String[] args) {
-//		new YearRunner().runAll();
-		new YearRunner().runYear(2021);
+		new YearRunner().runAll();
+//		new YearRunner().runYear(2021);
 //		new YearRunner().runAll("input.txt");
 	}
 	

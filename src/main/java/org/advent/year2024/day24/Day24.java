@@ -40,15 +40,10 @@ public class Day24 extends AdventDay {
 	@Override
 	public void prepare(String file) {
 		Scanner input = Utils.scanFileNearClass(getClass(), file);
-		initialValues = new HashMap<>();
-		while (input.hasNext()) {
-			String line = input.nextLine();
-			if (line.isEmpty())
-				break;
-			String[] split = line.split(": ");
-			initialValues.put(split[0], "1".equals(split[1]));
-		}
-		algorithm = Algorithm.parse(Utils.readLines(input));
+		List<List<String>> lines = Utils.splitByEmptyLine(Utils.readLines(input));
+		initialValues = lines.getFirst().stream().map(line -> line.split(": "))
+				.collect(Collectors.toMap(split -> split[0], split -> "1".equals(split[1])));
+		algorithm = Algorithm.parse(lines.getLast());
 	}
 	
 	@Override
