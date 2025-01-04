@@ -1,6 +1,9 @@
 package org.advent.year2021.day4;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,13 +15,29 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class Day4 {
+public class Day4 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day4.class, "input.txt");
+		new DayRunner(new Day4()).runAll();
+	}
+	
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 4512, 1924),
+				new ExpectedAnswers("input.txt", 16716, 4880)
+		);
+	}
+	
+	List<Integer> numbers;
+	List<Board> boards;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
 		
-		List<Integer> numbers = Arrays.stream(input.nextLine().split(",")).map(Integer::valueOf).toList();
-		List<Board> boards = new ArrayList<>();
+		numbers = Arrays.stream(input.nextLine().split(",")).map(Integer::valueOf).toList();
+		boards = new ArrayList<>();
 		
 		List<int[]> lines = new ArrayList<>();
 		while (input.hasNext()) {
@@ -33,12 +52,10 @@ public class Day4 {
 		}
 		if (!lines.isEmpty())
 			boards.add(new Board(lines.toArray(int[][]::new)));
-		
-		System.out.println("Answer 1: " + part1(numbers, boards));
-		System.out.println("Answer 2: " + part2(numbers, boards));
 	}
 	
-	private static int part1(List<Integer> numbers, List<Board> boards) {
+	@Override
+	public Object part1() {
 		Set<Integer> playedNumbers = new HashSet<>();
 		for (Integer number : numbers) {
 			playedNumbers.add(number);
@@ -49,16 +66,17 @@ public class Day4 {
 		return 0;
 	}
 	
-	private static int part2(List<Integer> numbers, List<Board> boards) {
-		boards = new ArrayList<>(boards);
+	@Override
+	public Object part2() {
+		List<Board> currentBoards = new ArrayList<>(boards);
 		Set<Integer> playedNumbers = new HashSet<>();
 		for (Integer number : numbers) {
 			playedNumbers.add(number);
-			for (Iterator<Board> iterator = boards.iterator(); iterator.hasNext(); ) {
+			for (Iterator<Board> iterator = currentBoards.iterator(); iterator.hasNext(); ) {
 				Board board = iterator.next();
 				if (board.win(playedNumbers)) {
 					iterator.remove();
-					if (boards.isEmpty())
+					if (currentBoards.isEmpty())
 						return number * board.allNumbers().filter(n -> !playedNumbers.contains(n)).sum();
 				}
 			}
@@ -77,11 +95,6 @@ public class Day4 {
 		
 		IntStream allNumbers() {
 			return Arrays.stream(cells).flatMapToInt(Arrays::stream);
-		}
-		
-		@Override
-		public String toString() {
-			return Arrays.stream(cells).map(Arrays::toString).collect(Collectors.joining("\n"));
 		}
 		
 		static List<Set<Integer>> winningSets(int[][] cells) {

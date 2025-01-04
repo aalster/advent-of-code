@@ -1,24 +1,37 @@
 package org.advent.year2021.day1;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-public class Day1 {
+public class Day1 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day1.class, "input.txt");
-		List<Integer> depths = new ArrayList<>();
-		while (input.hasNext())
-			depths.add(Integer.parseInt(input.nextLine()));
-		
-		System.out.println("Answer 1: " + part1(depths));
-		System.out.println("Answer 2: " + part2(depths));
+		new DayRunner(new Day1()).runAll();
 	}
 	
-	private static int part1(List<Integer> depths) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 7, 5),
+				new ExpectedAnswers("input.txt", 1502, 1538)
+		);
+	}
+	
+	List<Integer> depths;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		depths = Utils.readLines(input).stream().map(Integer::parseInt).toList();
+	}
+	
+	@Override
+	public Object part1() {
 		int increases = 0;
 		int previousDepth = 0;
 		for (Integer depth : depths) {
@@ -29,7 +42,8 @@ public class Day1 {
 		return increases - 1;
 	}
 	
-	private static int part2(List<Integer> depths) {
+	@Override
+	public Object part2() {
 		int increases = 0;
 		int previousDepth = 0;
 		for (int i = 0; i < depths.size() - 2; i++) {

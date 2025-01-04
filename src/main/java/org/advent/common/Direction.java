@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.stream.Stream;
 
+@Getter
 @RequiredArgsConstructor
 public enum Direction {
 	UP(0, new Point(0, -1)),
@@ -12,7 +13,6 @@ public enum Direction {
 	DOWN(2, new Point(0, 1)),
 	LEFT(3, new Point(-1, 0));
 	
-	@Getter
 	private final int indexClockwise;
 	private final Point p;
 	

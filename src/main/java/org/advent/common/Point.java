@@ -51,12 +51,6 @@ public record Point(int x, int y) {
 		return Math.abs(x - p.x) + Math.abs(y - p.y);
 	}
 	
-	public Point directionVectorTo(Point p) {
-		DirectionExt vertical = p.y == y ? null : p.y < y ? DirectionExt.N : DirectionExt.S;
-		DirectionExt horizontal = p.x == x ? null : p.x < x ? DirectionExt.W : DirectionExt.E;
-		return Stream.of(horizontal, vertical).filter(Objects::nonNull).map(DirectionExt::getPoint).reduce(new Point(0, 0), Point::shift);
-	}
-	
 	public boolean inRect(Point from, Point toExclusive) {
 		if (toExclusive.x < from.x || toExclusive.y < from.y)
 			throw new IllegalArgumentException("to lower than from");
