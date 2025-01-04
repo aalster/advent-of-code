@@ -67,4 +67,10 @@ public class Utils {
 		result.addAll(List.of(other));
 		return result;
 	}
+	
+	public static String removeEach(String target, String... remove) {
+		for (String r : remove)
+			target = target.replace(r, "");
+		return target;
+	}
 }

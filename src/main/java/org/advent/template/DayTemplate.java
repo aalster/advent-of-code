@@ -11,9 +11,7 @@ import java.util.Scanner;
 public class DayTemplate extends AdventDay {
 	
 	public static void main(String[] args) {
-		DayRunner runner = new DayRunner(new DayTemplate());
-//		runner.run("example.txt", 1);
-		runner.runAll();
+		new DayRunner(new DayTemplate()).runAll();
 	}
 	
 	@Override

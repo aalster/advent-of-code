@@ -16,9 +16,7 @@ import java.util.stream.Collectors;
 public class Day7 extends AdventDay {
 	
 	public static void main(String[] args) {
-		DayRunner runner = new DayRunner(new Day7());
-//		runner.run("example.txt", 1);
-		runner.runAll();
+		new DayRunner(new Day7()).runAll();
 	}
 	
 	@Override
