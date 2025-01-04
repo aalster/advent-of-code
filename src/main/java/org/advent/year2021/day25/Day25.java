@@ -3,22 +3,39 @@ package org.advent.year2021.day25;
 import org.advent.common.Direction;
 import org.advent.common.Point;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
-public class Day25 {
+public class Day25 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day25.class, "input.txt");
-		Map<Character, List<Point>> field = Point.readField(Utils.readLines(input));
-		
-		System.out.println("Answer: " + part1(field));
+		new DayRunner(new Day25()).runAll();
 	}
 	
-	private static long part1(Map<Character, List<Point>> field) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 58, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("input.txt", 498, ExpectedAnswers.IGNORE)
+		);
+	}
+	
+	Map<Character, List<Point>> field;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		field = Point.readField(Utils.readLines(input));
+	}
+	
+	@Override
+	public Object part1() {
 		int maxX = Point.maxX(field.get('.'));
 		int maxY = Point.maxY(field.get('.'));
 		Map<Point, Direction> cucumbers = new HashMap<>();
@@ -57,5 +74,10 @@ public class Day25 {
 		}
 		
 		return steps;
+	}
+	
+	@Override
+	public Object part2() {
+		return null;
 	}
 }

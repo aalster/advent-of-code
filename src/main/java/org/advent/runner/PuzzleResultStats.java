@@ -3,12 +3,11 @@ package org.advent.runner;
 import org.advent.common.Utils;
 
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
 public record PuzzleResultStats(Set<String> days, int total, int failed, int errors, long totalTime) {
-	private static final PuzzleResultStats empty = new PuzzleResultStats(Set.of(), 0, 0, 0, 0);
+	public static final PuzzleResultStats EMPTY = new PuzzleResultStats(Set.of(), 0, 0, 0, 0);
 	
 	public PuzzleResultStats(String day, boolean passed, boolean error, long time) {
 		this(Set.of(day), 1, passed ? 0 : 1, error ? 1 : 0, time);
@@ -32,7 +31,7 @@ public record PuzzleResultStats(Set<String> days, int total, int failed, int err
 	}
 	
 	public static PuzzleResultStats combineAll(Stream<PuzzleResultStats> stats) {
-		return stats.filter(Objects::nonNull).reduce(empty, PuzzleResultStats::combine);
+		return stats.reduce(EMPTY, PuzzleResultStats::combine);
 	}
 	
 	public void print() {

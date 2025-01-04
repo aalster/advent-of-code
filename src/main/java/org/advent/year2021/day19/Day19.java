@@ -3,11 +3,13 @@ package org.advent.year2021.day19;
 import org.advent.common.Point3D;
 import org.advent.common.Region3D;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -16,25 +18,37 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Day19 {
-	static final int scannerRange = 1000;
-	static final int commonBeacons = 12;
+public class Day19 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day19.class, "input.txt");
-		List<ScannerReport> reports = new ArrayList<>();
-		while (input.hasNext())
-			reports.add(ScannerReport.parse(input));
-		
-		System.out.println("Answer 1: " + part1(reports));
-		System.out.println("Answer 2: " + part2(reports));
+		new DayRunner(new Day19()).runAll();
 	}
 	
-	private static long part1(List<ScannerReport> reports) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 79, 3621),
+				new ExpectedAnswers("input.txt", 355, 10842)
+		);
+	}
+	
+	static final int scannerRange = 1000;
+	static final int commonBeacons = 12;
+	List<ScannerReport> reports;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		reports = Utils.splitByEmptyLine(Utils.readLines(input)).stream().map(ScannerReport::parse).toList();
+	}
+	
+	@Override
+	public Object part1() {
 		return mergeScanners(reports).stream().flatMap(r -> r.beacons().stream()).distinct().count();
 	}
 	
-	private static long part2(List<ScannerReport> reports) {
+	@Override
+	public Object part2() {
 		List<ScannerReport> merged = mergeScanners(reports);
 		int maxDistance = 0;
 		for (ScannerReport left : merged) {
@@ -49,7 +63,7 @@ public class Day19 {
 		return maxDistance;
 	}
 	
-	private static List<ScannerReport> mergeScanners(List<ScannerReport> reports) {
+	List<ScannerReport> mergeScanners(List<ScannerReport> reports) {
 		List<ScannerReport> notMerged = new ArrayList<>(reports);
 		List<ScannerReport> merged = new ArrayList<>();
 		merged.add(notMerged.removeFirst());
@@ -59,9 +73,9 @@ public class Day19 {
 		
 		while (!notMerged.isEmpty()) {
 			ScannerReport basis = merged.removeFirst();
-			for (ScannerReport candidate : new ArrayList<>(notMerged)) {
+			candidatesLoop: for (ScannerReport candidate : new ArrayList<>(notMerged)) {
 				List<ScannerReport> alignments = cachedAlignments.computeIfAbsent(candidate.number(), k1 -> candidate.allAlignments());
-				candidateChecked: for (ScannerReport aligned : alignments) {
+				for (ScannerReport aligned : alignments) {
 					for (Point3D basisBeacon : skip(basis.beacons(), commonBeacons - 1)) {
 						for (Point3D candidateBeacon : skip(aligned.beacons(), commonBeacons - 1)) {
 							Point3D delta = basisBeacon.subtract(candidateBeacon);
@@ -69,8 +83,7 @@ public class Day19 {
 							if (matches(basis, shifted)) {
 								merged.add(shifted);
 								notMerged.remove(candidate);
-//								System.out.println("Found pair: " + basis.number() + "-" + aligned.number() + " " + delta);
-								break candidateChecked;
+								continue candidatesLoop;
 							}
 						}
 					}
@@ -82,20 +95,16 @@ public class Day19 {
 		return checked;
 	}
 	
-	static boolean matches(ScannerReport basis, ScannerReport candidate) {
-		Region3D intersectionRegion = basis.region().intersection(candidate.region());
-		Set<Point3D> basisCommonBeacons = basis.beacons().stream()
-				.filter(intersectionRegion::containsInclusive)
-				.collect(Collectors.toSet());
-		Set<Point3D> candidateCommonBeacons = candidate.beacons().stream()
-				.filter(intersectionRegion::containsInclusive)
-				.collect(Collectors.toSet());
+	boolean matches(ScannerReport basis, ScannerReport candidate) {
+		Region3D intersection = basis.region().intersection(candidate.region());
+		Set<Point3D> basisCommonBeacons = basis.beacons().stream().filter(intersection::contains).collect(Collectors.toSet());
+		Set<Point3D> candidateCommonBeacons = candidate.beacons().stream().filter(intersection::contains).collect(Collectors.toSet());
 		return basisCommonBeacons.size() == candidateCommonBeacons.size()
 				&& basisCommonBeacons.size() >= commonBeacons
 				&& basisCommonBeacons.containsAll(candidateCommonBeacons);
 	}
 	
-	static <T> Collection<T> skip(Collection<T> items, int skip) {
+	<T> Collection<T> skip(Collection<T> items, int skip) {
 		return items.stream().skip(skip).toList();
 	}
 	
@@ -120,15 +129,9 @@ public class Day19 {
 					.toList();
 		}
 		
-		static ScannerReport parse(Scanner scanner) {
-			int number = Integer.parseInt(scanner.nextLine().replace("--- scanner ", "").replace(" ---", ""));
-			Set<Point3D> beacons = new HashSet<>();
-			while (scanner.hasNext()) {
-				String line = scanner.nextLine();
-				if (line.isEmpty())
-					break;
-				beacons.add(Point3D.parse(line));
-			}
+		static ScannerReport parse(List<String> lines) {
+			int number = Integer.parseInt(lines.getFirst().replace("--- scanner ", "").replace(" ---", ""));
+			Set<Point3D> beacons = lines.stream().skip(1).map(Point3D::parse).collect(Collectors.toSet());
 			return new ScannerReport(number, new Point3D(0, 0, 0), beacons);
 		}
 	}

@@ -2,6 +2,9 @@ package org.advent.year2021.day24;
 
 import lombok.Data;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,12 +17,39 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 @SuppressWarnings("DeconstructionCanBeUsed")
-public class Day24 {
+public class Day24 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day24.class, "input.txt");
-		List<String> lines = Utils.readLines(input);
-		
+		new DayRunner(new Day24()).runAll();
+	}
+	
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", ExpectedAnswers.IGNORE, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("input.txt", "99995969919326", "48111514719111")
+		);
+	}
+	
+	List<String> lines;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		lines = Utils.readLines(input);
+	}
+	
+	@Override
+	public Object part1() {
+		return solve(false);
+	}
+	
+	@Override
+	public Object part2() {
+		return solve(true);
+	}
+	
+	String solve(boolean min) {
 		State state = process(lines);
 		Value z = state.z;
 		
@@ -34,8 +64,7 @@ public class Day24 {
 				z = z.input(new PartialInputProvider(Map.of(index, digits[0])));
 		}
 		
-		System.out.println("Answer 1: " + searchModelNumberRecursive(possibleDigitsDesc, 0, z));
-		System.out.println("Answer 2: " + searchModelNumberRecursive(possibleDigitsAsc, 0, z));
+		return searchModelNumberRecursive(min ? possibleDigitsAsc : possibleDigitsDesc, 0, z);
 	}
 	
 	private static int[][] filterDigits(Value z) {
@@ -108,10 +137,6 @@ public class Day24 {
 			left.set(state, nextValue.simplify());
 		}
 		return state;
-	}
-	
-	private static long part2() {
-		return 0;
 	}
 	
 	@Data

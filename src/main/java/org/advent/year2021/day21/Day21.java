@@ -4,6 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.advent.common.Pair;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.HashMap;
 import java.util.List;
@@ -14,18 +17,31 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public class Day21 {
-	static final int totalPositions = 10;
+public class Day21 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day21.class, "input.txt");
-		List<String> lines = Utils.readLines(input);
-		
-		System.out.println("Answer 1: " + part1(lines));
-		System.out.println("Answer 2: " + part2(lines));
+		new DayRunner(new Day21()).runAll();
 	}
 	
-	private static int part1(List<String> lines) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 739785, 444356092776315L),
+				new ExpectedAnswers("input.txt", 1196172, 106768284484217L)
+		);
+	}
+	
+	static final int totalPositions = 10;
+	List<String> lines;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		lines = Utils.readLines(input);
+	}
+	
+	@Override
+	public Object part1() {
 		List<Player> players = lines.stream().map(Player::parse).toList();
 		int winningScore = 1000;
 		DeterministicDice dice = new DeterministicDice(100);
@@ -39,14 +55,13 @@ public class Day21 {
 		return dice.rolls * players.stream().mapToInt(p -> p.score).filter(s -> s < winningScore).sum();
 	}
 	
-	private static long part2(List<String> lines) {
+	@Override
+	public Object part2() {
 		List<Player> players = lines.stream().map(Player::parse).toList();
 		int winningScore = 21;
-		if (players.size() != 2)
-			throw new IllegalArgumentException("Wrong number of players: " + players.size());
 		
 		QuantumDice dice = new QuantumDice(3);
-		List<Pair<GameState, Long>> gameStates = List.of(Pair.of(new GameState(players.getFirst(), players.get(1)), 1L));
+		List<Pair<GameState, Long>> gameStates = List.of(Pair.of(new GameState(players.getFirst(), players.getLast()), 1L));
 		Map<Integer, Long> winsByPlayer = new HashMap<>();
 		
 		int move = 0;

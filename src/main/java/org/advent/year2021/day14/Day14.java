@@ -2,6 +2,9 @@ package org.advent.year2021.day14;
 
 import org.advent.common.Pair;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -11,33 +14,45 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 
-public class Day14 {
+public class Day14 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day14.class, "input.txt");
-		String template = input.nextLine();
-		Map<String, String> mappings = new HashMap<>();
-		while (input.hasNext()) {
-			String[] split = input.nextLine().split(" -> ");
-			if (split.length != 2)
-				continue;
-			mappings.put(split[0], split[1]);
-		}
-		
-		System.out.println("Answer 1: " + part1(template, mappings));
-		System.out.println("Answer 2: " + part2(template, mappings));
+		new DayRunner(new Day14()).runAll();
 	}
 	
-	private static long part1(String template, Map<String, String> mappings) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 1588, 2188189693529L),
+				new ExpectedAnswers("input.txt", 3406, 3941782230241L)
+		);
+	}
+	
+	String template;
+	Map<String, String> mappings;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		List<List<String>> lines = Utils.splitByEmptyLine(Utils.readLines(input));
+		template = lines.getFirst().getFirst();
+		mappings = lines.getLast().stream()
+				.map(line -> line.split(" -> "))
+				.collect(Collectors.toMap(s -> s[0], s -> s[1]));
+	}
+	
+	@Override
+	public Object part1() {
 		return solveNaive(template, mappings, 10);
 	}
 	
-	private static long part2(String template, Map<String, String> mappings) {
+	@Override
+	public Object part2() {
 		return solveRecursive(template, mappings, 40);
 	}
 	
 	@SuppressWarnings("SameParameterValue")
-	private static long solveNaive(String template, Map<String, String> mappings, int totalSteps) {
+	long solveNaive(String template, Map<String, String> mappings, int totalSteps) {
 		String current = template;
 		StringBuilder next;
 		for (int step = 0; step < totalSteps; step++) {
@@ -54,7 +69,7 @@ public class Day14 {
 	}
 	
 	@SuppressWarnings("SameParameterValue")
-	private static long solveRecursive(String template, Map<String, String> mappings, int totalSteps) {
+	long solveRecursive(String template, Map<String, String> mappings, int totalSteps) {
 		Map<Pair<Character, Character>, LinkedHashMap<Integer, Map<Character, Long>>> cache = new HashMap<>();
 		for (Map.Entry<String, String> entry : mappings.entrySet()) {
 			String pairStr = entry.getKey();
@@ -73,7 +88,7 @@ public class Day14 {
 		return stats.getMax() - stats.getMin();
 	}
 	
-	private static Map<Character, Long> middle(Pair<Character, Character> pair, int stepsLeft,
+	Map<Character, Long> middle(Pair<Character, Character> pair, int stepsLeft,
 	                                           Map<Pair<Character, Character>, LinkedHashMap<Integer, Map<Character, Long>>> cache) {
 		Map<Character, Long> middle = cache.get(pair).get(stepsLeft);
 		if (middle == null) {
@@ -87,7 +102,7 @@ public class Day14 {
 		return middle;
 	}
 	
-	private static <K> Map<K, Long> combine(Map<K, Long> dest, List<Map<K, Long>> maps) {
+	<K> Map<K, Long> combine(Map<K, Long> dest, List<Map<K, Long>> maps) {
 		maps.stream()
 				.flatMap(map -> map.keySet().stream())
 				.distinct()
@@ -96,7 +111,7 @@ public class Day14 {
 		return dest;
 	}
 	
-	private static Pair<Long, Long> countEdges(String current) {
+	Pair<Long, Long> countEdges(String current) {
 		Map<Integer, Long> counts = current.chars().boxed().collect(Collectors.groupingBy(c -> c, Collectors.counting()));
 		LongSummaryStatistics stats = counts.values().stream().mapToLong(v -> v).summaryStatistics();
 		return new Pair<>(stats.getMax(), stats.getMin());

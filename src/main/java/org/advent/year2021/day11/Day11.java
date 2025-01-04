@@ -3,6 +3,9 @@ package org.advent.year2021.day11;
 import org.advent.common.DirectionExt;
 import org.advent.common.Point;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -12,17 +15,30 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 
-public class Day11 {
+public class Day11 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day11.class, "input.txt");
-		List<String> lines = Utils.readLines(input);
-		
-		System.out.println("Answer 1: " + part1(lines));
-		System.out.println("Answer 2: " + part2(lines));
+		new DayRunner(new Day11()).runAll();
 	}
 	
-	private static long part1(List<String> lines) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 1656, 195),
+				new ExpectedAnswers("input.txt", 1773, 494)
+		);
+	}
+	
+	List<String> lines;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		lines = Utils.readLines(input);
+	}
+	
+	@Override
+	public Object part1() {
 		Field field = Field.parse(lines);
 		
 		long flashes = 0;
@@ -32,7 +48,8 @@ public class Day11 {
 		return flashes;
 	}
 	
-	private static long part2(List<String> lines) {
+	@Override
+	public Object part2() {
 		Field field = Field.parse(lines);
 		for (int i = 0; i < 1000; i++) {
 			field.step();
@@ -43,9 +60,9 @@ public class Day11 {
 		return 0;
 	}
 	
-	private record Field(Map<Point, Integer> field, int width, int height) {
+	record Field(Map<Point, Integer> field, int width, int height) {
 		
-		private int step() {
+		int step() {
 			Set<Point> flashedOnCurrentStep = new HashSet<>(width * height);
 			field.keySet().forEach(k -> field.computeIfPresent(k, (k2, v) -> v + 1));
 			while (true) {

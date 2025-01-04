@@ -2,6 +2,9 @@ package org.advent.year2021.day17;
 
 import org.advent.common.Point;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,20 +15,30 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 
-public class Day17 {
+public class Day17 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day17.class, "input.txt");
-		Target target = Target.parse(input.nextLine().replace("target area: ", ""));
-		
-		System.out.println("Answer 1: " + part1(target));
-		System.out.println("Answer 2: " + part2(target));
+		new DayRunner(new Day17()).runAll();
 	}
 	
-	private static int part1(Target target) {
-		if (target.maxY > 0)
-			throw new RuntimeException("Not working for positive target y");
-		
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 45, 112),
+				new ExpectedAnswers("input.txt", 19503, 5200)
+		);
+	}
+	
+	Target target;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		target = Target.parse(input.nextLine().replace("target area: ", ""));
+	}
+	
+	@Override
+	public Object part1() {
 		for (int y = target.minY; y <= target.maxY; y++) {
 			int vy = - y - 1;
 			for (int vx = target.maxX; vx > 0; vx--)
@@ -35,10 +48,8 @@ public class Day17 {
 		return 0;
 	}
 	
-	private static int part2(Target target) {
-		if (target.maxY > 0)
-			throw new RuntimeException("Not working for positive target y");
-		
+	@Override
+	public Object part2() {
 		Map<Integer, List<Integer>> vyByTime = new HashMap<>();
 		
 		for (int vy = target.minY; vy <= -target.minY; vy++) {

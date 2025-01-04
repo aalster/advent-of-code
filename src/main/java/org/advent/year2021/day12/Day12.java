@@ -1,6 +1,9 @@
 package org.advent.year2021.day12;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
@@ -12,23 +15,38 @@ import java.util.Scanner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Day12 {
+public class Day12 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day12.class, "input.txt");
-		List<String> lines = Utils.readLines(input);
-		Graph graph = Graph.parse(lines);
-		
-		System.out.println("Answer 1: " + part1(graph));
-		System.out.println("Answer 2: " + part2(graph));
+		new DayRunner(new Day12()).runAll();
 	}
 	
-	private static long part1(Graph graph) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 10, 36),
+				new ExpectedAnswers("example2.txt", 19, 103),
+				new ExpectedAnswers("example3.txt", 226, 3509),
+				new ExpectedAnswers("input.txt", 4186, 92111)
+		);
+	}
+	
+	Graph graph;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		graph = Graph.parse(Utils.readLines(input));
+	}
+	
+	@Override
+	public Object part1() {
 		List<Path> paths = List.of(Path.init(graph.paths().keySet(), ""));
 		return findPath(graph, paths).size();
 	}
 	
-	private static long part2(Graph graph) {
+	@Override
+	public Object part2() {
 		List<Path> paths = graph.paths().keySet().stream()
 				.filter(StringUtils::isAllLowerCase)
 				.filter(cave -> !cave.equals("start") && !cave.equals("end"))
@@ -38,7 +56,7 @@ public class Day12 {
 		return finished.stream().map(Path::path).distinct().count();
 	}
 	
-	private static List<Path> findPath(Graph graph, List<Path> paths) {
+	List<Path> findPath(Graph graph, List<Path> paths) {
 		List<Path> finished = new ArrayList<>();
 		while (!paths.isEmpty()) {
 			paths = paths.stream().flatMap(p -> p.step(graph)).toList();
@@ -51,15 +69,15 @@ public class Day12 {
 		return finished;
 	}
 	
-	private record Path(List<String> path, Map<String, Integer> visitLimit) {
+	record Path(List<String> path, Map<String, Integer> visitLimit) {
 		
-		public Stream<Path> step(Graph graph) {
+		Stream<Path> step(Graph graph) {
 			return graph.paths().get(path.getLast()).stream()
 					.filter(next -> visitLimit.get(next) > 0)
 					.map(this::go);
 		}
 		
-		private Path go(String next) {
+		Path go(String next) {
 			Map<String, Integer> nextVisited = new HashMap<>(visitLimit);
 			nextVisited.computeIfPresent(next, (k, v) -> v - 1);
 			return new Path(concat(path, next), nextVisited);
@@ -72,7 +90,7 @@ public class Day12 {
 		}
 	}
 	
-	private record Graph(Map<String, List<String>> paths) {
+	record Graph(Map<String, List<String>> paths) {
 		static Graph parse(List<String> lines) {
 			Map<String, List<String>> paths = new HashMap<>();
 			for (String line : lines) {
@@ -86,7 +104,7 @@ public class Day12 {
 		}
 	}
 	
-	private static <T> List<T> concat(List<T> list, T item) {
+	static <T> List<T> concat(List<T> list, T item) {
 		list = new ArrayList<>(list);
 		list.add(item);
 		return list;

@@ -23,7 +23,7 @@ public record Region3D(int minX, int maxX, int minY, int maxY, int minZ, int max
 	
 	public Region3D intersection(Region3D other) {
 		if (!intersects(other))
-			return null;
+			throw new RuntimeException("No intersection");
 		return new Region3D(
 				Math.max(minX, other.minX), Math.min(maxX, other.maxX),
 				Math.max(minY, other.minY), Math.min(maxY, other.maxY),
@@ -39,15 +39,12 @@ public record Region3D(int minX, int maxX, int minY, int maxY, int minZ, int max
 		};
 	}
 	
-	public boolean containsInclusive(Point3D p) {
-		return containsInclusive(p.x(), p.y(), p.z());
+	public boolean contains(Point3D p) {
+		return contains(p.x(), p.y(), p.z());
 	}
 	
-	public boolean containsInclusive(int x, int y, int z) {
-		return
-				minX <= x && x <= maxX &&
-				minY <= y && y <= maxY &&
-				minZ <= z && z <= maxZ;
+	public boolean contains(int x, int y, int z) {
+		return minX <= x && x <= maxX && minY <= y && y <= maxY && minZ <= z && z <= maxZ;
 	}
 	
 	public static Region3D fromCenter(Point3D center, int radius) {

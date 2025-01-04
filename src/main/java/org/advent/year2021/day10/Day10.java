@@ -1,6 +1,9 @@
 package org.advent.year2021.day10;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,35 +13,47 @@ import java.util.Scanner;
 import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
 
-public class Day10 {
-	
-	static final List<String> chunks = List.of("()", "[]", "{}", "<>");
-	static final Map<Character, Character> openingSymbols = chunks.stream()
-			.map(String::toCharArray)
-			.collect(Collectors.toMap(b -> b[1], b -> b[0]));
-	static final Map<Character, Character> closingSymbols = chunks.stream()
-			.map(String::toCharArray)
-			.collect(Collectors.toMap(b -> b[0], b -> b[1]));
+public class Day10 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day10.class, "input.txt");
-		List<String> lines = Utils.readLines(input);
-		
-		System.out.println("Answer 1: " + part1(lines));
-		System.out.println("Answer 2: " + part2(lines));
+		new DayRunner(new Day10()).runAll();
 	}
 	
-	private static long part1(List<String> data) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 26397, 288957),
+				new ExpectedAnswers("input.txt", 392043, 1605968119)
+		);
+	}
+	
+	Map<Character, Character> openingSymbols;
+	Map<Character, Character> closingSymbols;
+	List<String> lines;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		lines = Utils.readLines(input);
+		
+		List<String> chunks = List.of("()", "[]", "{}", "<>");
+		openingSymbols = chunks.stream().map(String::toCharArray).collect(Collectors.toMap(b -> b[1], b -> b[0]));
+		closingSymbols = chunks.stream().map(String::toCharArray).collect(Collectors.toMap(b -> b[0], b -> b[1]));
+	}
+	
+	@Override
+	public Object part1() {
 		Map<Character, Integer> points = Map.ofEntries(
 				Map.entry(')', 3),
 				Map.entry(']', 57),
 				Map.entry('}', 1197),
 				Map.entry('>', 25137)
 		);
-		return data.stream().map(Day10::findIncorrectClosing).filter(Objects::nonNull).mapToLong(points::get).sum();
+		return lines.stream().map(this::findIncorrectClosing).filter(Objects::nonNull).mapToLong(points::get).sum();
 	}
 	
-	private static long part2(List<String> data) {
+	@Override
+	public Object part2() {
 		Map<Character, Integer> points = Map.ofEntries(
 				Map.entry(')', 1),
 				Map.entry(']', 2),
@@ -51,33 +66,33 @@ public class Day10 {
 				result = result * 5 + points.get(c);
 			return result;
 		};
-		long[] scores = data.stream().map(Day10::completeLine).filter(Objects::nonNull).mapToLong(scoreMapper).sorted().toArray();
+		long[] scores = lines.stream().map(this::completeLine).filter(Objects::nonNull).mapToLong(scoreMapper).sorted().toArray();
 		return scores[scores.length / 2];
 	}
 	
-	static Character findIncorrectClosing(String line) {
-		Stack<Character> stack = new Stack<>();
+	Character findIncorrectClosing(String line) {
+		List<Character> stack = new ArrayList<>();
 		for (char c : line.toCharArray()) {
 			Character opening = openingSymbols.get(c);
 			if (opening == null) {
 				stack.add(c);
 				continue;
 			}
-			if (stack.isEmpty() || stack.remove() != opening)
+			if (stack.isEmpty() || stack.removeLast() != opening)
 				return c;
 		}
 		return null;
 	}
 	
-	static String completeLine(String line) {
-		Stack<Character> stack = new Stack<>();
+	String completeLine(String line) {
+		List<Character> stack = new ArrayList<>();
 		for (char c : line.toCharArray()) {
 			Character opening = openingSymbols.get(c);
 			if (opening == null) {
 				stack.add(c);
 				continue;
 			}
-			if (stack.isEmpty() || stack.remove() != opening)
+			if (stack.isEmpty() || stack.removeLast() != opening)
 				return null;
 		}
 		if (stack.isEmpty())
@@ -85,27 +100,7 @@ public class Day10 {
 		
 		StringBuilder completion = new StringBuilder();
 		while (!stack.isEmpty())
-			completion.append(closingSymbols.get(stack.remove()));
+			completion.append(closingSymbols.get(stack.removeLast()));
 		return completion.toString();
-	}
-	
-	static class Stack<T> {
-		private final List<T> items = new ArrayList<>();
-		
-		int size() {
-			return items.size();
-		}
-		
-		boolean isEmpty() {
-			return items.isEmpty();
-		}
-		
-		void add(T item) {
-			items.add(item);
-		}
-		
-		T remove() {
-			return items.remove(size() - 1);
-		}
 	}
 }

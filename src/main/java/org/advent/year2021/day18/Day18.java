@@ -1,21 +1,37 @@
 package org.advent.year2021.day18;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.List;
 import java.util.Scanner;
 
-public class Day18 {
+public class Day18 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day18.class, "input.txt");
-		List<Element> elements = Utils.readLines(input).stream().map(Element::parse).toList();
-		
-		System.out.println("Answer 1: " + part1(elements));
-		System.out.println("Answer 2: " + part2(elements));
+		new DayRunner(new Day18()).runAll();
 	}
 	
-	private static long part1(List<Element> elements) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 4140, 3993),
+				new ExpectedAnswers("input.txt", 3869, 4671)
+		);
+	}
+	
+	List<Element> elements;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		elements = Utils.readLines(input).stream().map(Element::parse).toList();
+	}
+	
+	@Override
+	public Object part1() {
 		Element result = elements.getFirst();
 		for (Element element : elements) {
 			if (result == element)
@@ -25,7 +41,8 @@ public class Day18 {
 		return result.magnitude();
 	}
 	
-	private static long part2(List<Element> elements) {
+	@Override
+	public Object part2() {
 		int maxMagnitude = 0;
 		for (Element left : elements) {
 			for (Element right : elements) {
@@ -42,17 +59,24 @@ public class Day18 {
 	static abstract class Element {
 		PairElement parent;
 		
-		
 		void reduce() {
+			//noinspection StatementWithEmptyBody
 			while (explode(4) || split()) {}
 		}
 		
-		protected abstract boolean explode(int level);
-		protected abstract boolean split();
+		abstract boolean explode(int level);
+		abstract boolean split();
 		
 		abstract int magnitude();
 		abstract Element copy();
 		abstract void asString(StringBuilder output);
+		
+		@Override
+		public String toString() {
+			StringBuilder output = new StringBuilder();
+			asString(output);
+			return output.toString();
+		}
 		
 		
 		static Element add(Element left, Element right) {
@@ -90,12 +114,12 @@ public class Day18 {
 		}
 		
 		@Override
-		protected boolean explode(int level) {
+		boolean explode(int level) {
 			return false;
 		}
 		
 		@Override
-		protected boolean split() {
+		boolean split() {
 			if (number < 10)
 				return false;
 			
@@ -106,7 +130,7 @@ public class Day18 {
 		}
 		
 		@Override
-		public int magnitude() {
+		int magnitude() {
 			return number;
 		}
 		
@@ -116,13 +140,8 @@ public class Day18 {
 		}
 		
 		@Override
-		public void asString(StringBuilder output) {
+		void asString(StringBuilder output) {
 			output.append(number);
-		}
-		
-		@Override
-		public String toString() {
-			return "" + number;
 		}
 	}
 	
@@ -135,21 +154,21 @@ public class Day18 {
 			setRight(right);
 		}
 		
-		public void setLeft(Element left) {
+		void setLeft(Element left) {
 			if (this.left != null)
 				this.left.parent = null;
 			this.left = left;
 			left.parent = this;
 		}
 		
-		public void setRight(Element right) {
+		void setRight(Element right) {
 			if (this.right != null)
 				this.right.parent = null;
 			this.right = right;
 			right.parent = this;
 		}
 		
-		public void replace(Element remove, Element add) {
+		void replace(Element remove, Element add) {
 			if (left == remove)
 				setLeft(add);
 			else if (right == remove)
@@ -159,7 +178,7 @@ public class Day18 {
 		}
 		
 		@Override
-		protected boolean explode(int level) {
+		boolean explode(int level) {
 			if (level <= 0) {
 				doExplode();
 				return true;
@@ -168,19 +187,13 @@ public class Day18 {
 		}
 		
 		@Override
-		protected boolean split() {
+		boolean split() {
 			return left.split() || right.split();
 		}
 		
-		private void doExplode() {
-//			System.out.println("exploding: " + this);
+		void doExplode() {
 			if (!(left instanceof NumberElement) || !(right instanceof NumberElement))
 				throw new RuntimeException("Exploding error: " + this);
-			
-//			Element root = this;
-//			while (root.parent != null)
-//				root = root.parent;
-//			System.out.println("root: " + root);
 			
 			PairElement leftParent = null;
 			PairElement rightParent = null;
@@ -218,7 +231,7 @@ public class Day18 {
 		}
 		
 		@Override
-		public int magnitude() {
+		int magnitude() {
 			return 3 * left.magnitude() + 2 * right.magnitude();
 		}
 		
@@ -234,13 +247,6 @@ public class Day18 {
 			output.append(",");
 			right.asString(output);
 			output.append("]");
-		}
-		
-		@Override
-		public String toString() {
-			StringBuilder output = new StringBuilder();
-			asString(output);
-			return output.toString();
 		}
 	}
 }

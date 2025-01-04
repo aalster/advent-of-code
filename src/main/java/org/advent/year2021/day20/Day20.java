@@ -3,45 +3,60 @@ package org.advent.year2021.day20;
 import org.advent.common.Direction;
 import org.advent.common.Point;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Day20 {
+public class Day20 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day20.class, "input.txt");
-		Map<Integer, Integer> enhancement = new HashMap<>();
-		int index = 0;
-		while (input.hasNext()) {
-			String line = input.nextLine();
-			if (line.isEmpty())
-				break;
-			for (char symbol : line.toCharArray()) {
-				enhancement.put(index, symbol == '#' ? 1 : 0);
-				index++;
-			}
-		}
-		Map<Point, Integer> pixels = Point.readFieldMap(Utils.readLines(input)).entrySet().stream()
-				.collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue() == '#' ? 1 : 0));
-		
-		System.out.println("Answer 1: " + part1(enhancement, pixels));
-		System.out.println("Answer 2: " + part2(enhancement, pixels));
+		new DayRunner(new Day20()).runAll();
 	}
 	
-	private static long part1(Map<Integer, Integer> enhancement, Map<Point, Integer> pixels) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 35, 3351),
+				new ExpectedAnswers("input.txt", 4917, 16389)
+		);
+	}
+	
+	Map<Integer, Integer> enhancement;
+	Map<Point, Integer> pixels;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		List<List<String>> lines = Utils.splitByEmptyLine(Utils.readLines(input));
+		enhancement = new HashMap<>();
+		int index = 0;
+		for (char c : String.join("", lines.getFirst()).toCharArray()) {
+			enhancement.put(index, c == '#' ? 1 : 0);
+			index++;
+		}
+		pixels = Point.readFieldMap(lines.getLast()).entrySet().stream()
+				.collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue() == '#' ? 1 : 0));
+	}
+	
+	@Override
+	public Object part1() {
 		return solve(enhancement, pixels, 2);
 	}
 	
-	private static long part2(Map<Integer, Integer> enhancement, Map<Point, Integer> pixels) {
+	@Override
+	public Object part2() {
 		return solve(enhancement, pixels, 50);
 	}
 	
-	static long solve(Map<Integer, Integer> enhancement, Map<Point, Integer> pixels, int count) {
+	long solve(Map<Integer, Integer> enhancement, Map<Point, Integer> pixels, int count) {
 		Image image = new Image(pixels, 0);
 		while (count > 0) {
 			count--;
@@ -72,14 +87,14 @@ public class Day20 {
 			return new Image(nextPixels, enhancement.get(enhancementNumber(infinityBits)));
 		}
 		
-		private int enhancementNumber(int[] bits) {
+		int enhancementNumber(int[] bits) {
 			int enhancementNumber = 0;
 			for (int bit : bits)
 				enhancementNumber = enhancementNumber * 2 + bit;
 			return enhancementNumber;
 		}
 		
-		public long countLitPixels() {
+		long countLitPixels() {
 			if (infinityPixel == 1)
 				throw new RuntimeException("Infinity");
 			return pixels.values().stream().filter(n -> n == 1).count();

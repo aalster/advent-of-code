@@ -4,6 +4,9 @@ import org.advent.common.Direction;
 import org.advent.common.Pair;
 import org.advent.common.Point;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -17,23 +20,44 @@ import java.util.SequencedSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class Day23 {
+public class Day23 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day23.class, "input.txt");
-		List<String> lines = Utils.readLines(input);
-		Pair<Field, State> part1 = parse(lines);
-		
-		List<String> lines2 = new ArrayList<>(lines);
-		lines2.add(3, "  #D#C#B#A#");
-		lines2.add(4, "  #D#B#A#C#");
-		Pair<Field, State> part2 = parse(lines2);
-		
-		System.out.println("Answer 1: " + solve(part1.left(), part1.right()));
-		System.out.println("Answer 2: " + solve(part2.left(), part2.right()));
+		new DayRunner(new Day23()).runAll();
 	}
 	
-	private static long solve(Field field, State initialState) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 12521, 44169),
+				new ExpectedAnswers("input.txt", 11320, 49532)
+		);
+	}
+	
+	List<String> lines;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		lines = Utils.readLines(input);
+	}
+	
+	@Override
+	public Object part1() {
+		Pair<Field, State> input = parse(lines);
+		return solve(input.left(), input.right());
+	}
+	
+	@Override
+	public Object part2() {
+		List<String> extendedLines = new ArrayList<>(lines);
+		extendedLines.add(3, "  #D#C#B#A#");
+		extendedLines.add(4, "  #D#B#A#C#");
+		Pair<Field, State> input = parse(extendedLines);
+		return solve(input.left(), input.right());
+	}
+	
+	long solve(Field field, State initialState) {
 		SequencedSet<State> states = new LinkedHashSet<>(List.of(initialState));
 		int minEnergy = Integer.MAX_VALUE;
 		while (!states.isEmpty()) {
@@ -52,7 +76,7 @@ public class Day23 {
 		return minEnergy;
 	}
 	
-	static Pair<Field, State> parse(List<String> lines) {
+	Pair<Field, State> parse(List<String> lines) {
 		Map<Character, List<Point>> points = Point.readField(lines);
 		
 		Map<Point, Character> amphipods = new HashMap<>();
@@ -95,13 +119,7 @@ public class Day23 {
 			nextAmphipods.remove(position);
 			nextAmphipods.put(pathToHome.right(), type);
 			int nextEnergy = energy + pathToHome.left() * field.energyCosts.get(type);
-			Set<Point> nextSettled;
-			if (isSettled) {
-				nextSettled = new HashSet<>(settled);
-				nextSettled.add(pathToHome.right());
-			} else {
-				nextSettled = settled;
-			}
+			Set<Point> nextSettled = isSettled ? Utils.combineToSet(settled, pathToHome.right()) : settled;
 			return new State(nextAmphipods, nextSettled, nextEnergy);
 		}
 		
@@ -199,7 +217,7 @@ public class Day23 {
 			return Pair.of(steps, position);
 		}
 		
-		private boolean canMove(Point position, Character type, Map<Point, Character> amphipods) {
+		boolean canMove(Point position, Character type, Map<Point, Character> amphipods) {
 			while (position.y() > hallwayY + 1) {
 				position = position.shift(Direction.UP);
 				if (amphipods.containsKey(position))

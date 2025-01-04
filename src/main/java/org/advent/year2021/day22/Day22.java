@@ -4,35 +4,51 @@ import org.advent.common.Axis3D;
 import org.advent.common.Pair;
 import org.advent.common.Region3D;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Scanner;
 import java.util.Set;
 
-public class Day22 {
+public class Day22 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day22.class, "input.txt");
-		List<Cuboid> cuboids = Utils.readLines(input).stream().map(Cuboid::parse).toList();
-		
-		System.out.println("Answer 1: " + part1(cuboids));
-		System.out.println("Answer 2: " + part2(cuboids));
+		new DayRunner(new Day22()).runAll();
 	}
 	
-	private static long part1(List<Cuboid> cuboids) {
-		cuboids = cuboids.reversed();
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 590784, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("example2.txt", 474140, 2758514936282235L),
+				new ExpectedAnswers("input.txt", 611378, 1214313344725528L)
+		);
+	}
+	
+	List<Cuboid> cuboids;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		cuboids = Utils.readLines(input).stream().map(Cuboid::parse).toList();
+	}
+	
+	@Override
+	public Object part1() {
+		List<Cuboid> cuboidsCopy = cuboids.reversed();
 		int radius = 50;
 		long count = 0;
 		for (int x = -radius; x <= radius; x++) {
 			for (int y = -radius; y <= radius; y++) {
 				for (int z = -radius; z <= radius; z++) {
-					for (Cuboid cuboid : cuboids) {
-						if (cuboid.region().containsInclusive(x, y, z)) {
+					for (Cuboid cuboid : cuboidsCopy) {
+						if (cuboid.region().contains(x, y, z)) {
 							if (cuboid.on())
 								count++;
 							break;
@@ -44,12 +60,13 @@ public class Day22 {
 		return count;
 	}
 	
-	private static long part2(List<Cuboid> cuboids) {
-		cuboids = new ArrayList<>(cuboids);
+	@Override
+	public Object part2() {
+		List<Cuboid> cuboidsCopy = new ArrayList<>(cuboids);
 		Set<Cuboid> mergedCuboids = new HashSet<>();
 		
-		while (!cuboids.isEmpty()) {
-			Cuboid current = cuboids.removeFirst();
+		while (!cuboidsCopy.isEmpty()) {
+			Cuboid current = cuboidsCopy.removeFirst();
 			
 			Cuboid _current = current;
 			Cuboid merged = mergedCuboids.stream().filter(c -> c.region.intersects(_current.region)).findAny().orElse(null);
@@ -59,11 +76,11 @@ public class Day22 {
 				continue;
 			}
 			
-			Region3D intersection = Objects.requireNonNull(merged.region.intersection(current.region));
+			Region3D intersection = merged.region.intersection(current.region);
 			
 			if (!intersection.equals(current.region)) {
 				for (Region3D remain : cutRemains(current.region, intersection))
-					cuboids.addFirst(new Cuboid(current.on, remain));
+					cuboidsCopy.addFirst(new Cuboid(current.on, remain));
 				current = new Cuboid(current.on, intersection);
 			}
 			

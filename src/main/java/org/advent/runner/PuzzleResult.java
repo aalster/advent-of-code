@@ -22,7 +22,7 @@ public record PuzzleResult(String day, int part, Object expected, Object answer,
 	}
 	
 	PuzzleResultStats stats() {
-		return expected == ExpectedAnswers.IGNORE ? null : new PuzzleResultStats(day, passed, exception != null, time);
+		return expected == ExpectedAnswers.IGNORE ? PuzzleResultStats.EMPTY : new PuzzleResultStats(day, passed, exception != null, time);
 	}
 	
 	public static PuzzleResult result(AdventDay day, int part, Object expected, Object answer, long time) {

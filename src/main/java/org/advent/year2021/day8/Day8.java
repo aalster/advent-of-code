@@ -1,6 +1,9 @@
 package org.advent.year2021.day8;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
@@ -11,28 +14,43 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class Day8 {
+public class Day8 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day8.class, "input.txt");
-		List<String> lines = Utils.readLines(input);
-		
-		System.out.println("Answer 1: " + part1(lines));
-		System.out.println("Answer 2: " + part2(lines));
+		new DayRunner(new Day8()).runAll();
 	}
 	
-	private static int part1(List<String> data) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", ExpectedAnswers.IGNORE, 5353),
+				new ExpectedAnswers("example2.txt", 26, 61229),
+				new ExpectedAnswers("input.txt", 303, 961734)
+		);
+	}
+	
+	List<String> lines;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		lines = Utils.readLines(input);
+	}
+	
+	@Override
+	public Object part1() {
 		Set<Integer> segmentsSizeToCount = Set.of(2, 3, 4, 7);
-		return (int) data.stream()
+		return (int) lines.stream()
 				.map(s -> StringUtils.substringAfter(s, " | "))
 				.flatMap(s -> Arrays.stream(s.split(" ")))
 				.filter(s -> segmentsSizeToCount.contains(s.length()))
 				.count();
 	}
 	
-	private static int part2(List<String> data) {
+	@Override
+	public Object part2() {
 		int result = 0;
-		for (String datum : data) {
+		for (String datum : lines) {
 			String[] split = datum.split(" \\| ");
 			Map<Integer, List<Digit>> digits = Stream.of(split[0].split(" "))
 					.map(Digit::unknown)
@@ -44,13 +62,13 @@ public class Day8 {
 			Digit seven = digits.get(3).getFirst().known(7);
 			Digit eight = digits.get(7).getFirst().known(8);
 			
-			Digit six = digits.get(6).stream().filter(d -> d.signalsExcept(seven).size() == 4).findAny().orElseThrow().known(6);
-			Digit nine = digits.get(6).stream().filter(d -> d.signalsExcept(four).size() == 2).findAny().orElseThrow().known(9);
+			Digit six = digits.get(6).stream().filter(d -> d.signalsSizeExcept(seven) == 4).findAny().orElseThrow().known(6);
+			Digit nine = digits.get(6).stream().filter(d -> d.signalsSizeExcept(four) == 2).findAny().orElseThrow().known(9);
 			Digit zero = digits.get(6).stream().filter(d -> !d.equalSignals(six) && !d.equalSignals(nine)).findAny().orElseThrow().known(0);
 			
-			Digit five = digits.get(5).stream().filter(d -> d.signalsExcept(nine).size() == 0 && d.signalsExcept(seven).size() == 3).findAny().orElseThrow().known(5);
-			Digit three = digits.get(5).stream().filter(d -> d.signalsExcept(seven).size() == 2).findAny().orElseThrow().known(3);
-			Digit two = digits.get(5).stream().filter(d -> d.signalsExcept(nine).size() == 1).findAny().orElseThrow().known(2);
+			Digit five = digits.get(5).stream().filter(d -> d.signalsSizeExcept(nine) == 0 && d.signalsSizeExcept(seven) == 3).findAny().orElseThrow().known(5);
+			Digit three = digits.get(5).stream().filter(d -> d.signalsSizeExcept(seven) == 2).findAny().orElseThrow().known(3);
+			Digit two = digits.get(5).stream().filter(d -> d.signalsSizeExcept(nine) == 1).findAny().orElseThrow().known(2);
 			
 			List<Digit> allDigits = List.of(zero, one, two, three, four, five, six, seven, eight, nine);
 			
@@ -78,8 +96,8 @@ public class Day8 {
 			return signals.equals(other.signals);
 		}
 		
-		Set<Integer> signalsExcept(Digit d) {
-			return this.signals.stream().filter(o -> !d.signals.contains(o)).collect(Collectors.toSet());
+		int signalsSizeExcept(Digit d) {
+			return this.signals.stream().filter(o -> !d.signals.contains(o)).collect(Collectors.toSet()).size();
 		}
 		
 		Digit known(int digit) {
@@ -88,11 +106,6 @@ public class Day8 {
 		
 		static Digit unknown(String s) {
 			return new Digit(-1, s.chars().boxed().collect(Collectors.toSet()));
-		}
-		
-		@Override
-		public String toString() {
-			return "Digit[" + digit + ", " + signals.stream().map(Character::toString).collect(Collectors.joining()) + "]";
 		}
 	}
 }

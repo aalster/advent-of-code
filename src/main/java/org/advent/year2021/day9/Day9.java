@@ -3,19 +3,38 @@ package org.advent.year2021.day9;
 import org.advent.common.Direction;
 import org.advent.common.Point;
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class Day9 {
+public class Day9 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day9.class, "input.txt");
-		Map<Point, Integer> heights = new HashMap<>();
+		new DayRunner(new Day9()).runAll();
+	}
+	
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 15, 1134),
+				new ExpectedAnswers("input.txt", 478, 1327014)
+		);
+	}
+	
+	Map<Point, Integer> heights;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		heights = new HashMap<>();
 		int y = 0;
 		while (input.hasNext()) {
 			int x = 0;
@@ -25,16 +44,15 @@ public class Day9 {
 			}
 			y++;
 		}
-		
-		System.out.println("Answer 1: " + part1(heights));
-		System.out.println("Answer 2: " + part2(heights, 3));
 	}
 	
-	private static int part1(Map<Point, Integer> heights) {
+	@Override
+	public Object part1() {
 		return findLowPoints(heights).stream().mapToInt(heights::get).map(h -> h + 1).sum();
 	}
 	
-	private static int part2(Map<Point, Integer> heights, int count) {
+	@Override
+	public Object part2() {
 		Map<Point, Integer> notProcessed = new HashMap<>(heights);
 		return findLowPoints(heights).stream()
 				.map(lowPoint -> {
@@ -51,11 +69,11 @@ public class Day9 {
 					return basinSize;
 				})
 				.sorted(Comparator.<Integer>naturalOrder().reversed())
-				.limit(count)
+				.limit(3)
 				.reduce(1, (l, r) -> l * r);
 	}
 	
-	private static Set<Point> findLowPoints(Map<Point, Integer> heights) {
+	Set<Point> findLowPoints(Map<Point, Integer> heights) {
 		return heights.keySet().stream()
 				.filter(point -> Direction.stream()
 						.map(point::move)

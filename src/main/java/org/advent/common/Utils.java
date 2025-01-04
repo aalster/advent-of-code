@@ -61,4 +61,10 @@ public class Utils {
 		result.addAll(other);
 		return result;
 	}
+	
+	public static <T> Set<T> combineToSet(Collection<T> collection, T... other) {
+		Set<T> result = new HashSet<>(collection);
+		result.addAll(List.of(other));
+		return result;
+	}
 }
