@@ -1,25 +1,37 @@
 package org.advent.year2020.day1;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-public class Day1 {
+public class Day1 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day1.class, "input.txt");
-		List<Integer> numbers = new ArrayList<>();
-		while (input.hasNext()) {
-			numbers.add(Integer.parseInt(input.nextLine()));
-		}
-		
-		System.out.println("Answer 1: " + part1(numbers));
-		System.out.println("Answer 2: " + part2(numbers));
+		new DayRunner(new Day1()).runAll();
 	}
 	
-	private static int part1(List<Integer> numbers) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 514579, 241861950),
+				new ExpectedAnswers("input.txt", 211899, 275765682)
+		);
+	}
+	
+	List<Integer> numbers;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		numbers = Utils.readLines(input).stream().map(Integer::parseInt).toList();
+	}
+	
+	@Override
+	public Object part1() {
 		int index = 0;
 		for (Integer left : numbers) {
 			for (Integer right : numbers.subList(index + 1, numbers.size())) {
@@ -31,7 +43,8 @@ public class Day1 {
 		return 0;
 	}
 	
-	private static int part2(List<Integer> numbers) {
+	@Override
+	public Object part2() {
 		int index = 0;
 		for (Integer left : numbers) {
 			for (Integer right : numbers.subList(index + 1, numbers.size())) {

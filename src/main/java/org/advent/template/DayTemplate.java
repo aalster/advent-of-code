@@ -1,4 +1,4 @@
-package org.advent.template2;
+package org.advent.template;
 
 import org.advent.common.Utils;
 import org.advent.runner.AdventDay;

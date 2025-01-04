@@ -1,31 +1,44 @@
 package org.advent.year2020.day2;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class Day2 {
+public class Day2 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day2.class, "input.txt");
-		List<Password> passwords = new ArrayList<>();
-		while (input.hasNext()) {
-			passwords.add(Password.parse(input.nextLine()));
-		}
-		
-		System.out.println("Answer 1: " + part1(passwords));
-		System.out.println("Answer 2: " + part2(passwords));
+		new DayRunner(new Day2()).runAll();
 	}
 	
-	private static long part1(List<Password> passwords) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 2, 1),
+				new ExpectedAnswers("input.txt", 622, 263)
+		);
+	}
+	
+	List<Password> passwords;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		passwords = Utils.readLines(input).stream().map(Password::parse).toList();
+	}
+	
+	@Override
+	public Object part1() {
 		return passwords.stream().filter(Password::isValid).count();
 	}
 	
-	private static long part2(List<Password> passwords) {
+	@Override
+	public Object part2() {
 		return passwords.stream().filter(Password::isValid2).count();
 	}
 	
@@ -42,7 +55,7 @@ public class Day2 {
 			return (left == letter) != (right == letter);
 		}
 		
-		private static final Pattern pattern = Pattern.compile("(.+)-(.+) (.): (.+)");
+		static final Pattern pattern = Pattern.compile("(.+)-(.+) (.): (.+)");
 		static Password parse(String line) {
 			Matcher matcher = pattern.matcher(line);
 			if (!matcher.matches())

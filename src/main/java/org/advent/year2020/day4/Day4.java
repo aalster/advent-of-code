@@ -1,47 +1,52 @@
 package org.advent.year2020.day4;
 
 import org.advent.common.Utils;
+import org.advent.runner.AdventDay;
+import org.advent.runner.DayRunner;
+import org.advent.runner.ExpectedAnswers;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class Day4 {
+public class Day4 extends AdventDay {
 	
 	public static void main(String[] args) {
-		Scanner input = Utils.scanFileNearClass(Day4.class, "input.txt");
-		List<Passport> passports = new ArrayList<>();
-		Map<String, String> fields = new HashMap<>();
-		while (input.hasNext()) {
-			String line = input.nextLine();
-			if (line.isEmpty()) {
-				passports.add(new Passport(fields));
-				fields = new HashMap<>();
-				continue;
-			}
-			fields.putAll(Arrays.stream(line.split(" "))
-					.map(s -> s.split(":"))
-					.collect(Collectors.toMap(pair -> pair[0], pair -> pair[1])));
-		}
-		if (!fields.isEmpty())
-			passports.add(new Passport(fields));
-		
-		System.out.println("Answer 1: " + part1(passports));
-		System.out.println("Answer 2: " + part2(passports));
+		new DayRunner(new Day4()).runAll();
 	}
 	
-	private static long part1(List<Passport> passports) {
+	@Override
+	public List<ExpectedAnswers> expected() {
+		return List.of(
+				new ExpectedAnswers("example.txt", 2, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("example2.txt", ExpectedAnswers.IGNORE, 4),
+				new ExpectedAnswers("example3.txt", ExpectedAnswers.IGNORE, 0),
+				new ExpectedAnswers("input.txt", 192, 101)
+		);
+	}
+	
+	List<Passport> passports;
+	
+	@Override
+	public void prepare(String file) {
+		Scanner input = Utils.scanFileNearClass(getClass(), file);
+		passports = Utils.splitByEmptyLine(Utils.readLines(input)).stream()
+				.map(lines -> Passport.parse(String.join(" ", lines)))
+				.toList();
+	}
+	
+	@Override
+	public Object part1() {
 		Set<String> requiredFields = Set.of("byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid");
 		return passports.stream().filter(p -> p.isValid(requiredFields)).count();
 	}
 	
-	private static long part2(List<Passport> passports) {
+	@Override
+	public Object part2() {
 		Map<String, Validation<String>> requiredFields = Map.of(
 				"byr", number(range(1920, 2002)),
 				"iyr", number(range(2010, 2020)),
@@ -75,6 +80,12 @@ public class Day4 {
 					return false;
 			}
 			return true;
+		}
+		
+		static Passport parse(String line) {
+			return new Passport(Arrays.stream(line.split(" "))
+					.map(s -> s.split(":"))
+					.collect(Collectors.toMap(pair -> pair[0], pair -> pair[1])));
 		}
 	}
 	
