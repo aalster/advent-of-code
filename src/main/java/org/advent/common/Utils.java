@@ -68,9 +68,13 @@ public class Utils {
 		return result;
 	}
 	
-	public static String removeEach(String target, String... remove) {
-		for (String r : remove)
-			target = target.replace(r, "");
-		return target;
+	public static String replaceEach(String text, String[] targets, String replacement) {
+		for (String t : targets)
+			text = text.replace(t, replacement);
+		return text;
+	}
+	
+	public static String removeEach(String text, String... targets) {
+		return replaceEach(text, targets, "");
 	}
 }
