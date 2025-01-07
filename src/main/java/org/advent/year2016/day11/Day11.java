@@ -135,6 +135,7 @@ public class Day11 extends AdventDay {
 			
 			Set<Containment> taken = new HashSet<>();
 			if (!symmetric.isEmpty()) {
+				// Между симметричными вариантами нет разницы, выбираем всегда только один такой вариант
 				String first = symmetric.stream().sorted().limit(1).findFirst().orElseThrow();
 				taken.add(new Containment(Set.of(), Set.of(first)));
 				taken.add(new Containment(Set.of(first), Set.of(first)));
