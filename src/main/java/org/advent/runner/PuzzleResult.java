@@ -5,13 +5,16 @@ import lombok.SneakyThrows;
 public record PuzzleResult(String day, int part, Object expected, Object answer, Exception exception, long time, boolean passed) {
 	
 	PuzzleResult print(int pad) {
-		if (expected != ExpectedAnswers.IGNORE) {
-			String result = exception == null
-					? (passed ? "✅" : "❌") + " " + OutputUtils.white(answer) + (expected != null && !passed ? " Expected: " + expected : "")
-					: "❌ " + OutputUtils.red("Error: " + exception.getMessage());
-			System.out.println(" ".repeat(pad) + "Answer " + part + " " + Timer.formatTime(time, 7) + ": " + result);
-		}
+		if (expected != ExpectedAnswers.IGNORE)
+			System.out.println(" ".repeat(pad) + presentation());
 		return this;
+	}
+	
+	public String presentation() {
+		String result = exception == null
+				? (passed ? "✅" : "❌") + " " + OutputUtils.white(answer) + (expected != null && !passed ? " Expected: " + expected : "")
+				: "❌ " + OutputUtils.red("Error: " + exception.getMessage());
+		return "Answer " + part + " " + Timer.formatTime(time, 7) + ": " + result;
 	}
 	
 	@SneakyThrows
@@ -26,19 +29,11 @@ public record PuzzleResult(String day, int part, Object expected, Object answer,
 	}
 	
 	public static PuzzleResult result(AdventDay day, int part, Object expected, Object answer, long time) {
-		return new PuzzleResult(dayKey(day), part, expected, answer, null, time, passed(expected, answer));
+		return new PuzzleResult(day.toString(), part, expected, answer, null, time, passed(expected, answer));
 	}
 	
 	public static PuzzleResult error(AdventDay day, int part, Object expected, Exception exception, long time) {
-		return new PuzzleResult(dayKey(day), part, expected, null, exception, time, false);
-	}
-	
-	public static PuzzleResult ignored(AdventDay day, int part, Object expected) {
-		return new PuzzleResult(dayKey(day), part, expected, null, null, 0, false);
-	}
-	
-	static String dayKey(AdventDay day) {
-		return day.getYear() + "-" + day.getDay();
+		return new PuzzleResult(day.toString(), part, expected, null, exception, time, false);
 	}
 	
 	static boolean passed(Object expected, Object answer) {

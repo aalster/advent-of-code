@@ -21,7 +21,7 @@ public abstract class AdventDay {
 	
 	@Override
 	public String toString() {
-		return "Year " + year + "\n  Day " + day;
+		return year + "-" + (day < 10 ? "0" : "") + day;
 	}
 	
 	private static int findByPrefix(String[] packages, String prefix) {

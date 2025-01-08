@@ -26,20 +26,24 @@ public record PuzzleResultStats(Set<String> days, int total, int failed, int err
 				totalTime + other.totalTime);
 	}
 	
+	public String dayResult() {
+		return total == 0 ? "➖" : failed + errors > 0 ? "❌" :
+				totalTime / total < 500 ? "✅" : totalTime / total < 5000 ? "🟧" : "🟥";
+	}
+	
+	public String summary() {
+		return OutputUtils.white("Finished after " + totalTime + "ms.") +
+				" Days: " + OutputUtils.white(days.size()) + "." +
+				" Tests passed: " + OutputUtils.green(passed()) + "." +
+				" Failed: " + (failed > 0 ? OutputUtils.red(failed) : failed) + "." +
+				" Errors: " + (errors > 0 ? OutputUtils.red(errors) : errors) + ".";
+	}
+	
 	public static PuzzleResultStats combineAll(PuzzleResultStats... stats) {
 		return combineAll(Arrays.stream(stats));
 	}
 	
 	public static PuzzleResultStats combineAll(Stream<PuzzleResultStats> stats) {
 		return stats.reduce(EMPTY, PuzzleResultStats::combine);
-	}
-	
-	public void print() {
-		System.out.println(
-				OutputUtils.white("Finished after " + totalTime + "ms.") +
-				" Days: " + OutputUtils.white(days.size()) + "." +
-				" Tests passed: " + OutputUtils.green(passed()) + "." +
-				" Failed: " + (failed > 0 ? OutputUtils.red(failed) : failed) + "." +
-				" Errors: " + (errors > 0 ? OutputUtils.red(errors) : errors) + ".");
 	}
 }

@@ -1,9 +1,9 @@
 package org.advent.runner;
 
+import java.util.function.Function;
+
 public class OutputUtils {
-	record Color(String regular, String bold) {
-	
-	}
+	public static final String WIDE_SPACE = "     ";
 	
 	
 	public static final String RESET = "\033[0m";  // Text Reset
@@ -92,6 +92,15 @@ public class OutputUtils {
 	
 	public static String yellow(Object text) {
 		return YELLOW + text + RESET;
+	}
+	
+	public static String leftPad(Object text, int size) {
+		return leftPad(text, size, t -> t);
+	}
+	
+	public static String leftPad(Object text, int size, Function<String, String> modifier) {
+		String output = "" + text;
+		return " ".repeat(Math.max(0, size - output.length())) + modifier.apply(output);
 	}
 	
 	public static void main(String[] args) {

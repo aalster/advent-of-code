@@ -2,60 +2,43 @@ package org.advent.runner;
 
 import lombok.RequiredArgsConstructor;
 
-import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 @RequiredArgsConstructor
 public class DayRunner {
 	private final AdventDay day;
 	
 	public PuzzleResultStats runAll() {
-		System.out.println(day);
-		return PuzzleResultStats.combineAll(day.expected().stream().map(f -> run(f, true, true)));
+		return PuzzleResultStats.combineAll(day.expected().stream().map(f -> run(f, 0, false)));
 	}
 	
 	public PuzzleResultStats run(String file) {
-		return run(expected(file), false, false);
+		return run(file, 0);
 	}
 	
-	PuzzleResultStats runForYear(String file) {
+	public PuzzleResultStats run(String file, int part) {
+		return run(expected(file), part, false);
+	}
+	
+	PuzzleResultStats runForYear(String file, boolean silent) {
 		if (file != null)
-			return run(expected(file), false, true);
-		return PuzzleResultStats.combineAll(day.expected().stream().map(f -> run(f, true, true)));
+			return run(expected(file), 0, silent);
+		return PuzzleResultStats.combineAll(day.expected().stream().map(f -> run(f, 0, silent)));
 	}
 	
-	public PuzzleResult run(String file, int part) {
-		ExpectedAnswers expected = expected(file);
+	private PuzzleResultStats run(ExpectedAnswers expected, int part, boolean silent) {
 		day.prepare(expected.file());
-		PuzzleResult result = switch (part) {
-			case 1 -> runPart(day, expected.answer1(), day::part1, part);
-			case 2 -> runPart(day, expected.answer2(), day::part2, part);
-			default -> throw new IllegalStateException("Unexpected value: " + part);
-		};
-		return result.print(0).propagateError();
-	}
-	
-	public PuzzleResultStats run(ExpectedAnswers expected, boolean printInfo, boolean pad) {
-		Timer timer = new Timer();
-		day.prepare(expected.file());
-		if (printInfo)
-			System.out.println("    " + OutputUtils.white(expected.file()) + " (prepare " + timer.stepFormatted() + "):");
 		
-		PuzzleResult part1 = runPart(day, expected.answer1(), day::part1, 1).print(pad ? 6 : 0);
-		PuzzleResult part2 = runPart(day, expected.answer2(), day::part2, 2).print(pad ? 6 : 0);
-		return PuzzleResultStats.combineAll(part1.stats(), part2.stats());
-	}
-	
-	private PuzzleResult runPart(AdventDay day, Object expected, Supplier<Object> solution, int part) {
-		if (expected == ExpectedAnswers.IGNORE)
-			return PuzzleResult.ignored(day, part, expected);
-		
-		Timer timer = new Timer();
-		try {
-			Object answer = solution.get();
-			return PuzzleResult.result(day, part, expected, answer, timer.time());
-		} catch (Exception e) {
-			return PuzzleResult.error(day, part, expected, e, timer.time());
-		}
+		String title = day + " " + OutputUtils.leftPad(expected.file(), 13, OutputUtils::white) + ": ";
+		return PuzzleResultStats.combineAll(Stream.of(
+						new PuzzleRunner(day, expected.answer1(), day::part1, 1),
+						new PuzzleRunner(day, expected.answer2(), day::part2, 2))
+				.filter(PuzzleRunner::notIgnored)
+				.filter(p -> part == 0 || part == p.part())
+				.map(PuzzleRunner::run)
+				.peek(silent ? r -> {} : r -> System.out.println(title + r.presentation()))
+				.map(r -> part > 0 ? r.propagateError() : r)
+				.map(PuzzleResult::stats));
 	}
 	
 	private ExpectedAnswers expected(String file) {
