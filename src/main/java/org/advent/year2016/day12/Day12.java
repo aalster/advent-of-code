@@ -76,11 +76,11 @@ public class Day12 extends AdventDay {
 		return values.get("a");
 	}
 	
-	// Используется в 2016-23
+	// Используется в 2016-23, 2016-25
 	public static String[] optimize(String[] operations) {
-		String[] optimized = Arrays.copyOf(operations, operations.length);
-		for (int index = 0; index < optimized.length; index++) {
-			String operation = optimized[index];
+		operations = Arrays.copyOf(operations, operations.length);
+		for (int index = 0; index < operations.length; index++) {
+			String operation = operations[index];
 			if (operation.startsWith("jnz")) {
 				String[] split = operation.split(" ");
 				String left = split[1];
@@ -91,7 +91,7 @@ public class Day12 extends AdventDay {
 				if (target >= index)
 					continue;
 				
-				Map<String, List<String>> ops = Arrays.stream(optimized, target, index)
+				Map<String, List<String>> ops = Arrays.stream(operations, target, index)
 						.filter(op -> !"skip".equals(op))
 						.collect(Collectors.groupingBy(op -> op.split(" ")[0]));
 				List<String> decOps = ops.getOrDefault("dec", List.of());
@@ -115,11 +115,11 @@ public class Day12 extends AdventDay {
 					if (!decOp[1].equals(left))
 						continue;
 					
-					optimized[target] = "muladd " + left + " " + cpyOps.getFirst().split(" ")[1] + " " + addOp[2];
-					optimized[target + 1] = cpyOps.getLast();
-					optimized[target + 2] = "cpy 0 " + left;
+					operations[target] = "muladd " + left + " " + cpyOps.getFirst().split(" ")[1] + " " + addOp[2];
+					operations[target + 1] = cpyOps.getLast();
+					operations[target + 2] = "cpy 0 " + left;
 					for (int i = target + 3; i <= index; i++)
-						optimized[i] = "skip";
+						operations[i] = "skip";
 				}
 				
 //				inc d
@@ -132,13 +132,13 @@ public class Day12 extends AdventDay {
 					if (!decOp[1].equals(left))
 						continue;
 					
-					optimized[target] = "add " + left + " " + incOp[1];
-					optimized[target + 1] = "cpy 0 " + left;
+					operations[target] = "add " + left + " " + incOp[1];
+					operations[target + 1] = "cpy 0 " + left;
 					for (int i = target + 2; i <= index; i++)
-						optimized[i] = "skip";
+						operations[i] = "skip";
 				}
 			}
 		}
-		return optimized;
+		return operations;
 	}
 }
