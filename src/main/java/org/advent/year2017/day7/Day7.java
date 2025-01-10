@@ -86,10 +86,6 @@ public class Day7 extends AdventDay {
 				Stream.of(split[1].split(", ")).map(programs::get).forEach(program::addChild);
 			}
 			
-//			programs.values().stream()
-//					.map(p -> p.name + ": " + p.weight + " " + p.getTotalWeight() + " " + p.children.stream().map(Program::getName).toList())
-//					.forEach(System.out::println);
-			
 			Program root = programs.values().iterator().next();
 			while (root.parent != null)
 				root = programs.get(root.parent);
