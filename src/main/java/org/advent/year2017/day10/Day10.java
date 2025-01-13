@@ -43,19 +43,23 @@ public class Day10 extends AdventDay {
 	public Object part1() {
 		int[] lengths = Arrays.stream(line.split(",\\s?")).mapToInt(Integer::parseInt).toArray();
 		int[] numbers = IntStream.range(0, part1Size).toArray();
-		knotHash(numbers, lengths, 1);
+		sparseHash(numbers, lengths, 1);
 		return numbers[0] * numbers[1];
 	}
 	
 	@Override
 	public Object part2() {
-		int[] lengths = IntStream.concat(line.chars(), IntStream.of(17, 31, 73, 47, 23)).toArray();
+		return knotHash(line);
+	}
+	
+	public static String knotHash(String input) {
+		int[] lengths = IntStream.concat(input.chars(), IntStream.of(17, 31, 73, 47, 23)).toArray();
 		int[] numbers = IntStream.range(0, 256).toArray();
-		knotHash(numbers, lengths, 64);
+		sparseHash(numbers, lengths, 64);
 		return denseHash(numbers);
 	}
 	
-	void knotHash(int[] numbers, int[] lengths, int rounds) {
+	public static void sparseHash(int[] numbers, int[] lengths, int rounds) {
 		int index = 0;
 		int skip = 0;
 		while (rounds-- > 0) {
@@ -67,7 +71,7 @@ public class Day10 extends AdventDay {
 		}
 	}
 	
-	void reverse(int[] numbers, int start, int end) {
+	private static void reverse(int[] numbers, int start, int end) {
 		while (start < end) {
 			int temp = numbers[start % numbers.length];
 			numbers[start % numbers.length] = numbers[end % numbers.length];
@@ -77,7 +81,7 @@ public class Day10 extends AdventDay {
 		}
 	}
 	
-	String denseHash(int[] numbers) {
+	private static String denseHash(int[] numbers) {
 		byte[] result = new byte[numbers.length / 16];
 		for (int group = 0; group < result.length; group++)
 			for (int index = 0; index < 16 && index + group < numbers.length; index++)
