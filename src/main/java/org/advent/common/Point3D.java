@@ -3,6 +3,7 @@ package org.advent.common;
 import java.util.Arrays;
 
 public record Point3D(int x, int y, int z) {
+	public static final Point3D ZERO = new Point3D(0, 0, 0);
 	
 	public Point3D shift(int dx, int dy, int dz) {
 		return new Point3D(x + dx, y + dy, z + dz);
