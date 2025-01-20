@@ -11,10 +11,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 @Data
 public class LetterPoints {
+	private static final boolean printUnknownLetters = true;
 	private final LetterSize letterSize;
 	private final Map<Set<Point>, Character> letters;
 	
@@ -32,10 +34,27 @@ public class LetterPoints {
 	
 	
 	public String parse(Collection<Point> points) {
-		return letters(points).stream().map(l -> "" + letters.getOrDefault(l, '?')).collect(Collectors.joining());
+		return letters(points).stream().map(l -> "" + getLetter(l)).collect(Collectors.joining());
 	}
 	
-	private static List<Set<Point>> letters(Collection<Point> points) {
+	private Character getLetter(Set<Point> points) {
+		Character letter = letters.get(points);
+		if (printUnknownLetters && letter == null) {
+			System.out.println("Unknown letter:");
+			Point.printField(points, p -> points.contains(p) ? '#' : ' ');
+		}
+		return letter == null ? '?' : letter;
+	}
+	
+	private Collection<Set<Point>> letters(Collection<Point> points) {
+		return shiftToStart(points).stream()
+				.collect(Collectors.groupingBy(p -> p.x() / letterSize.getWidth(), TreeMap::new,
+						Collectors.mapping(p -> new Point(p.x() % letterSize.getWidth(), p.y()), Collectors.toSet())))
+				.values();
+		
+	}
+	
+	private Collection<Set<Point>> lettersUsingShift(Collection<Point> points) {
 		points = shiftToStart(points);
 		List<Set<Point>> letters = new ArrayList<>();
 		while (!points.isEmpty()) {

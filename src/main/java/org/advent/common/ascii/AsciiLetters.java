@@ -1,6 +1,7 @@
 package org.advent.common.ascii;
 
 import org.advent.common.Point;
+import org.advent.runner.DayRunner;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -35,5 +36,14 @@ public class AsciiLetters {
 	
 	public static String parse(String asciiLetters, char symbol) {
 		return parse(Point.readField(List.of(asciiLetters.split("\n"))).get(symbol));
+	}
+	
+	public static void main(String[] args) {
+		List.of(
+				new org.advent.year2016.day8.Day8(),
+				new org.advent.year2018.day10.Day10(),
+				new org.advent.year2021.day13.Day13(),
+				new org.advent.year2022.day10.Day10()
+		).forEach(day -> new DayRunner(day).runAll());
 	}
 }

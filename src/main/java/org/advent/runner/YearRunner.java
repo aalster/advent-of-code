@@ -11,8 +11,8 @@ public class YearRunner {
 	
 	public static void main(String[] args) {
 //		new YearRunner().runAll();
-		new YearRunner().runAllHorizontal();
-//		new YearRunner().runYear(2016);
+//		new YearRunner().runAllHorizontal();
+		new YearRunner().runYear(2023);
 //		new YearRunner().runAll("input.txt");
 	}
 	
