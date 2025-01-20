@@ -6,10 +6,8 @@ import java.util.HashMap;
 import java.util.IntSummaryStatistics;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 public record Point(int x, int y) {
 	public static final Point ZERO = new Point(0, 0);
@@ -58,7 +56,11 @@ public record Point(int x, int y) {
 	}
 	
 	public static Point parse(String value) {
-		String[] split = value.split(",");
+		return parse(value, ",");
+	}
+	
+	public static Point parse(String value, String delimiterRegex) {
+		String[] split = value.split(delimiterRegex);
 		int x = Integer.parseInt(split[0]);
 		int y = Integer.parseInt(split[1]);
 		return new Point(x, y);
