@@ -1,6 +1,6 @@
 package org.advent.year2021.day13;
 
-import org.advent.common.AsciiLetters;
+import org.advent.common.ascii.AsciiLetters;
 import org.advent.common.Pair;
 import org.advent.common.Point;
 import org.advent.common.Utils;

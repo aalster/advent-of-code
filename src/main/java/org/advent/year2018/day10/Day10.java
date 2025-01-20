@@ -1,9 +1,9 @@
 package org.advent.year2018.day10;
 
-import org.advent.common.AsciiLetters;
 import org.advent.common.Pair;
 import org.advent.common.Point;
 import org.advent.common.Utils;
+import org.advent.common.ascii.AsciiLetters;
 import org.advent.runner.AdventDay;
 import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
@@ -77,7 +77,6 @@ public class Day10 extends AdventDay {
 			time++;
 		}
 		Set<Point> points = lights.stream().map(Light::pos).collect(Collectors.toSet());
-		Point.printField(points, p -> points.contains(p) ? '#' : '.');
 		return Pair.of(AsciiLetters.parse(points), time);
 	}
 	

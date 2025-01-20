@@ -1,6 +1,6 @@
 package org.advent.year2016.day8;
 
-import org.advent.common.AsciiLetters;
+import org.advent.common.ascii.AsciiLetters;
 import org.advent.common.Point;
 import org.advent.common.Utils;
 import org.advent.runner.AdventDay;

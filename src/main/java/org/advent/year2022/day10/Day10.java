@@ -1,6 +1,6 @@
 package org.advent.year2022.day10;
 
-import org.advent.common.AsciiLetters;
+import org.advent.common.ascii.AsciiLetters;
 import org.advent.common.Utils;
 import org.advent.runner.AdventDay;
 import org.advent.runner.DayRunner;
