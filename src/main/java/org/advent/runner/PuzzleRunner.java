@@ -9,9 +9,10 @@ public record PuzzleRunner(AdventDay day, ExpectedAnswers expected, int part) {
 	}
 	
 	public PuzzleResult run() {
-		day.prepare(expected.file());
 		Timer timer = new Timer();
 		try {
+			day.prepare(expected.file());
+			timer.time();
 			Object answer = day.part(part);
 			return PuzzleResult.result(day, part, expected.answer(part), answer, timer.time());
 		} catch (Exception e) {
