@@ -2,8 +2,6 @@ package org.advent.runner;
 
 import lombok.RequiredArgsConstructor;
 
-import java.util.stream.Stream;
-
 @RequiredArgsConstructor
 public class DayRunner {
 	private final AdventDay day;
@@ -27,12 +25,8 @@ public class DayRunner {
 	}
 	
 	private PuzzleResultStats run(ExpectedAnswers expected, int part, boolean silent) {
-		day.prepare(expected.file());
-		
 		String title = day + " " + OutputUtils.leftPad(expected.file(), 13, OutputUtils::white) + ": ";
-		return PuzzleResultStats.combineAll(Stream.of(
-						new PuzzleRunner(day, expected.answer1(), day::part1, 1),
-						new PuzzleRunner(day, expected.answer2(), day::part2, 2))
+		return PuzzleResultStats.combineAll(PuzzleRunner.allParts(day, expected)
 				.filter(PuzzleRunner::notIgnored)
 				.filter(p -> part == 0 || part == p.part())
 				.map(PuzzleRunner::run)

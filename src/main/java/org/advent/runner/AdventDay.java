@@ -19,6 +19,14 @@ public abstract class AdventDay {
 	public abstract Object part1();
 	public abstract Object part2();
 	
+	public Object part(int part) {
+		return switch (part) {
+			case 1 -> part1();
+			case 2 -> part2();
+			default -> throw new IllegalStateException("Unexpected value: " + part);
+		};
+	}
+	
 	@Override
 	public String toString() {
 		return year + "-" + (day < 10 ? "0" : "") + day;
