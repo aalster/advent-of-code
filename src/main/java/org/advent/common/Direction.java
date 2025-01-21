@@ -8,13 +8,14 @@ import java.util.stream.Stream;
 @Getter
 @RequiredArgsConstructor
 public enum Direction {
-	UP(0, new Point(0, -1)),
-	RIGHT(1, new Point(1, 0)),
-	DOWN(2, new Point(0, 1)),
-	LEFT(3, new Point(-1, 0));
+	UP(0, new Point(0, -1), true),
+	RIGHT(1, new Point(1, 0), false),
+	DOWN(2, new Point(0, 1), true),
+	LEFT(3, new Point(-1, 0), false);
 	
 	private final int indexClockwise;
 	private final Point p;
+	private final boolean vertical;
 	
 	public Point shift(Point point) {
 		return point.shift(p);
