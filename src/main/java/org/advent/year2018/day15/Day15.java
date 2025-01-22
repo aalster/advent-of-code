@@ -22,11 +22,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Day15 extends AdventDay {
-	static final boolean print = false;
 	
 	public static void main(String[] args) {
 		new DayRunner(new Day15()).runAll();
-//		new DayRunner(new Day15()).run("example.txt", 1);
 	}
 	
 	@Override
@@ -71,7 +69,7 @@ public class Day15 extends AdventDay {
 	
 	@Override
 	public Object part1() {
-		return solve(emptyPoints, units, 3, false);
+		return new Battleground(units, emptyPoints, 3, false).play();
 	}
 	
 	@Override
@@ -81,7 +79,7 @@ public class Day15 extends AdventDay {
 		int bestOutcome = 0;
 		while (minDamage < maxDamage) {
 			int middleDamage = (minDamage + maxDamage) / 2;
-			int outcome = solve(emptyPoints, units, middleDamage, true);
+			int outcome = new Battleground(units, emptyPoints, middleDamage, true).play();
 			if (outcome <= 0) {
 				minDamage = middleDamage + 1;
 			} else {
@@ -92,36 +90,10 @@ public class Day15 extends AdventDay {
 		return bestOutcome;
 	}
 	
-	int solve(Set<Point> emptyPoints, SortedMap<Point, Unit> units, int elfDamage, boolean noElfDeaths) {
-		return new Battleground(units, emptyPoints, elfDamage, noElfDeaths).play();
-	}
-	
-	static void print(Map<Point, Unit> units, Set<Point> emptyPoints) {
-		print(units, emptyPoints, false);
-	}
-	
-	static void print(Map<Point, Unit> units, Set<Point> emptyPoints, boolean force) {
-		if (!force && !print)
-			return;
-		System.out.println();
-		List<Point> bounds = List.of(new Point(0, 0), Point.maxBound(emptyPoints).shift(1, 1));
-		Point.printField(bounds, p -> Optional.ofNullable(units.get(p))
-				.map(u -> u.type == Unit.TYPE_ELF ? 'E' : 'G')
-				.orElseGet(() -> emptyPoints.contains(p) ? '.' : '#'));
-		System.out.println(units.values().stream()
-				.map(u -> (u.type == Unit.TYPE_ELF ? "E(" : "G(") + u.hp + ")")
-				.collect(Collectors.joining(", ")));
-		System.out.println();
-	}
-	
-	static final Direction[] sortedDirections = Direction.stream()
-			.sorted(Comparator.comparing(Direction::getP, Point.COMPARATOR)).toArray(Direction[]::new);
-	
-	static class Battleground {
-		final SortedMap<Point, Unit> units;
-		final Set<Point> emptyPoints;
-		final int elfDamage;
-		final boolean noElfDeaths;
+	record Battleground(SortedMap<Point, Unit> units, Set<Point> emptyPoints, int elfDamage, boolean noElfDeaths) {
+		
+		static final Direction[] sortedDirections = Direction.stream()
+				.sorted(Comparator.comparing(Direction::getP, Point.COMPARATOR)).toArray(Direction[]::new);
 		
 		Battleground(SortedMap<Point, Unit> units, Set<Point> emptyPoints, int elfDamage, boolean noElfDeaths) {
 			TreeMap<Point, Unit> copy = new TreeMap<>(Point.COMPARATOR);
@@ -140,7 +112,6 @@ public class Day15 extends AdventDay {
 		}
 		
 		int play() {
-			print(units, emptyPoints);
 			int steps = 0;
 			main: while (true) {
 				for (Point position : new ArrayList<>(units.keySet())) {
@@ -152,16 +123,11 @@ public class Day15 extends AdventDay {
 						break main;
 					
 					Point nextPosition = nextStep(unit);
-					if (nextPosition != null) {
+					if (nextPosition != null)
 						move(nextPosition, unit);
-						if (print)
-							System.out.println(unit.type + " " + unit.position + " moves to " + nextPosition);
-					}
 					
-					Unit target = unit.attackTarget(units);
+					Unit target = attackTarget(unit);
 					if (target != null) {
-						if (print)
-							System.out.println(unit.type + " " + unit.position + " attacks " + target.position);
 						target.hp -= unit.type == Unit.TYPE_ELF ? elfDamage : 3;
 						if (target.hp <= 0) {
 							if (noElfDeaths && target.type == Unit.TYPE_ELF)
@@ -171,13 +137,7 @@ public class Day15 extends AdventDay {
 					}
 				}
 				steps++;
-				if (print)
-					System.out.println("\nSTEP: " + steps);
-				print(units, emptyPoints);
 			}
-			print(units, emptyPoints);
-			if (print)
-				System.out.println("TOTAL STEPS: " + (steps + 1));
 			return steps * units.values().stream().mapToInt(u -> u.hp).sum();
 		}
 		
@@ -202,8 +162,8 @@ public class Day15 extends AdventDay {
 			
 			while (!paths.isEmpty()) {
 				Optional<Point> targetStep = paths.stream().filter(p -> targetPositions.contains(p.current))
-					.min(Comparator.comparing(Path::current, Point.COMPARATOR).thenComparing(Path::firstStep, Point.COMPARATOR))
-					.map(Path::firstStep);
+						.min(Comparator.comparing(Path::current, Point.COMPARATOR).thenComparing(Path::firstStep, Point.COMPARATOR))
+						.map(Path::firstStep);
 				if (targetStep.isPresent())
 					return targetStep.get();
 				
@@ -212,6 +172,16 @@ public class Day15 extends AdventDay {
 				paths = paths.stream().flatMap(p -> p.next(emptyPoints, visited)).collect(Collectors.toSet());
 			}
 			return null;
+		}
+		
+		Unit attackTarget(Unit unit) {
+			Unit target = null;
+			for (Direction direction : sortedDirections) {
+				Unit enemy = units.get(direction.shift(unit.position));
+				if (enemy != null && enemy.type != unit.type && (target == null || enemy.hp < target.hp))
+					target = enemy;
+			}
+			return target;
 		}
 	}
 	
@@ -230,16 +200,6 @@ public class Day15 extends AdventDay {
 		
 		Unit copy() {
 			return new Unit(position, type);
-		}
-		
-		Unit attackTarget(Map<Point, Unit> units) {
-			Unit target = null;
-			for (Direction direction : sortedDirections) {
-				Unit enemy = units.get(direction.shift(position));
-				if (enemy != null && enemy.type != type && (target == null || enemy.hp < target.hp))
-					target = enemy;
-			}
-			return target;
 		}
 	}
 	
