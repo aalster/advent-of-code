@@ -2,6 +2,7 @@ package org.advent.common;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.IntSummaryStatistics;
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 public record Point(int x, int y) {
+	public static final Comparator<Point> COMPARATOR = Comparator.comparing(Point::y).thenComparing(Point::x);
 	public static final Point ZERO = new Point(0, 0);
 	
 	public Point shift(int dx, int dy) {

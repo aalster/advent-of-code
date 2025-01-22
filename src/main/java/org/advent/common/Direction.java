@@ -3,6 +3,7 @@ package org.advent.common;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.util.List;
 import java.util.stream.Stream;
 
 @Getter
@@ -12,6 +13,8 @@ public enum Direction {
 	RIGHT(1, new Point(1, 0), false),
 	DOWN(2, new Point(0, 1), true),
 	LEFT(3, new Point(-1, 0), false);
+	
+	public static final List<Direction> ALL = List.of(Direction.values());
 	
 	private final int indexClockwise;
 	private final Point p;
