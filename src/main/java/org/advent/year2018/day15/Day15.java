@@ -1,7 +1,6 @@
 package org.advent.year2018.day15;
 
 import org.advent.common.Direction;
-import org.advent.common.Pair;
 import org.advent.common.Point;
 import org.advent.common.Utils;
 import org.advent.runner.AdventDay;
@@ -9,6 +8,7 @@ import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -60,9 +60,9 @@ public class Day15 extends AdventDay {
 					continue;
 				Point position = new Point(x, y);
 				if (c == 'E')
-					units.put(position, new Unit(Unit.TYPE_ELF));
+					units.put(position, new Unit(position, Unit.TYPE_ELF));
 				if (c == 'G')
-					units.put(position, new Unit(Unit.TYPE_GOBLIN));
+					units.put(position, new Unit(position, Unit.TYPE_GOBLIN));
 				emptyPoints.add(position);
 			}
 			y++;
@@ -76,74 +76,24 @@ public class Day15 extends AdventDay {
 	
 	@Override
 	public Object part2() {
-		for (int elfDamage = 4; elfDamage <= 200; elfDamage++) {
-			int outcome = solve(emptyPoints, units, elfDamage, true);
-			if (outcome > 0)
-				return outcome;
+		int minDamage = 4;
+		int maxDamage = 200;
+		int bestOutcome = 0;
+		while (minDamage < maxDamage) {
+			int middleDamage = (minDamage + maxDamage) / 2;
+			int outcome = solve(emptyPoints, units, middleDamage, true);
+			if (outcome <= 0) {
+				minDamage = middleDamage + 1;
+			} else {
+				maxDamage = middleDamage;
+				bestOutcome = outcome;
+			}
 		}
-		return 0;
+		return bestOutcome;
 	}
 	
 	int solve(Set<Point> emptyPoints, SortedMap<Point, Unit> units, int elfDamage, boolean noElfDeaths) {
-		TreeMap<Point, Unit> copy = new TreeMap<>(Point.COMPARATOR);
-		for (Map.Entry<Point, Unit> entry : units.entrySet())
-			copy.put(entry.getKey(), entry.getValue().copy());
-		units = copy;
-		
-		print(units, emptyPoints);
-		int steps = 0;
-		main: while (true) {
-			for (Point position : new ArrayList<>(units.keySet())) {
-				Unit unit = units.get(position);
-				if (unit == null)
-					continue;
-				
-				if (units.values().stream().noneMatch(u -> u.type != unit.type))
-					break main;
-				
-				Pair<Point, Unit> attack = unit.attackTarget(position, units);
-				if (attack != null) {
-					Unit target = attack.right();
-					if (print)
-						System.out.println(unit.type + " " + position + " attacks " + attack.left());
-					target.hp -= unit.type == Unit.TYPE_ELF ? elfDamage : 3;
-					if (target.hp <= 0) {
-						if (noElfDeaths && target.type == Unit.TYPE_ELF)
-							return 0;
-						units.remove(attack.left());
-					}
-				} else {
-					Point nextPosition = unit.move(position, emptyPoints, units);
-					if (nextPosition != null) {
-						units.remove(position);
-						units.put(nextPosition, unit);
-						if (print)
-							System.out.println(unit.type + " " + position + " moves to " + nextPosition);
-						
-						attack = unit.attackTarget(nextPosition, units);
-						if (attack != null) {
-							Unit target = attack.right();
-							if (print)
-								System.out.println(unit.type + " " + nextPosition + " attacks " + attack.left());
-							target.hp -= unit.type == Unit.TYPE_ELF ? elfDamage : 3;
-							if (target.hp <= 0) {
-								if (noElfDeaths && target.type == Unit.TYPE_ELF)
-									return 0;
-								units.remove(attack.left());
-							}
-						}
-					}
-				}
-			}
-			steps++;
-			if (print)
-				System.out.println("\nSTEP: " + steps);
-			print(units, emptyPoints);
-		}
-		print(units, emptyPoints);
-		if (print)
-			System.out.println("TOTAL STEPS: " + (steps + 1));
-		return steps * units.values().stream().mapToInt(u -> u.hp).sum();
+		return new Battleground(units, emptyPoints, elfDamage, noElfDeaths).play();
 	}
 	
 	static void print(Map<Point, Unit> units, Set<Point> emptyPoints) {
@@ -164,109 +114,146 @@ public class Day15 extends AdventDay {
 		System.out.println();
 	}
 	
-	static class Unit {
-		static final Direction[] sortedDirections = Direction.stream()
-				.sorted(Comparator.comparing(Direction::getP, Point.COMPARATOR)).toArray(Direction[]::new);
-		static final int TYPE_ELF = 0;
-		static final int TYPE_GOBLIN = 1;
+	static final Direction[] sortedDirections = Direction.stream()
+			.sorted(Comparator.comparing(Direction::getP, Point.COMPARATOR)).toArray(Direction[]::new);
+	
+	static class Battleground {
+		final SortedMap<Point, Unit> units;
+		final Set<Point> emptyPoints;
+		final int elfDamage;
+		final boolean noElfDeaths;
 		
-		int type;
-		int hp = 200;
-		
-		Unit(int type) {
-			this.type = type;
+		Battleground(SortedMap<Point, Unit> units, Set<Point> emptyPoints, int elfDamage, boolean noElfDeaths) {
+			TreeMap<Point, Unit> copy = new TreeMap<>(Point.COMPARATOR);
+			for (Map.Entry<Point, Unit> entry : units.entrySet())
+				copy.put(entry.getKey(), entry.getValue().copy());
+			this.units = copy;
+			this.emptyPoints = emptyPoints;
+			this.elfDamage = elfDamage;
+			this.noElfDeaths = noElfDeaths;
 		}
 		
-		Unit copy() {
-			return new Unit(type);
+		void move(Point nextPosition, Unit unit) {
+			units.remove(unit.position);
+			unit.position = nextPosition;
+			units.put(nextPosition, unit);
 		}
 		
-		Pair<Point, Unit> attackTarget(Point position, Map<Point, Unit> units) {
-			Point targetPosition = null;
-			Unit target = null;
-			for (Direction direction : sortedDirections) {
-				Point next = direction.shift(position);
-				Unit enemy = units.get(next);
-				if (enemy != null && enemy.type != type && (target == null || enemy.hp < target.hp)) {
-					targetPosition = next;
-					target = enemy;
+		int play() {
+			print(units, emptyPoints);
+			int steps = 0;
+			main: while (true) {
+				for (Point position : new ArrayList<>(units.keySet())) {
+					Unit unit = units.get(position);
+					if (unit == null)
+						continue;
+					
+					if (units.values().stream().noneMatch(u -> u.type != unit.type))
+						break main;
+					
+					Point nextPosition = nextStep(unit);
+					if (nextPosition != null) {
+						move(nextPosition, unit);
+						if (print)
+							System.out.println(unit.type + " " + unit.position + " moves to " + nextPosition);
+					}
+					
+					Unit target = unit.attackTarget(units);
+					if (target != null) {
+						if (print)
+							System.out.println(unit.type + " " + unit.position + " attacks " + target.position);
+						target.hp -= unit.type == Unit.TYPE_ELF ? elfDamage : 3;
+						if (target.hp <= 0) {
+							if (noElfDeaths && target.type == Unit.TYPE_ELF)
+								return 0;
+							units.remove(target.position);
+						}
+					}
 				}
+				steps++;
+				if (print)
+					System.out.println("\nSTEP: " + steps);
+				print(units, emptyPoints);
 			}
-			return target != null ? Pair.of(targetPosition, target) : null;
+			print(units, emptyPoints);
+			if (print)
+				System.out.println("TOTAL STEPS: " + (steps + 1));
+			return steps * units.values().stream().mapToInt(u -> u.hp).sum();
 		}
 		
-		Point move(Point position, Set<Point> emptyPoints, Map<Point, Unit> units) {
-			Set<Point> targetPositions = units.entrySet().stream()
-					.filter(e -> e.getValue().type != type)
-					.map(Map.Entry::getKey)
+		Point nextStep(Unit unit) {
+			List<Point> firstSteps = Arrays.stream(sortedDirections).map(unit.position::shift).filter(emptyPoints::contains).toList();
+			for (Point firstStep : firstSteps) {
+				Unit possibleTarget = units.get(firstStep);
+				if (possibleTarget != null && possibleTarget.type != unit.type)
+					return null;
+			}
+			
+			Set<Point> targetPositions = units.values().stream()
+					.filter(u -> u.type != unit.type)
+					.map(u -> u.position)
 					.flatMap(p -> Direction.stream().map(p::shift))
 					.filter(emptyPoints::contains)
 					.filter(p -> !units.containsKey(p))
 					.collect(Collectors.toSet());
-			if (targetPositions.isEmpty())
-				return null;
 			
-			Set<Point> visited = new HashSet<>();
-			Set<Path> paths = Set.of(new Path(position, List.of()));
+			Set<Path> paths = firstSteps.stream().filter(s -> !units.containsKey(s)).map(Path::new).collect(Collectors.toSet());
+			Set<Point> visited = new HashSet<>(units.keySet());
 			
-			Path targetPath = null;
-			while (targetPath == null && !paths.isEmpty()) {
+			while (!paths.isEmpty()) {
+				Optional<Point> targetStep = paths.stream().filter(p -> targetPositions.contains(p.current))
+					.min(Comparator.comparing(Path::current, Point.COMPARATOR).thenComparing(Path::firstStep, Point.COMPARATOR))
+					.map(Path::firstStep);
+				if (targetStep.isPresent())
+					return targetStep.get();
+				
 				for (Path path : paths)
 					visited.add(path.current);
-				
-				Set<Path> nextPaths = paths.stream()
-						.flatMap(p -> p.next(emptyPoints, visited, units.keySet()))
-						.collect(Collectors.toSet());
-				
-				for (Path nextPath : nextPaths) {
-					if (targetPositions.contains(nextPath.current)) {
-						if (targetPath == null
-								|| Point.COMPARATOR.compare(nextPath.current, targetPath.current) < 0
-								|| Point.COMPARATOR.compare(nextPath.secondStep(), targetPath.secondStep()) < 0) {
-							targetPath = nextPath;
-						}
-					}
-				}
-				paths = nextPaths;
+				paths = paths.stream().flatMap(p -> p.next(emptyPoints, visited)).collect(Collectors.toSet());
 			}
-			return targetPath == null ? null : targetPath.secondStep();
+			return null;
 		}
 	}
 	
-	record Path(Point current, List<Point> firstTwoSteps) {
+	static class Unit {
+		static final int TYPE_ELF = 0;
+		static final int TYPE_GOBLIN = 1;
 		
-		Point secondStep() {
-			return firstTwoSteps.size() == 2 ? firstTwoSteps.getLast() : firstTwoSteps.size() == 1 ? current : null;
+		Point position;
+		int type;
+		int hp = 200;
+		
+		Unit(Point position, int type) {
+			this.position = position;
+			this.type = type;
 		}
 		
-		Stream<Path> next(Set<Point> emptyPoints, Set<Point> visited, Set<Point> occupied) {
-			List<Point> nextSteps;
-			if (firstTwoSteps.size() < 2) {
-				nextSteps = new ArrayList<>(firstTwoSteps);
-				nextSteps.add(current);
-			} else {
-				nextSteps = firstTwoSteps;
+		Unit copy() {
+			return new Unit(position, type);
+		}
+		
+		Unit attackTarget(Map<Point, Unit> units) {
+			Unit target = null;
+			for (Direction direction : sortedDirections) {
+				Unit enemy = units.get(direction.shift(position));
+				if (enemy != null && enemy.type != type && (target == null || enemy.hp < target.hp))
+					target = enemy;
 			}
-			return Direction.stream().map(current::shift)
-					.filter(emptyPoints::contains)
-					.filter(n -> !visited.contains(n))
-					.filter(n -> !occupied.contains(n))
-					.map(n -> new Path(n, nextSteps));
+			return target;
 		}
 	}
 	
-	record Path2(Point firstStep, Point current) {
+	record Path(Point firstStep, Point current) {
 		
-		Path2(Point firstStep) {
+		Path(Point firstStep) {
 			this(firstStep, firstStep);
 		}
 		
-		Stream<Path2> next(Set<Point> emptyPoints, Set<Point> visited, Set<Point> occupied) {
+		Stream<Path> next(Set<Point> emptyPoints, Set<Point> visited) {
 			return Direction.stream().map(current::shift)
 					.filter(emptyPoints::contains)
 					.filter(next -> !visited.contains(next))
-					.filter(next -> !occupied.contains(next))
-					.map(next -> new Path2(firstStep, next));
+					.map(next -> new Path(firstStep, next));
 		}
 	}
 }
