@@ -2,6 +2,10 @@ package org.advent.runner;
 
 import lombok.RequiredArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+
 @RequiredArgsConstructor
 public class DayRunner {
 	private final AdventDay day;
@@ -16,6 +20,16 @@ public class DayRunner {
 	
 	public PuzzleResultStats run(String file, int part) {
 		return run(expected(file), part, false);
+	}
+	
+	public void time(String file, int part, int iterations) {
+		ExpectedAnswers expected = expected(file);
+		List<PuzzleResultStats> stats = new ArrayList<>(iterations);
+		for (int i = 0; i < iterations; i++)
+			stats.add(run(expected, part, true));
+		PuzzleResultStats result = PuzzleResultStats.combineAll(stats.stream());
+		System.out.println(result.summary());
+		System.out.printf(Locale.US, "Average time: %.3fms\n", (float) result.totalTime() / iterations);
 	}
 	
 	PuzzleResultStats runForYear(String file, boolean silent) {

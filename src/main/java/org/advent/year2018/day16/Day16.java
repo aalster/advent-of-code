@@ -18,7 +18,6 @@ public class Day16 extends AdventDay {
 	
 	public static void main(String[] args) {
 		new DayRunner(new Day16()).runAll();
-//		new DayRunner(new Day16()).run("example.txt", 1);
 	}
 	
 	@Override
@@ -69,15 +68,10 @@ public class Day16 extends AdventDay {
 		
 		Map<Integer, String> opcodes = new HashMap<>();
 		while (opcodes.size() < allOpcodeNames.size()) {
-			for (Map.Entry<Integer, Set<String>> entry : new ArrayList<>(possibleOpcodes.entrySet())) {
-				if (entry.getValue().isEmpty()) {
-					possibleOpcodes.remove(entry.getKey());
-				} else if (entry.getValue().size() == 1) {
+			for (Map.Entry<Integer, Set<String>> entry : possibleOpcodes.entrySet()) {
+				if (entry.getValue().size() == 1)
 					opcodes.put(entry.getKey(), entry.getValue().iterator().next());
-					possibleOpcodes.remove(entry.getKey());
-				} else {
-					entry.getValue().removeAll(opcodes.values());
-				}
+				entry.getValue().removeAll(opcodes.values());
 			}
 		}
 		
