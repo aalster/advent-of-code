@@ -47,9 +47,9 @@ public enum Direction {
 	public char presentationChar() {
 		return switch (this) {
 			case UP -> '^';
-			case LEFT -> '<';
 			case RIGHT -> '>';
 			case DOWN -> 'v';
+			case LEFT -> '<';
 		};
 	}
 	
@@ -59,20 +59,30 @@ public enum Direction {
 	
 	public static Direction parseSymbol(char symbol) {
 		return switch (symbol) {
-			case '>' -> RIGHT;
-			case '<' -> LEFT;
 			case '^' -> UP;
+			case '>' -> RIGHT;
 			case 'v', 'V' -> DOWN;
+			case '<' -> LEFT;
 			default -> throw new IllegalArgumentException("" + symbol);
 		};
 	}
 	
 	public static Direction parseLetter(char symbol) {
 		return switch (symbol) {
-			case 'R' -> RIGHT;
-			case 'L' -> LEFT;
 			case 'U' -> UP;
+			case 'R' -> RIGHT;
 			case 'D' -> DOWN;
+			case 'L' -> LEFT;
+			default -> throw new IllegalArgumentException("" + symbol);
+		};
+	}
+	
+	public static Direction parseCompassLetter(char symbol) {
+		return switch (symbol) {
+			case 'N' -> UP;
+			case 'E' -> RIGHT;
+			case 'S' -> DOWN;
+			case 'W' -> LEFT;
 			default -> throw new IllegalArgumentException("" + symbol);
 		};
 	}
