@@ -13,11 +13,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Stack;
 
 public class Day20 extends AdventDay {
 	
 	public static void main(String[] args) {
 		new DayRunner(new Day20()).runAll();
+//		new DayRunner(new Day20()).run("example4.txt", 1);
 	}
 	
 	@Override
@@ -37,7 +39,11 @@ public class Day20 extends AdventDay {
 	@Override
 	public void prepare(String file) {
 		Scanner input = Utils.scanFileNearClass(getClass(), file);
-		path = PathElement.parse(input.nextLine());
+		String line = input.nextLine();
+		path = PathElement.parse(line);
+		System.out.println(line);
+		System.out.println(path.asString());
+//		System.out.println(path);
 	}
 	
 	@Override
@@ -77,12 +83,91 @@ public class Day20 extends AdventDay {
 		}
 	}
 	
+	static class PathIterator {
+		final char[] chars;
+		int index;
+		
+		PathIterator(String path) {
+			this.chars = path.toCharArray();
+		}
+		
+		boolean hasNext() {
+			return index < chars.length;
+		}
+		
+		char peekNext() {
+			return chars[index];
+		}
+		
+		char next() {
+			return chars[index++];
+		}
+	}
+	
 	interface PathElement {
 		
 		void fillStepsMap(TakenPath path);
 		
+		default String asString() {
+			StringBuilder result = new StringBuilder().append("^");
+			asString(result);
+			return result.append("$").toString();
+		}
+		
+		void asString(StringBuilder result);
+		
 		static PathElement parse(String line) {
+			if (false)
+				return parse3(line);
 			return Sequence.parse(line, 1).left();
+		}
+		
+		static PathElement parse3(String line) {
+			line = line.substring(1, line.length() - 1);
+			
+			Stack<List<PathElement>> sequences = new Stack<>();
+			Stack<List<PathElement>> branches = new Stack<>();
+			
+			List<PathElement> sequence = new ArrayList<>();
+			List<PathElement> branch = new ArrayList<>();
+			StringBuilder path = new StringBuilder();
+			
+			for (int i = 0; i < line.length(); i++) {
+				char ch = line.charAt(i);
+				
+				if (ch == '(') {
+					sequence.add(new Path(path.toString()));
+					path.setLength(0);
+					
+					sequences.push(sequence);
+					sequence = new ArrayList<>();
+					branches.push(branch);
+					branch = new ArrayList<>();
+					
+				} else if (ch == '|') {
+					sequence.add(new Path(path.toString()));
+					path.setLength(0);
+					
+					branch.add(new Sequence(sequence));
+					sequence = new ArrayList<>();
+					
+				} else if (ch == ')') {
+					sequence.add(new Path(path.toString()));
+					path.setLength(0);
+					
+					branch.add(new Sequence(sequence));
+					sequence = sequences.pop();
+					sequence.add(new Branch(branch));
+					branch = branches.pop();
+					
+				} else {
+					path.append(ch);
+				}
+			}
+			sequence.add(new Path(path.toString()));
+			path.setLength(0);
+			
+			return new Sequence(sequence);
 		}
 	}
 	
@@ -94,15 +179,19 @@ public class Day20 extends AdventDay {
 				path.move(Direction.parseCompassLetter(d));
 		}
 		
+		@Override
+		public void asString(StringBuilder result) {
+			result.append(directions);
+		}
+		
 		static Pair<PathElement, Integer> parse(String line, int from) {
 			StringBuilder directions = new StringBuilder();
 			int index = from;
 			for (; index < line.length(); index++) {
 				char c = line.charAt(index);
-				if (Character.isLetter(c))
-					directions.append(c);
-				else
+				if (!Character.isLetter(c))
 					break;
+				directions.append(c);
 			}
 			return Pair.of(new Path(directions.toString()), index);
 		}
@@ -114,6 +203,12 @@ public class Day20 extends AdventDay {
 		public void fillStepsMap(TakenPath path) {
 			for (PathElement element : elements)
 				element.fillStepsMap(path);
+		}
+		
+		@Override
+		public void asString(StringBuilder result) {
+			for (PathElement element : elements)
+				element.asString(result);
 		}
 		
 		static Pair<PathElement, Integer> parse(String line, int from) {
@@ -145,6 +240,17 @@ public class Day20 extends AdventDay {
 		public void fillStepsMap(TakenPath path) {
 			for (PathElement element : elements)
 				element.fillStepsMap(path.branch());
+		}
+		
+		@Override
+		public void asString(StringBuilder result) {
+			result.append("(");
+			for (PathElement element : elements) {
+				element.asString(result);
+				result.append("|");
+			}
+			result.setLength(result.length() - 1);
+			result.append(")");
 		}
 		
 		static Pair<PathElement, Integer> parse(String line, int from) {
