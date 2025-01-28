@@ -1,7 +1,6 @@
 package org.advent.year2018.day20;
 
 import org.advent.common.Direction;
-import org.advent.common.Pair;
 import org.advent.common.Point;
 import org.advent.common.Utils;
 import org.advent.runner.AdventDay;
@@ -13,13 +12,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.Stack;
 
 public class Day20 extends AdventDay {
 	
 	public static void main(String[] args) {
 		new DayRunner(new Day20()).runAll();
-//		new DayRunner(new Day20()).run("example4.txt", 1);
+//		new DayRunner(new Day20()).run("example3.txt", 1);
 	}
 	
 	@Override
@@ -39,11 +37,7 @@ public class Day20 extends AdventDay {
 	@Override
 	public void prepare(String file) {
 		Scanner input = Utils.scanFileNearClass(getClass(), file);
-		String line = input.nextLine();
-		path = PathElement.parse(line);
-		System.out.println(line);
-		System.out.println(path.asString());
-//		System.out.println(path);
+		path = PathElement.parse(input.nextLine());
 	}
 	
 	@Override
@@ -85,10 +79,10 @@ public class Day20 extends AdventDay {
 	
 	static class PathIterator {
 		final char[] chars;
-		int index;
+		int index = 0;
 		
 		PathIterator(String path) {
-			this.chars = path.toCharArray();
+			chars = path.toCharArray();
 		}
 		
 		boolean hasNext() {
@@ -99,8 +93,8 @@ public class Day20 extends AdventDay {
 			return chars[index];
 		}
 		
-		char next() {
-			return chars[index++];
+		void indexInc() {
+			index++;
 		}
 	}
 	
@@ -108,66 +102,8 @@ public class Day20 extends AdventDay {
 		
 		void fillStepsMap(TakenPath path);
 		
-		default String asString() {
-			StringBuilder result = new StringBuilder().append("^");
-			asString(result);
-			return result.append("$").toString();
-		}
-		
-		void asString(StringBuilder result);
-		
 		static PathElement parse(String line) {
-			if (false)
-				return parse3(line);
-			return Sequence.parse(line, 1).left();
-		}
-		
-		static PathElement parse3(String line) {
-			line = line.substring(1, line.length() - 1);
-			
-			Stack<List<PathElement>> sequences = new Stack<>();
-			Stack<List<PathElement>> branches = new Stack<>();
-			
-			List<PathElement> sequence = new ArrayList<>();
-			List<PathElement> branch = new ArrayList<>();
-			StringBuilder path = new StringBuilder();
-			
-			for (int i = 0; i < line.length(); i++) {
-				char ch = line.charAt(i);
-				
-				if (ch == '(') {
-					sequence.add(new Path(path.toString()));
-					path.setLength(0);
-					
-					sequences.push(sequence);
-					sequence = new ArrayList<>();
-					branches.push(branch);
-					branch = new ArrayList<>();
-					
-				} else if (ch == '|') {
-					sequence.add(new Path(path.toString()));
-					path.setLength(0);
-					
-					branch.add(new Sequence(sequence));
-					sequence = new ArrayList<>();
-					
-				} else if (ch == ')') {
-					sequence.add(new Path(path.toString()));
-					path.setLength(0);
-					
-					branch.add(new Sequence(sequence));
-					sequence = sequences.pop();
-					sequence.add(new Branch(branch));
-					branch = branches.pop();
-					
-				} else {
-					path.append(ch);
-				}
-			}
-			sequence.add(new Path(path.toString()));
-			path.setLength(0);
-			
-			return new Sequence(sequence);
+			return Sequence.parse(new PathIterator(line.substring(1, line.length() - 1)));
 		}
 	}
 	
@@ -179,21 +115,16 @@ public class Day20 extends AdventDay {
 				path.move(Direction.parseCompassLetter(d));
 		}
 		
-		@Override
-		public void asString(StringBuilder result) {
-			result.append(directions);
-		}
-		
-		static Pair<PathElement, Integer> parse(String line, int from) {
+		static PathElement parse(PathIterator iterator) {
 			StringBuilder directions = new StringBuilder();
-			int index = from;
-			for (; index < line.length(); index++) {
-				char c = line.charAt(index);
+			while (iterator.hasNext()) {
+				char c = iterator.peekNext();
 				if (!Character.isLetter(c))
 					break;
 				directions.append(c);
+				iterator.indexInc();
 			}
-			return Pair.of(new Path(directions.toString()), index);
+			return new Path(directions.toString());
 		}
 	}
 	
@@ -205,32 +136,20 @@ public class Day20 extends AdventDay {
 				element.fillStepsMap(path);
 		}
 		
-		@Override
-		public void asString(StringBuilder result) {
-			for (PathElement element : elements)
-				element.asString(result);
-		}
-		
-		static Pair<PathElement, Integer> parse(String line, int from) {
+		static PathElement parse(PathIterator iterator) {
 			List<PathElement> elements = new ArrayList<>();
-			int index = from;
-			for (; index < line.length(); index++) {
-				char c = line.charAt(index);
-				if (Character.isLetter(c)) {
-					Pair<PathElement, Integer> path = Path.parse(line, index);
-					elements.add(path.left());
-					index = path.right() - 1;
-					continue;
-				}
-				if (c == '(') {
-					Pair<PathElement, Integer> branch = Branch.parse(line, index);
-					elements.add(branch.left());
-					index = branch.right() - 1;
-					continue;
-				}
-				break;
+			while (iterator.hasNext()) {
+				char c = iterator.peekNext();
+				
+				if (Character.isLetter(c))
+					elements.add(Path.parse(iterator));
+				else if (c == '(')
+					elements.add(Branch.parse(iterator));
+				else
+					break;
 			}
-			return Pair.of(elements.size() == 1 ? elements.getFirst() : new Sequence(elements), index);
+			return elements.isEmpty() ? new Path("")
+					: elements.size() == 1 ? elements.getFirst() : new Sequence(elements);
 		}
 	}
 	
@@ -242,34 +161,20 @@ public class Day20 extends AdventDay {
 				element.fillStepsMap(path.branch());
 		}
 		
-		@Override
-		public void asString(StringBuilder result) {
-			result.append("(");
-			for (PathElement element : elements) {
-				element.asString(result);
-				result.append("|");
-			}
-			result.setLength(result.length() - 1);
-			result.append(")");
-		}
-		
-		static Pair<PathElement, Integer> parse(String line, int from) {
+		static PathElement parse(PathIterator iterator) {
 			List<PathElement> elements = new ArrayList<>();
-			int index = from + 1;
-			for (; index < line.length(); index++) {
-				char c = line.charAt(index);
+			iterator.indexInc();
+			while (iterator.hasNext()) {
+				char c = iterator.peekNext();
 				if (c == ')')
 					break;
-				if (c == '|') {
-					if (line.charAt(index + 1) == ')')
-						elements.add(new Path(""));
-					continue;
-				}
-				Pair<PathElement, Integer> sequence = Sequence.parse(line, index);
-				elements.add(sequence.left());
-				index = sequence.right() - 1;
+				if (c == '|')
+					iterator.indexInc();
+				
+				elements.add(Sequence.parse(iterator));
 			}
-			return Pair.of(new Branch(elements), index + 1);
+			iterator.indexInc();
+			return new Branch(elements);
 		}
 	}
 }
