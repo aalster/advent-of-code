@@ -17,7 +17,7 @@ public record Point3D(int x, int y, int z) {
 		return shift(-other.x, -other.y, -other.z);
 	}
 	
-	public int manhattanDistance(Point3D other) {
+	public int distanceTo(Point3D other) {
 		return Math.abs(x - other.x) + Math.abs(y - other.y) + Math.abs(z - other.z);
 	}
 	

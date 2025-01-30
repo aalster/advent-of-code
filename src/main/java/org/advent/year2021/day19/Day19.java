@@ -55,7 +55,7 @@ public class Day19 extends AdventDay {
 			for (ScannerReport right : merged) {
 				if (left == right)
 					continue;
-				int distance = left.scanner().manhattanDistance(right.scanner());
+				int distance = left.scanner().distanceTo(right.scanner());
 				if (maxDistance < distance)
 					maxDistance = distance;
 			}

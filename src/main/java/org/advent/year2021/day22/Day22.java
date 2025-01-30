@@ -1,7 +1,6 @@
 package org.advent.year2021.day22;
 
-import org.advent.common.Axis3D;
-import org.advent.common.Pair;
+import org.advent.common.Point3D;
 import org.advent.common.Region3D;
 import org.advent.common.Utils;
 import org.advent.runner.AdventDay;
@@ -11,10 +10,8 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
-import java.util.Set;
 
 public class Day22 extends AdventDay {
 	
@@ -41,77 +38,32 @@ public class Day22 extends AdventDay {
 	
 	@Override
 	public Object part1() {
-		List<Cuboid> cuboidsCopy = cuboids.reversed();
-		int radius = 50;
-		long count = 0;
-		for (int x = -radius; x <= radius; x++) {
-			for (int y = -radius; y <= radius; y++) {
-				for (int z = -radius; z <= radius; z++) {
-					for (Cuboid cuboid : cuboidsCopy) {
-						if (cuboid.region().contains(x, y, z)) {
-							if (cuboid.on())
-								count++;
-							break;
-						}
-					}
-				}
-			}
-		}
-		return count;
+		Region3D initializationArea = Region3D.fromCenter(Point3D.ZERO, 50);
+		List<Cuboid> initializationCuboids = cuboids.stream()
+				.map(c -> new Cuboid(c.on, initializationArea.intersection(c.region)))
+				.filter(c -> c.region != null)
+				.toList();
+		return solve(initializationCuboids);
 	}
 	
 	@Override
 	public Object part2() {
-		List<Cuboid> cuboidsCopy = new ArrayList<>(cuboids);
-		Set<Cuboid> mergedCuboids = new HashSet<>();
-		
-		while (!cuboidsCopy.isEmpty()) {
-			Cuboid current = cuboidsCopy.removeFirst();
-			
-			Cuboid _current = current;
-			Cuboid merged = mergedCuboids.stream().filter(c -> c.region.intersects(_current.region)).findAny().orElse(null);
-			if (merged == null) {
-				if (current.on)
-					mergedCuboids.add(current);
-				continue;
-			}
-			
-			Region3D intersection = merged.region.intersection(current.region);
-			
-			if (!intersection.equals(current.region)) {
-				for (Region3D remain : cutRemains(current.region, intersection))
-					cuboidsCopy.addFirst(new Cuboid(current.on, remain));
-				current = new Cuboid(current.on, intersection);
-			}
-			
-			if (merged.on == current.on)
-				continue;
-			
-			mergedCuboids.remove(merged);
-			if (!intersection.equals(merged.region))
-				for (Region3D remain : cutRemains(merged.region, intersection))
-					mergedCuboids.add(new Cuboid(merged.on, remain));
-			
-			mergedCuboids.add(current);
-		}
-		return mergedCuboids.stream().filter(Cuboid::on).mapToLong(c -> c.region().volume()).sum();
+		return solve(cuboids);
 	}
 	
-	static List<Region3D> cutRemains(Region3D target, Region3D cutoff) {
-		List<Region3D> result = new ArrayList<>();
-		for (Axis3D axis : Axis3D.values()) {
-			if (axis.minOfRegion(target) < axis.minOfRegion(cutoff)) {
-				Pair<Region3D, Region3D> cut = target.cut(axis, axis.minOfRegion(cutoff));
-				result.add(cut.left());
-				target = cut.right();
+	private long solve(List<Cuboid> cuboids) {
+		List<Cuboid> merged = new ArrayList<>();
+		
+		for (Cuboid current : cuboids) {
+			for (Cuboid m : new ArrayList<>(merged)) {
+				Region3D intersection = current.region.intersection(m.region);
+				if (intersection != null)
+					merged.add(new Cuboid(!m.on, intersection));
 			}
-			if (axis.maxOfRegion(cutoff) < axis.maxOfRegion(target)) {
-				Pair<Region3D, Region3D> cut = target.cut(axis, axis.maxOfRegion(cutoff) + 1);
-				result.add(cut.right());
-				target = cut.left();
-			}
+			if (current.on)
+				merged.add(current);
 		}
-		return result;
+		return merged.stream().mapToLong(c -> c.region.volume() * (c.on ? 1 : -1)).sum();
 	}
 	
 	record Cuboid(boolean on, Region3D region) {

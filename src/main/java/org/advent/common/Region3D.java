@@ -1,33 +1,40 @@
 package org.advent.common;
 
+import java.util.List;
+
 public record Region3D(int minX, int maxX, int minY, int maxY, int minZ, int maxZ) {
 	public Region3D {
 		if (maxX < minX || maxY < minY || maxZ < minZ)
 			throw new RuntimeException("Region bounds not sorted");
 	}
 	
+	public List<Point3D> allCorners() {
+		return List.of(
+				new Point3D(minX, minY, minZ),
+				new Point3D(maxX, minY, minZ),
+				new Point3D(maxX, maxY, minZ),
+				new Point3D(minX, maxY, minZ),
+				new Point3D(minX, minY, maxZ),
+				new Point3D(maxX, minY, maxZ),
+				new Point3D(maxX, maxY, maxZ),
+				new Point3D(minX, maxY, maxZ)
+		);
+	}
+	
 	public long volume() {
 		return (long) (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
 	}
 	
-	@SuppressWarnings("RedundantIfStatement")
-	public boolean intersects(Region3D other) {
-		if (maxX < other.minX || other.maxX < minX)
-			return false;
-		if (maxY < other.minY || other.maxY < minY)
-			return false;
-		if (maxZ < other.minZ || other.maxZ < minZ)
-			return false;
-		return true;
-	}
-	
 	public Region3D intersection(Region3D other) {
-		if (!intersects(other))
-			throw new RuntimeException("No intersection");
-		return new Region3D(
-				Math.max(minX, other.minX), Math.min(maxX, other.maxX),
-				Math.max(minY, other.minY), Math.min(maxY, other.maxY),
-				Math.max(minZ, other.minZ), Math.min(maxZ, other.maxZ));
+		int interMinX = Math.max(minX, other.minX);
+		int interMaxX = Math.min(maxX, other.maxX);
+		int interMinY = Math.max(minY, other.minY);
+		int interMaxY = Math.min(maxY, other.maxY);
+		int interMinZ = Math.max(minZ, other.minZ);
+		int interMaxZ = Math.min(maxZ, other.maxZ);
+		if (interMaxX < interMinX || interMaxY < interMinY || interMaxZ < interMinZ)
+			return null;
+		return new Region3D(interMinX, interMaxX, interMinY, interMaxY, interMinZ, interMaxZ);
 	}
 	
 	// Режет фигуру на части [min, coordinate) и [coordinate, max]

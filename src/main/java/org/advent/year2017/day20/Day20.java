@@ -43,7 +43,7 @@ public class Day20 extends AdventDay {
 	
 	@Override
 	public Object part1() {
-		Comparator<Point3D> pointComparator = Comparator.comparing(Point3D.ZERO::manhattanDistance);
+		Comparator<Point3D> pointComparator = Comparator.comparing(Point3D.ZERO::distanceTo);
 		Comparator<Particle> particleComparator = Comparator.comparing(Particle::acc, pointComparator)
 				.thenComparing(Particle::vel, pointComparator)
 				.thenComparing(Particle::pos, pointComparator);
