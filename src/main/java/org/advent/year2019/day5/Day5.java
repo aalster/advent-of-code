@@ -64,8 +64,6 @@ public class Day5 extends AdventDay {
 				int modeLeft = operation % 10;
 				operation = operation / 10;
 				int modeRight = operation % 10;
-//				operation = operation / 10;
-//				int mode3 = operation % 10;
 				
 				switch (opcode) {
 					case 1 -> {
@@ -110,16 +108,8 @@ public class Day5 extends AdventDay {
 			return output;
 		}
 		
-		IntcodeComputer copy() {
-			return new IntcodeComputer(Arrays.copyOf(program, program.length));
-		}
-		
-		static IntcodeComputer of(int[] program) {
-			return new IntcodeComputer(program);
-		}
-		
 		static IntcodeComputer parse(String line) {
-			return IntcodeComputer.of(Arrays.stream(line.split(",")).mapToInt(Integer::parseInt).toArray());
+			return new IntcodeComputer(Arrays.stream(line.split(",")).mapToInt(Integer::parseInt).toArray());
 		}
 	}
 }
