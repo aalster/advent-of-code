@@ -11,7 +11,7 @@ import java.util.stream.Stream;
 
 @Data
 public class IntcodeComputer {
-	private static final boolean debug = true;
+	private static final boolean debug = false;
 	public enum State {
 		RUNNING, HALTED, WAITING_INPUT
 	}
@@ -35,7 +35,8 @@ public class IntcodeComputer {
 		return new IntcodeComputer(Arrays.copyOf(program, program.length));
 	}
 	
-	public void set(long index, long value) {
+	public void set(long index, int mode, long value) {
+		index += mode == 2 ? relativeBase : 0;
 		expand((int) index);
 		program[(int) index] = value;
 	}
@@ -73,6 +74,8 @@ public class IntcodeComputer {
 			int modeLeft = (int) (operation % 10);
 			operation = operation / 10;
 			int modeRight = (int) (operation % 10);
+			operation = operation / 10;
+			int modeResult = (int) (operation % 10);
 			
 			if (debug) {
 				IntcodeOperation operationDescription = operations.get(opcode);
@@ -82,11 +85,11 @@ public class IntcodeComputer {
 			
 			switch (opcode) {
 				case 1 -> {
-					set(program[index + 3], get(program[index + 1], modeLeft) + get(program[index + 2], modeRight));
+					set(program[index + 3], modeResult, get(program[index + 1], modeLeft) + get(program[index + 2], modeRight));
 					index += 4;
 				}
 				case 2 -> {
-					set(program[index + 3], get(program[index + 1], modeLeft) * get(program[index + 2], modeRight));
+					set(program[index + 3], modeResult, get(program[index + 1], modeLeft) * get(program[index + 2], modeRight));
 					index += 4;
 				}
 				case 3 -> {
@@ -94,7 +97,7 @@ public class IntcodeComputer {
 						state = State.WAITING_INPUT;
 						return null;
 					}
-					set(program[index + 1], input.nextInput());
+					set(program[index + 1], modeLeft, input.nextInput());
 					index += 2;
 				}
 				case 4 -> {
@@ -115,11 +118,11 @@ public class IntcodeComputer {
 						index += 3;
 				}
 				case 7 -> {
-					set(program[index + 3], get(program[index + 1], modeLeft) < get(program[index + 2], modeRight) ? 1 : 0);
+					set(program[index + 3], modeResult, get(program[index + 1], modeLeft) < get(program[index + 2], modeRight) ? 1 : 0);
 					index += 4;
 				}
 				case 8 -> {
-					set(program[index + 3], get(program[index + 1], modeLeft) == get(program[index + 2], modeRight) ? 1 : 0);
+					set(program[index + 3], modeResult, get(program[index + 1], modeLeft) == get(program[index + 2], modeRight) ? 1 : 0);
 					index += 4;
 				}
 				case 9 -> {
@@ -146,8 +149,8 @@ public class IntcodeComputer {
 		return output;
 	}
 	
-	record Parameter(long parameter, int mode) {
-	
+	public String toString() {
+		return Arrays.stream(program).mapToObj(String::valueOf).collect(Collectors.joining(","));
 	}
 	
 	public static IntcodeComputer parse(String line) {
