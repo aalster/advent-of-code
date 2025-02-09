@@ -5,6 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -76,5 +77,31 @@ public class Utils {
 	
 	public static String removeEach(String text, String... targets) {
 		return replaceEach(text, targets, "");
+	}
+	
+	
+	public static List<int[]> intPermutations(int... values) {
+		List<int[]> result = new ArrayList<>(values.length * values.length);
+		permutations(result, values, 0);
+		return result;
+	}
+	
+	private static void permutations(List<int[]> res, int[] arr, int idx) {
+		if (idx == arr.length) {
+			res.add(Arrays.copyOf(arr, arr.length));
+			return;
+		}
+		
+		for (int i = idx; i < arr.length; i++) {
+			swap(arr, idx, i);
+			permutations(res, arr, idx + 1);
+			swap(arr, idx, i);
+		}
+	}
+	
+	private static void swap(int[] arr, int i, int j) {
+		int temp = arr[i];
+		arr[i] = arr[j];
+		arr[j] = temp;
 	}
 }
