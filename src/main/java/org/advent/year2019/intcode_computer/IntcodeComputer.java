@@ -16,12 +16,18 @@ public class IntcodeComputer {
 		RUNNING, HALTED, WAITING_INPUT
 	}
 	
-	private int[] program;
+	private long[] program;
 	private int index = 0;
-	private int relativeBase = 0;
+	private long relativeBase = 0;
 	private State state = State.RUNNING;
 	
 	public IntcodeComputer(int[] program) {
+		this.program = new long[program.length];
+		for (int i = 0; i < program.length; i++)
+			this.program[i] = program[i];
+	}
+	
+	public IntcodeComputer(long[] program) {
 		this.program = program;
 	}
 	
@@ -29,21 +35,21 @@ public class IntcodeComputer {
 		return new IntcodeComputer(Arrays.copyOf(program, program.length));
 	}
 	
-	public void set(int index, int value) {
-		expand(index);
-		program[index] = value;
+	public void set(long index, long value) {
+		expand((int) index);
+		program[(int) index] = value;
 	}
 	
-	public int get(int parameter, int mode) {
+	public long get(long parameter, int mode) {
 		return switch (mode) {
 			case 0 -> {
-				expand(parameter);
-				yield program[parameter];
+				expand((int) parameter);
+				yield program[(int) parameter];
 			}
 			case 1 -> parameter;
 			case 2 -> {
-				expand(relativeBase + parameter);
-				yield program[relativeBase + parameter];
+				expand((int) (relativeBase + parameter));
+				yield program[(int) (relativeBase + parameter)];
 			}
 			default -> throw new IllegalStateException("Unknown mode: " + mode);
 		};
@@ -54,19 +60,19 @@ public class IntcodeComputer {
 			program = Arrays.copyOf(program, index + 1);
 	}
 	
-	public Integer runUntilOutput(InputProvider input) {
+	public Long runUntilOutput(InputProvider input) {
 		if (state == State.HALTED)
 			return null;
 		if (state == State.WAITING_INPUT && !input.hasNext())
 			return null;
 		
 		loop: while (0 <= index && index < program.length) {
-			int operation = program[index];
-			int opcode = operation % 100;
+			long operation = program[index];
+			int opcode = (int) (operation % 100);
 			operation = operation / 100;
-			int modeLeft = operation % 10;
+			int modeLeft = (int) (operation % 10);
 			operation = operation / 10;
-			int modeRight = operation % 10;
+			int modeRight = (int) (operation % 10);
 			
 			if (debug) {
 				IntcodeOperation operationDescription = operations.get(opcode);
@@ -92,19 +98,19 @@ public class IntcodeComputer {
 					index += 2;
 				}
 				case 4 -> {
-					int output = get(program[index + 1], modeLeft);
+					long output = get(program[index + 1], modeLeft);
 					index += 2;
 					return output;
 				}
 				case 5 -> {
 					if (get(program[index + 1], modeLeft) != 0)
-						index = get(program[index + 2], modeRight);
+						index = (int) get(program[index + 2], modeRight);
 					else
 						index += 3;
 				}
 				case 6 -> {
 					if (get(program[index + 1], modeLeft) == 0)
-						index = get(program[index + 2], modeRight);
+						index = (int) get(program[index + 2], modeRight);
 					else
 						index += 3;
 				}
@@ -129,10 +135,10 @@ public class IntcodeComputer {
 		return null;
 	}
 	
-	public List<Integer> run(InputProvider input) {
-		List<Integer> output = new ArrayList<>();
+	public List<Long> run(InputProvider input) {
+		List<Long> output = new ArrayList<>();
 		while (true) {
-			Integer value = runUntilOutput(input);
+			Long value = runUntilOutput(input);
 			if (value == null)
 				break;
 			output.add(value);
@@ -140,8 +146,12 @@ public class IntcodeComputer {
 		return output;
 	}
 	
+	record Parameter(long parameter, int mode) {
+	
+	}
+	
 	public static IntcodeComputer parse(String line) {
-		return new IntcodeComputer(Arrays.stream(line.split(",")).mapToInt(Integer::parseInt).toArray());
+		return new IntcodeComputer(Arrays.stream(line.split(",")).mapToLong(Long::parseLong).toArray());
 	}
 	
 	record IntcodeOperation(int opcode, int length, String name, String description) {

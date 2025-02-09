@@ -14,7 +14,7 @@ public class Day9 extends AdventDay {
 	
 	public static void main(String[] args) {
 //		new DayRunner(new Day9()).runAll();
-		new DayRunner(new Day9()).run("example.txt", 1);
+		new DayRunner(new Day9()).run("input.txt", 1);
 	}
 	
 	@Override

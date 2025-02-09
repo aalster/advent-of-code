@@ -39,9 +39,9 @@ public class Day7 extends AdventDay {
 	
 	@Override
 	public Object part1() {
-		int maxOutput = Integer.MIN_VALUE;
+		long maxOutput = Long.MIN_VALUE;
 		for (int[] phases : Utils.intPermutations(0, 1, 2, 3, 4)) {
-			int input = 0;
+			long input = 0;
 			for (int phase : phases)
 				input = computer.copy().runUntilOutput(InputProvider.constant(phase, input));
 			maxOutput = Math.max(maxOutput, input);
@@ -51,16 +51,16 @@ public class Day7 extends AdventDay {
 	
 	@Override
 	public Object part2() {
-		int maxOutput = Integer.MIN_VALUE;
+		long maxOutput = Long.MIN_VALUE;
 		for (int[] phases : Utils.intPermutations(5, 6, 7, 8, 9)) {
-			int input = 0;
+			long input = 0;
 			IntcodeComputer[] computers = IntStream.range(0, 5).mapToObj(i -> computer.copy()).toArray(IntcodeComputer[]::new);
 			for (int i = 0; i < 5; i++)
 				input = computers[i].runUntilOutput(InputProvider.constant(phases[i], input));
 			int index = 0;
 			while (true) {
 				IntcodeComputer current = computers[index % computers.length];
-				Integer result = current.runUntilOutput(InputProvider.constant(input));
+				Long result = current.runUntilOutput(InputProvider.constant(input));
 				if (current.getState() == IntcodeComputer.State.HALTED)
 					break;
 				input = result;
