@@ -11,25 +11,47 @@ import java.util.stream.Stream;
 
 @Data
 public class IntcodeComputer {
-	private static final boolean debug = false;
+	private static final boolean debug = true;
 	public enum State {
 		RUNNING, HALTED, WAITING_INPUT
 	}
 	
-	private final int[] program;
+	private int[] program;
 	private int index = 0;
+	private int relativeBase = 0;
 	private State state = State.RUNNING;
+	
+	public IntcodeComputer(int[] program) {
+		this.program = program;
+	}
 	
 	public IntcodeComputer copy() {
 		return new IntcodeComputer(Arrays.copyOf(program, program.length));
 	}
 	
 	public void set(int index, int value) {
+		expand(index);
 		program[index] = value;
 	}
 	
 	public int get(int parameter, int mode) {
-		return mode == 0 ? program[parameter] : parameter;
+		return switch (mode) {
+			case 0 -> {
+				expand(parameter);
+				yield program[parameter];
+			}
+			case 1 -> parameter;
+			case 2 -> {
+				expand(relativeBase + parameter);
+				yield program[relativeBase + parameter];
+			}
+			default -> throw new IllegalStateException("Unknown mode: " + mode);
+		};
+	}
+	
+	private void expand(int index) {
+		if (program.length <= index)
+			program = Arrays.copyOf(program, index + 1);
 	}
 	
 	public Integer runUntilOutput(InputProvider input) {
@@ -94,6 +116,10 @@ public class IntcodeComputer {
 					set(program[index + 3], get(program[index + 1], modeLeft) == get(program[index + 2], modeRight) ? 1 : 0);
 					index += 4;
 				}
+				case 9 -> {
+					relativeBase += get(program[index + 1], modeLeft);
+					index += 2;
+				}
 				case 99 -> {
 					break loop;
 				}
@@ -154,6 +180,10 @@ public class IntcodeComputer {
 			new IntcodeOperation(8, 4, "equals", "Opcode 8 is equals: if the first" +
 					" parameter is equal to the second parameter, it stores 1 in the position given by the third" +
 					" parameter. Otherwise, it stores 0."),
+			
+			new IntcodeOperation(9, 2, "relative-base", "Opcode 9 adjusts the relative base" +
+					" by the value of its only parameter. The relative base increases (or decreases, if the value is" +
+					" negative) by the value of the parameter."),
 			
 			new IntcodeOperation(99, 1, "halt", "99 means that the program is finished" +
 					" and should immediately halt.")
