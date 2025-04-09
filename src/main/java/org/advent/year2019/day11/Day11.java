@@ -10,6 +10,7 @@ import org.advent.runner.ExpectedAnswers;
 import org.advent.year2019.intcode_computer.InputProvider;
 import org.advent.year2019.intcode_computer.IntcodeComputer;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,33 +39,57 @@ public class Day11 extends AdventDay {
 	
 	@Override
 	public Object part1() {
-		return draw(false).size();
+		return draw(false).panels.size();
 	}
 	
 	@Override
 	public Object part2() {
-		List<Point> whitePanels = draw(true).entrySet().stream()
-				.filter(Map.Entry::getValue)
-				.map(Map.Entry::getKey)
-				.toList();
-		return AsciiLetters.parse(whitePanels);
+		return AsciiLetters.parse(draw(true).whitePanels());
 	}
 	
-	private Map<Point, Boolean> draw(boolean initialColorWhite) {
+	private Grid draw(boolean initialColorWhite) {
+		Grid grid = new Grid();
+		grid.draw(initialColorWhite);
+		
+		while (true) {
+			Long color = computer.runUntilOutput(grid);
+			Long turn = computer.runUntilOutput(grid);
+			if (computer.getState() == IntcodeComputer.State.HALTED)
+				break;
+			
+			grid.draw(color == 1);
+			grid.turn(turn == 0 ? Direction.LEFT : Direction.RIGHT);
+		}
+		return grid;
+	}
+	
+	
+	static class Grid implements InputProvider {
+		Map<Point, Boolean> panels = new HashMap<>();
 		Point position = Point.ZERO;
 		Direction direction = Direction.UP;
-		Map<Point, Boolean> panels = new HashMap<>();
-		panels.put(position, initialColorWhite);
-		while (computer.getState() != IntcodeComputer.State.HALTED) {
-			InputProvider input = InputProvider.constant(panels.getOrDefault(position, false) ? 1 : 0);
-			Long color = computer.runUntilOutput(input);
-			Long turn = computer.runUntilOutput(input);
-			if (color == null || turn == null)
-				break;
-			panels.put(position, color == 1);
-			direction = direction.rotate(turn == 0 ? Direction.LEFT : Direction.RIGHT);
+		
+		void draw(boolean white) {
+			panels.put(position, white);
+		}
+		
+		void turn(Direction turn) {
+			direction = direction.rotate(turn);
 			position = position.shift(direction);
 		}
-		return panels;
+		
+		Collection<Point> whitePanels() {
+			return panels.entrySet().stream().filter(Map.Entry::getValue).map(Map.Entry::getKey).toList();
+		}
+		
+		@Override
+		public boolean hasNext() {
+			return true;
+		}
+		
+		@Override
+		public long nextInput() {
+			return panels.getOrDefault(position, false) ? 1 : 0;
+		}
 	}
 }
