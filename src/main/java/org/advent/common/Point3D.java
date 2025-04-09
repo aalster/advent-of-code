@@ -55,6 +55,10 @@ public record Point3D(int x, int y, int z) {
 				(p.z == z && p.y == y && Math.abs(p.x - x) == 1);
 	}
 	
+	public int[] toArray() {
+		return new int[]{x, y, z};
+	}
+	
 	public static Point3D parse(String value) {
 		int[] c = Arrays.stream(value.split(",")).mapToInt(Integer::parseInt).toArray();
 		return new Point3D(c[0], c[1], c[2]);

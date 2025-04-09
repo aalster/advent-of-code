@@ -8,6 +8,14 @@ import lombok.RequiredArgsConstructor;
 public enum Axis3D {
 	X, Y, Z;
 	
+	public Point3D shift(Point3D point, int distance) {
+		return switch (this) {
+			case X -> new Point3D(point.x() + distance, point.y(), point.z());
+			case Y -> new Point3D(point.x(), point.y() + distance, point.z());
+			case Z -> new Point3D(point.x(), point.y(), point.z() + distance);
+		};
+	}
+	
 	public int ofPoint(Point3D point) {
 		return switch (this) {
 			case X -> point.x();
