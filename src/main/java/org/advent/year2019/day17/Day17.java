@@ -9,11 +9,17 @@ import org.advent.runner.ExpectedAnswers;
 import org.advent.year2019.intcode_computer.InputProvider;
 import org.advent.year2019.intcode_computer.IntcodeComputer;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class Day17 extends AdventDay {
@@ -44,8 +50,8 @@ public class Day17 extends AdventDay {
 	
 	@Override
 	public Object part2() {
-		String pathInstructions = pathInstructions(readField(computer.copy()));
-		return walk(computer, compressPathInstructions(pathInstructions));
+		List<PathInstruction> pathInstructions = pathInstructions(readField(computer.copy()));
+		return walk(computer, formatInput(pathInstructions));
 	}
 	
 	Field readField(IntcodeComputer computer) {
@@ -58,7 +64,6 @@ public class Day17 extends AdventDay {
 		}
 //		System.out.println(output);
 		Map<Character, List<Point>> field = Point.readField(List.of(output.toString().split("\n")));
-		
 		Character robotSymbol = Stream.of('<', '>', '^', 'v').filter(field::containsKey).findAny().orElseThrow();
 		return new Field(field.get(robotSymbol).getFirst(), Direction.parseSymbol(robotSymbol), new HashSet<>(field.get('#')));
 	}
@@ -66,16 +71,16 @@ public class Day17 extends AdventDay {
 	long walk(IntcodeComputer computer, String logic) {
 		computer.set(0, 0, 2);
 		InputProvider input = new StringInputProvider(logic);
+		long lastOutput = 0;
 		while (computer.getState() != IntcodeComputer.State.HALTED) {
-			Long type = computer.runUntilOutput(input);
-			if (type == null)
+			Long output = computer.runUntilOutput(input);
+			if (output == null)
 				break;
-			if (type < 256)
-				System.out.print((char) (long) type);
-			else
-				return type;
+			lastOutput = output;
+//			if (output < 256)
+//				System.out.print((char) (long) output);
 		}
-		return 0;
+		return lastOutput;
 	}
 	
 	Set<Point> findIntersections(Field field) {
@@ -109,18 +114,17 @@ public class Day17 extends AdventDay {
 				.orElse(null);
 	}
 	
-	String pathInstructions(Field field) {
+	List<PathInstruction> pathInstructions(Field field) {
 		Point robot = field.robot;
 		Direction direction = field.direction;
 		Set<Point> scaffolds = field.scaffolds;
 		
-		StringBuilder pathInstructions = new StringBuilder();
+		List<PathInstruction> pathInstructions = new ArrayList<>();
 		while (true) {
 			Direction turn = turnToScaffold(scaffolds, robot, direction);
 			if (turn == null)
 				break;
 			direction = direction.rotate(turn);
-			pathInstructions.append(turn.presentationLetter()).append(",");
 			
 			int distance = 0;
 			while (true) {
@@ -130,26 +134,91 @@ public class Day17 extends AdventDay {
 				robot = next;
 				distance++;
 			}
-			pathInstructions.append(distance).append(",");
+			pathInstructions.add(new PathInstruction(turn.presentationLetter(), distance));
 		}
-		pathInstructions.setLength(pathInstructions.length() - 1);
-		return pathInstructions.toString();
+		return pathInstructions;
 	}
 	
-	String compressPathInstructions(String pathInstructions) {
-		System.out.println(pathInstructions);
-		// R,8,L,12,R,8,R,12,L,8,R,10,R,12,L,8,R,10,R,8,L,12,R,8,R,8,L,8,L,8,R,8,R,10,R,8,L,12,R,8,R,8,L,12,R,8,R,8,L,8,L,8,R,8,R,10,R,12,L,8,R,10,R,8,L,8,L,8,R,8,R,10
-		String input = """
-				A,B,B,A,C,A,A,C,B,C
-				R,8,L,12,R,8
-				R,12,L,8,R,10
-				R,8,L,8,L,8,R,8,R,10
-				y
-				""";
-		return input;
+	// https://gitlab.com/krystian.slesik/advent-of-code-2019/blob/master/src/main/java/pl/kslesik/adventofcode/Day17.java
+	String formatInput(List<PathInstruction> pathInstructions) {
+		List<String> functions = PathInstruction.extractFunctions(pathInstructions).stream().map(PathInstruction::toString).toList();
+		return PathInstruction.toString(pathInstructions) + "\n" + String.join("\n", functions) + "\nn\n";
 	}
 	
 	record Field(Point robot, Direction direction, Set<Point> scaffolds) {
+	}
+	
+	record PathInstruction(String name, int distance) {
+		@Override
+		public String toString() {
+			return name + (distance > 0 ? "," + distance : "");
+		}
+		
+		static String toString(List<PathInstruction> pathInstructions) {
+			return pathInstructions.stream().map(PathInstruction::toString).collect(Collectors.joining(","));
+		}
+		
+		static List<List<PathInstruction>> extractFunctions(List<PathInstruction> pathInstructions) {
+			List<List<PathInstruction>> functions = new LinkedList<>();
+			while (!pathInstructions.isEmpty()) {
+				Range range = PathInstruction.findFirstNotReplacedRange(pathInstructions);
+				if (range == null)
+					break;
+				
+				List<PathInstruction> function = IntStream.rangeClosed(2, range.to - range.from)
+						.mapToObj(i -> pathInstructions.subList(range.from, range.from + i))
+						.filter(s -> countOccurrences(pathInstructions, s) > 1)
+						.max(Comparator.comparing((List<PathInstruction> sub) -> sub.size()).thenComparing(s -> countOccurrences(pathInstructions, s)))
+						.map(ArrayList::new)
+						.orElseThrow();
+				
+				replaceFunction(pathInstructions, function, "" + (char) ('A' + functions.size()));
+				functions.add(function);
+			}
+			return functions;
+		}
+		
+		static void replaceFunction(List<PathInstruction> pathInstructions, List<PathInstruction> function, String name) {
+			PathInstruction replacement = new PathInstruction(name, 0);
+			int index;
+			while ((index = Collections.indexOfSubList(pathInstructions, function)) >= 0) {
+				for (int i = 0; i < function.size() - 1; i++)
+					pathInstructions.remove(index);
+				pathInstructions.set(index, replacement);
+			}
+		}
+		
+		static int countOccurrences(List<?> tokens, List<?> pattern) {
+			int count = 0;
+			for (int i = 0; i <= tokens.size() - pattern.size(); i++) {
+				if (tokens.subList(i, i + pattern.size()).equals(pattern)) {
+					count++;
+					i += pattern.size() - 1;
+				}
+			}
+			return count;
+		}
+		
+		static Range findFirstNotReplacedRange(List<PathInstruction> pathInstructions) {
+			int from = -1;
+			int index = 0;
+			for (PathInstruction pathInstruction : pathInstructions) {
+				if (from < 0) {
+					if (pathInstruction.distance > 0)
+						from = index;
+				} else {
+					if (pathInstruction.distance == 0)
+						return new Range(from, index);
+				}
+				index++;
+			}
+			if (from < 0)
+				return null;
+			return new Range(from, pathInstructions.size());
+		}
+	}
+	
+	record Range(int from, int to) {
 	}
 	
 	static class StringInputProvider implements InputProvider {
