@@ -41,6 +41,10 @@ public enum Direction {
 		return String.valueOf(presentationChar());
 	}
 	
+	public String presentationLetter() {
+		return name().substring(0, 1);
+	}
+	
 	public char presentationChar() {
 		return switch (this) {
 			case UP -> '^';
