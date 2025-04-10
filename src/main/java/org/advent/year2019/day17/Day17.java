@@ -51,7 +51,9 @@ public class Day17 extends AdventDay {
 	@Override
 	public Object part2() {
 		List<PathInstruction> pathInstructions = pathInstructions(readField(computer.copy()));
-		return walk(computer, formatInput(pathInstructions));
+		List<String> functions = PathInstruction.extractFunctions(pathInstructions).stream().map(PathInstruction::toString).toList();
+		String input = PathInstruction.toString(pathInstructions) + "\n" + String.join("\n", functions) + "\nn\n";
+		return walk(computer, input);
 	}
 	
 	Field readField(IntcodeComputer computer) {
@@ -139,12 +141,6 @@ public class Day17 extends AdventDay {
 		return pathInstructions;
 	}
 	
-	// https://gitlab.com/krystian.slesik/advent-of-code-2019/blob/master/src/main/java/pl/kslesik/adventofcode/Day17.java
-	String formatInput(List<PathInstruction> pathInstructions) {
-		List<String> functions = PathInstruction.extractFunctions(pathInstructions).stream().map(PathInstruction::toString).toList();
-		return PathInstruction.toString(pathInstructions) + "\n" + String.join("\n", functions) + "\nn\n";
-	}
-	
 	record Field(Point robot, Direction direction, Set<Point> scaffolds) {
 	}
 	
@@ -158,9 +154,11 @@ public class Day17 extends AdventDay {
 			return pathInstructions.stream().map(PathInstruction::toString).collect(Collectors.joining(","));
 		}
 		
+		// Переделанный вариант отсюда
+		// https://gitlab.com/krystian.slesik/advent-of-code-2019/blob/master/src/main/java/pl/kslesik/adventofcode/Day17.java
 		static List<List<PathInstruction>> extractFunctions(List<PathInstruction> pathInstructions) {
 			List<List<PathInstruction>> functions = new LinkedList<>();
-			while (!pathInstructions.isEmpty()) {
+			while (true) {
 				Range range = PathInstruction.findFirstNotReplacedRange(pathInstructions);
 				if (range == null)
 					break;
