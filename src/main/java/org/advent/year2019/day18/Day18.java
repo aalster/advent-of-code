@@ -8,15 +8,11 @@ import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.PriorityQueue;
-import java.util.Queue;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -26,18 +22,22 @@ public class Day18 extends AdventDay {
 	
 	public static void main(String[] args) {
 		new DayRunner(new Day18()).runAll();
-//		new DayRunner(new Day18()).run("example.txt", 1);
+//		new DayRunner(new Day18()).run("example.txt", 2);
 	}
 	
 	@Override
 	public List<ExpectedAnswers> expected() {
 		return List.of(
-				new ExpectedAnswers("example.txt", 8, null),
-				new ExpectedAnswers("example2.txt", 86, null),
-				new ExpectedAnswers("example3.txt", 132, null),
-				new ExpectedAnswers("example4.txt", 136, null),
-				new ExpectedAnswers("example5.txt", 81, null),
-				new ExpectedAnswers("input.txt", null, null)
+				new ExpectedAnswers("example.txt", 8, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("example2.txt", 86, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("example3.txt", 132, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("example4.txt", 136, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("example5.txt", 81, ExpectedAnswers.IGNORE),
+				new ExpectedAnswers("example6.txt", ExpectedAnswers.IGNORE, 8),
+				new ExpectedAnswers("example7.txt", ExpectedAnswers.IGNORE, 24),
+				new ExpectedAnswers("example8.txt", ExpectedAnswers.IGNORE, 32),
+				new ExpectedAnswers("example9.txt", ExpectedAnswers.IGNORE, 72),
+				new ExpectedAnswers("input.txt", 4270, null)
 		);
 	}
 	
@@ -61,7 +61,8 @@ public class Day18 extends AdventDay {
 	
 	@Override
 	public Object part1() {
-		Map<Point, Character> doors = field.doors.entrySet().stream().collect(Collectors.toMap(java.util.Map.Entry::getValue, java.util.Map.Entry::getKey));
+		Map<Point, Character> doors = field.doors.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+		Map<Point, Character> keys2 = field.keysLeft.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
 		Map<Character, Point> keys = field.keysLeft();
 		Set<Point> walls = new HashSet<>(field.walls);
 		walls.removeAll(doors.keySet());
@@ -69,7 +70,7 @@ public class Day18 extends AdventDay {
 		Map<Character, Map<Character, PathInfo>> paths = new HashMap<>();
 		Map<Character, PathInfo> startingPaths = new HashMap<>();
 		for (Map.Entry<Character, Point> entry : keys.entrySet()) {
-			startingPaths.put(entry.getKey(), pathInfo(walls, doors, field.position, entry.getValue()));
+			startingPaths.put(entry.getKey(), pathInfo(walls, doors, keys2, field.position, entry.getValue()));
 		}
 		paths.put('@', startingPaths);
 		
@@ -77,27 +78,25 @@ public class Day18 extends AdventDay {
 		while (!keysNames.isEmpty()) {
 			Character key = keysNames.removeLast();
 			for (Character other : keysNames) {
-				PathInfo path = pathInfo(walls, doors, keys.get(key), keys.get(other));
+				PathInfo path = pathInfo(walls, doors, keys2, keys.get(key), keys.get(other));
 				paths.computeIfAbsent(key, k -> new HashMap<>()).put(other, path);
 				paths.computeIfAbsent(other, k -> new HashMap<>()).put(key, path);
 			}
 		}
 		
-		Set<State> states = Set.of(new State('@', field.keysLeft.keySet(), 0));
 		int minTotalDistance = Integer.MAX_VALUE;
+		Set<State> states = Set.of(new State('@', field.keysLeft.keySet(), 0));
 		while (!states.isEmpty()) {
 			int _minTotalDistance = minTotalDistance;
 			states = states.stream()
 					.flatMap(s -> s.next(paths))
 					.filter(f -> f.totalDistance < _minTotalDistance)
-//					.peek(Field::print)
 					.collect(Collectors.toSet());
 			minTotalDistance = states.stream()
 					.filter(f -> f.keysLeft.isEmpty())
 					.mapToInt(State::totalDistance)
 					.min()
 					.orElse(minTotalDistance);
-			System.out.println("states: " + states.size() + " minTotalDistance: " + minTotalDistance);
 		}
 		return minTotalDistance;
 	}
@@ -107,10 +106,11 @@ public class Day18 extends AdventDay {
 		return null;
 	}
 	
-	PathInfo pathInfo(Set<Point> walls, Map<Point, Character> doors, Point start, Point end) {
+	PathInfo pathInfo(Set<Point> walls, Map<Point, Character> doors, Map<Point, Character> keys, Point start, Point end) {
 		Set<Point> path = findPath(walls, start, end);
 		Set<Character> doorsNames = path.stream().map(doors::get).filter(Objects::nonNull).map(Character::toLowerCase).collect(Collectors.toSet());
-		return new PathInfo(doorsNames, path.size());
+		Set<Character> keysNames = path.stream().filter(p -> !p.equals(end)).map(keys::get).filter(Objects::nonNull).collect(Collectors.toSet());
+		return new PathInfo(doorsNames, keysNames, path.size());
 	}
 	
 	Set<Point> findPath(Set<Point> walls, Point start, Point end) {
@@ -147,7 +147,7 @@ public class Day18 extends AdventDay {
 		return visited;
 	}
 	
-	record PathInfo(Set<Character> doors, int distance) {
+	record PathInfo(Set<Character> doors, Set<Character> keys, int distance) {
 	
 	}
 	
@@ -159,6 +159,8 @@ public class Day18 extends AdventDay {
 				PathInfo path = nextPaths.get(nextKey);
 				if (keysLeft.stream().anyMatch(path.doors::contains))
 					continue;
+				if (path.keys.stream().anyMatch(keysLeft::contains))
+					continue;
 				
 				Set<Character> nextKeysLeft = new HashSet<>(keysLeft);
 				nextKeysLeft.remove(nextKey);
@@ -169,11 +171,7 @@ public class Day18 extends AdventDay {
 	}
 	
 	record Field(Point position, Set<Point> walls, Map<Character, Point> doors, Map<Character, Point> keysLeft,
-	             int totalDistance, int minPossibleDistance) {
-		
-		public Field(Point position, Set<Point> walls, Map<Character, Point> doors, Map<Character, Point> keysLeft, int totalDistance) {
-			this(position, walls, doors, keysLeft, totalDistance, 0);
-		}
+	             int totalDistance) {
 		
 		Stream<Field> next() {
 			return keysDistances().entrySet().stream()
@@ -226,26 +224,5 @@ public class Day18 extends AdventDay {
 			}
 			return false;
 		}
-		
-		static int minPossibleDistance(Point position, int current, Collection<Point> keysLeft) {
-			return current = keysLeft.stream().mapToInt(position::distanceTo).sum();
-		}
-	}
-	
-	public Object part3() {
-		Queue<Field> fields = new PriorityQueue<>(Comparator.comparing(Field::totalDistance).thenComparing(f -> f.keysLeft.size()));
-		fields.add(field);
-		int minTotalDistance = Integer.MAX_VALUE;
-		while (!fields.isEmpty()) {
-			Field current = fields.poll();
-			if (current.totalDistance >= minTotalDistance)
-				continue;
-			if (current.keysLeft.isEmpty()) {
-				minTotalDistance = current.totalDistance;
-				continue;
-			}
-			current.next().forEach(fields::offer);
-		}
-		return minTotalDistance;
 	}
 }
