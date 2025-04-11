@@ -7,11 +7,16 @@ import org.advent.runner.AdventDay;
 import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.PriorityQueue;
+import java.util.Queue;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -56,20 +61,43 @@ public class Day18 extends AdventDay {
 	
 	@Override
 	public Object part1() {
-		Collection<Field> fields = List.of(field);
+		Map<Point, Character> doors = field.doors.entrySet().stream().collect(Collectors.toMap(java.util.Map.Entry::getValue, java.util.Map.Entry::getKey));
+		Map<Character, Point> keys = field.keysLeft();
+		Set<Point> walls = new HashSet<>(field.walls);
+		walls.removeAll(doors.keySet());
+		
+		Map<Character, Map<Character, PathInfo>> paths = new HashMap<>();
+		Map<Character, PathInfo> startingPaths = new HashMap<>();
+		for (Map.Entry<Character, Point> entry : keys.entrySet()) {
+			startingPaths.put(entry.getKey(), pathInfo(walls, doors, field.position, entry.getValue()));
+		}
+		paths.put('@', startingPaths);
+		
+		List<Character> keysNames = new ArrayList<>(keys.keySet());
+		while (!keysNames.isEmpty()) {
+			Character key = keysNames.removeLast();
+			for (Character other : keysNames) {
+				PathInfo path = pathInfo(walls, doors, keys.get(key), keys.get(other));
+				paths.computeIfAbsent(key, k -> new HashMap<>()).put(other, path);
+				paths.computeIfAbsent(other, k -> new HashMap<>()).put(key, path);
+			}
+		}
+		
+		Set<State> states = Set.of(new State('@', field.keysLeft.keySet(), 0));
 		int minTotalDistance = Integer.MAX_VALUE;
-		while (!fields.isEmpty()) {
+		while (!states.isEmpty()) {
 			int _minTotalDistance = minTotalDistance;
-			fields = fields.stream()
-					.flatMap(Field::next)
+			states = states.stream()
+					.flatMap(s -> s.next(paths))
 					.filter(f -> f.totalDistance < _minTotalDistance)
 //					.peek(Field::print)
 					.collect(Collectors.toSet());
-			minTotalDistance = fields.stream()
+			minTotalDistance = states.stream()
 					.filter(f -> f.keysLeft.isEmpty())
-					.mapToInt(Field::totalDistance)
+					.mapToInt(State::totalDistance)
 					.min()
 					.orElse(minTotalDistance);
+			System.out.println("states: " + states.size() + " minTotalDistance: " + minTotalDistance);
 		}
 		return minTotalDistance;
 	}
@@ -79,7 +107,73 @@ public class Day18 extends AdventDay {
 		return null;
 	}
 	
-	record Field(Point position, Set<Point> walls, Map<Character, Point> doors, Map<Character, Point> keysLeft, int totalDistance) {
+	PathInfo pathInfo(Set<Point> walls, Map<Point, Character> doors, Point start, Point end) {
+		Set<Point> path = findPath(walls, start, end);
+		Set<Character> doorsNames = path.stream().map(doors::get).filter(Objects::nonNull).map(Character::toLowerCase).collect(Collectors.toSet());
+		return new PathInfo(doorsNames, path.size());
+	}
+	
+	Set<Point> findPath(Set<Point> walls, Point start, Point end) {
+		Map<Point, Integer> visited = pathMap(start, end, walls);
+		if (visited.isEmpty())
+			return Set.of();
+		int step = visited.get(end);
+		Set<Point> path = new HashSet<>(step);
+		while (step > 0) {
+			path.add(end);
+			step--;
+			int currentStep = step;
+			end = Direction.stream().map(end::shift).filter(p -> visited.getOrDefault(p, -1) == currentStep).findAny().orElseThrow();
+		}
+		return path;
+	}
+	
+	Map<Point, Integer> pathMap(Point start, Point end, Set<Point> walls) {
+		Map<Point, Integer> visited = new HashMap<>();
+		Set<Point> current = Set.of(start);
+		int step = 0;
+		while (!(end != null && current.contains(end)) && !current.isEmpty()) {
+			int currentStep = step;
+			current = current.stream()
+					.peek(c -> visited.put(c, currentStep))
+					.flatMap(c -> Direction.stream().map(c::shift))
+					.filter(n -> !visited.containsKey(n))
+					.filter(n -> !walls.contains(n))
+					.collect(Collectors.toSet());
+			step++;
+		}
+		if (end != null)
+			visited.put(end, step);
+		return visited;
+	}
+	
+	record PathInfo(Set<Character> doors, int distance) {
+	
+	}
+	
+	record State(Character currentKey, Set<Character> keysLeft, int totalDistance) {
+		Stream<State> next(Map<Character, Map<Character, PathInfo>> paths) {
+			Map<Character, PathInfo> nextPaths = paths.get(currentKey);
+			List<State> next = new ArrayList<>();
+			for (Character nextKey : keysLeft) {
+				PathInfo path = nextPaths.get(nextKey);
+				if (keysLeft.stream().anyMatch(path.doors::contains))
+					continue;
+				
+				Set<Character> nextKeysLeft = new HashSet<>(keysLeft);
+				nextKeysLeft.remove(nextKey);
+				next.add(new State(nextKey, nextKeysLeft, totalDistance + path.distance));
+			}
+			return next.stream();
+		}
+	}
+	
+	record Field(Point position, Set<Point> walls, Map<Character, Point> doors, Map<Character, Point> keysLeft,
+	             int totalDistance, int minPossibleDistance) {
+		
+		public Field(Point position, Set<Point> walls, Map<Character, Point> doors, Map<Character, Point> keysLeft, int totalDistance) {
+			this(position, walls, doors, keysLeft, totalDistance, 0);
+		}
 		
 		Stream<Field> next() {
 			return keysDistances().entrySet().stream()
@@ -124,5 +218,34 @@ public class Day18 extends AdventDay {
 				return walls.contains(p) ? '#' : '.';
 			});
 		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			if (obj instanceof Field other) {
+				return other.totalDistance == totalDistance && other.position.equals(position) && other.keysLeft.equals(keysLeft);
+			}
+			return false;
+		}
+		
+		static int minPossibleDistance(Point position, int current, Collection<Point> keysLeft) {
+			return current = keysLeft.stream().mapToInt(position::distanceTo).sum();
+		}
+	}
+	
+	public Object part3() {
+		Queue<Field> fields = new PriorityQueue<>(Comparator.comparing(Field::totalDistance).thenComparing(f -> f.keysLeft.size()));
+		fields.add(field);
+		int minTotalDistance = Integer.MAX_VALUE;
+		while (!fields.isEmpty()) {
+			Field current = fields.poll();
+			if (current.totalDistance >= minTotalDistance)
+				continue;
+			if (current.keysLeft.isEmpty()) {
+				minTotalDistance = current.totalDistance;
+				continue;
+			}
+			current.next().forEach(fields::offer);
+		}
+		return minTotalDistance;
 	}
 }
