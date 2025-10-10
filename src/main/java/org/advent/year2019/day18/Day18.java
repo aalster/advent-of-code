@@ -10,6 +10,8 @@ import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -46,8 +48,8 @@ public class Day18 extends AdventDay {
 	
 	List<Point> positions;
 	Set<Point> walls;
-	Map<Point, Character> doors;
-	Map<Point, Character> keys;
+	Map<Point, Integer> doors;
+	Map<Point, Integer> keys;
 	
 	@Override
 	public void prepare(String file) {
@@ -57,10 +59,10 @@ public class Day18 extends AdventDay {
 		walls = new HashSet<>(fieldMap.get('#'));
 		doors = fieldMap.entrySet().stream()
 				.filter(e -> 'A' <= e.getKey() && e.getKey() <= 'Z')
-				.collect(Collectors.toMap(e -> e.getValue().getFirst(), Map.Entry::getKey));
+				.collect(Collectors.toMap(e -> e.getValue().getFirst(), e -> e.getKey() - 'A'));
 		keys = fieldMap.entrySet().stream()
 				.filter(e -> 'a' <= e.getKey() && e.getKey() <= 'z')
-				.collect(Collectors.toMap(e -> e.getValue().getFirst(), Map.Entry::getKey));
+				.collect(Collectors.toMap(e -> e.getValue().getFirst(), e -> e.getKey() - 'a'));
 	}
 	
 	@Override
@@ -81,12 +83,12 @@ public class Day18 extends AdventDay {
 		return solve(positions, walls, doors, keys);
 	}
 	
-	public int solve(List<Point> positions, Set<Point> walls, Map<Point, Character> doors, Map<Point, Character> keys) {
+	public int solve(List<Point> positions, Set<Point> walls, Map<Point, Integer> doors, Map<Point, Integer> keys) {
 		PathsCache pathsCache = PathsCache.compute(positions, walls, doors, keys);
 		
 		int minTotalDistance = Integer.MAX_VALUE;
 		LinkedHashMap<State, Integer> states = new LinkedHashMap<>();
-		states.put(new State(positions, new HashSet<>(keys.values())), 0);
+		states.put(new State(positions, bitSet(keys.values())), 0);
 		while (!states.isEmpty()) {
 			State current = states.firstEntry().getKey();
 			int currentSteps = states.remove(current);
@@ -109,7 +111,7 @@ public class Day18 extends AdventDay {
 		return minTotalDistance;
 	}
 	
-	record State(List<Point> currentPositions, Set<Character> keysLeft) {
+	record State(List<Point> currentPositions, BitSet keysLeft) {
 		
 		List<Pair<State, Integer>> next(PathsCache pathsCache) {
 			List<Pair<State, Integer>> next = new ArrayList<>();
@@ -125,51 +127,49 @@ public class Day18 extends AdventDay {
 		}
 	}
 	
-	record PathInfo(Set<Character> doors, Set<Character> keys, int distance) {
+	record PathInfo(BitSet doors, BitSet keys, int distance) {
 	}
 	
-	record PathResult(Point nextPosition, Set<Character> nextKeysLeft, int distance) {
+	record PathResult(Point nextPosition, BitSet nextKeysLeft, int distance) {
 	}
 	
 	record PathsCache(
-			Map<Point, Map<Character, PathInfo>> paths,
-			Map<Character, Point> keysByName,
-			Map<Point, Map<Set<Character>, List<PathResult>>> cache) {
+			Map<Point, Map<Integer, PathInfo>> paths,
+			Map<Integer, Point> keysByName,
+			Map<Point, Map<BitSet, List<PathResult>>> cache) {
 		
-		List<PathResult> possiblePaths(Point currentPosition, Set<Character> keysLeft) {
+		List<PathResult> possiblePaths(Point currentPosition, BitSet keysLeft) {
 			return cache.computeIfAbsent(currentPosition, k -> new HashMap<>())
 					.computeIfAbsent(keysLeft, k -> {
-						Map<Character, PathInfo> nextPaths = paths.get(currentPosition);
+						Map<Integer, PathInfo> nextPaths = paths.get(currentPosition);
 						if (nextPaths == null)
 							return List.of();
 						
-						List<PathResult> result = new ArrayList<>();
-						for (Character nextKey : keysLeft) {
-							PathInfo path = nextPaths.get(nextKey);
-							if (path == null)
-								continue;
-							if (keysLeft.stream().anyMatch(path.doors::contains))
-								continue;
-							if (path.keys.stream().anyMatch(keysLeft::contains))
-								continue;
-							
-							Set<Character> nextKeysLeft = new HashSet<>(keysLeft);
-							nextKeysLeft.remove(nextKey);
-							
-							result.add(new PathResult(keysByName.get(nextKey), nextKeysLeft, path.distance));
-						}
-						return result;
+						return keysLeft.stream()
+								.mapToObj(nextKey -> {
+									PathInfo path = nextPaths.get(nextKey);
+									if (path == null || keysLeft.intersects(path.doors) || keysLeft.intersects(path.keys))
+										return null;
+									
+									BitSet nextKeysLeft = new BitSet();
+									nextKeysLeft.or(keysLeft);
+									nextKeysLeft.clear(nextKey);
+									
+									return new PathResult(keysByName.get(nextKey), nextKeysLeft, path.distance);
+								})
+								.filter(Objects::nonNull)
+								.toList();
 					});
 		}
 		
-		static PathsCache compute(List<Point> positions, Set<Point> walls, Map<Point, Character> doors, Map<Point, Character> keys) {
-			Map<Character, Point> keysByName = keys.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
-			Map<Point, Map<Character, PathInfo>> paths = new HashMap<>();
+		static PathsCache compute(List<Point> positions, Set<Point> walls, Map<Point, Integer> doors, Map<Point, Integer> keys) {
+			Map<Integer, Point> keysByName = keys.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+			Map<Point, Map<Integer, PathInfo>> paths = new HashMap<>();
 			
-			Map<Character, PathInfo> startingPaths = new HashMap<>();
+			Map<Integer, PathInfo> startingPaths = new HashMap<>();
 			for (Point position : positions) {
 				Map<Point, Integer> pathMap = pathMap(position, walls);
-				for (Map.Entry<Character, Point> entry : keysByName.entrySet()) {
+				for (Map.Entry<Integer, Point> entry : keysByName.entrySet()) {
 					PathInfo path = pathInfo(pathMap, doors, keys, position, entry.getValue());
 					if (path != null)
 						startingPaths.put(entry.getKey(), path);
@@ -177,12 +177,12 @@ public class Day18 extends AdventDay {
 				paths.put(position, startingPaths);
 			}
 			
-			List<Character> keysNames = new ArrayList<>(keysByName.keySet());
+			List<Integer> keysNames = new ArrayList<>(keysByName.keySet());
 			while (!keysNames.isEmpty()) {
-				Character key = keysNames.removeLast();
+				Integer key = keysNames.removeLast();
 				Point position = keysByName.get(key);
 				Map<Point, Integer> pathMap = pathMap(position, walls);
-				for (Character other : keysNames) {
+				for (Integer other : keysNames) {
 					Point target = keysByName.get(other);
 					PathInfo path = pathInfo(pathMap, doors, keys, position, target);
 					if (path == null)
@@ -194,24 +194,23 @@ public class Day18 extends AdventDay {
 			return new PathsCache(paths, keysByName, new HashMap<>());
 		}
 		
-		static PathInfo pathInfo(Map<Point, Integer> pathMap, Map<Point, Character> doors, Map<Point, Character> keys,
+		static PathInfo pathInfo(Map<Point, Integer> pathMap, Map<Point, Integer> doors, Map<Point, Integer> keys,
 		                         Point start, Point target) {
 			if (pathMap.get(target) == null)
 				return null;
 			
 			Set<Point> path = findPath(pathMap, target);
-			Set<Character> doorsNames = path.stream()
+			Set<Integer> doorsIndexes = path.stream()
 					.map(doors::get)
 					.filter(Objects::nonNull)
-					.map(Character::toLowerCase)
 					.collect(Collectors.toSet());
-			Set<Character> keysNames = path.stream()
+			Set<Integer> keysIndexes = path.stream()
 					.filter(p -> !p.equals(start))
 					.filter(p -> !p.equals(target))
 					.map(keys::get)
 					.filter(Objects::nonNull)
 					.collect(Collectors.toSet());
-			return new PathInfo(doorsNames, keysNames, path.size());
+			return new PathInfo(bitSet(doorsIndexes), bitSet(keysIndexes), path.size());
 		}
 		
 		static Set<Point> findPath(Map<Point, Integer> pathMap, Point target) {
@@ -246,5 +245,11 @@ public class Day18 extends AdventDay {
 			}
 			return visited;
 		}
+	}
+	
+	static BitSet bitSet(Collection<Integer> indexes) {
+		BitSet bitSet = new BitSet();
+		indexes.forEach(bitSet::set);
+		return bitSet;
 	}
 }
