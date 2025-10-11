@@ -11,6 +11,14 @@ public record Rect(int minX, int maxX, int minY, int maxY) {
 		this(from.x(), to.x(), from.y(), to.y());
 	}
 	
+	public Point topLeft() {
+		return new Point(minX, minY);
+	}
+	
+	public Point bottomRight() {
+		return new Point(maxX, maxY);
+	}
+	
 	public boolean containsInclusive(Point p) {
 		return containsInclusive(p.x(), p.y());
 	}
