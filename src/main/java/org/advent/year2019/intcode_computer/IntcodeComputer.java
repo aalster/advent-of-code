@@ -21,12 +21,6 @@ public class IntcodeComputer {
 	private long relativeBase = 0;
 	private State state = State.RUNNING;
 	
-	public IntcodeComputer(int[] program) {
-		this.program = new long[program.length];
-		for (int i = 0; i < program.length; i++)
-			this.program[i] = program[i];
-	}
-	
 	public IntcodeComputer(long[] program) {
 		this.program = program;
 	}

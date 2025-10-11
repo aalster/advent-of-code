@@ -8,6 +8,10 @@ public interface InputProvider {
 	long nextInput();
 	
 	
+	static InputProvider empty() {
+		return constant();
+	}
+	
 	static InputProvider constant(long... values) {
 		long[] copy = Arrays.copyOf(values, values.length);
 		return new InputProvider() {
@@ -25,6 +29,10 @@ public interface InputProvider {
 				throw new IllegalStateException("All input values are used");
 			}
 		};
+	}
+	
+	static InputProvider ascii(String text) {
+		return constant(text.chars().mapToLong(n -> n).toArray());
 	}
 	
 	static InputProvider circular(int[] values) {
