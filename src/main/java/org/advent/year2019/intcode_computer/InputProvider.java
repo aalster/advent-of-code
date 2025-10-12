@@ -12,6 +12,12 @@ public interface InputProvider {
 		return constant();
 	}
 	
+	static InputProvider repeated(long value, int repeats) {
+		long[] values = new long[repeats];
+		Arrays.fill(values, value);
+		return constant(values);
+	}
+	
 	static InputProvider constant(long... values) {
 		long[] copy = Arrays.copyOf(values, values.length);
 		return new InputProvider() {
