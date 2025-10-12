@@ -10,7 +10,6 @@ import org.advent.runner.ExpectedAnswers;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.IntSummaryStatistics;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
@@ -21,8 +20,6 @@ public class Day24 extends AdventDay {
 	
 	public static void main(String[] args) {
 		new DayRunner(new Day24()).runAll();
-//		new DayRunner(new Day24()).run("example.txt", 2);
-//		new DayRunner(new Day24()).run("input.txt", 2);
 	}
 	
 	@Override
@@ -33,7 +30,16 @@ public class Day24 extends AdventDay {
 		);
 	}
 	
-	int size = 5;
+	final int size = 5;
+	final Rect bounds = new Rect(Point.ZERO, new Point(size - 1, size - 1));
+	final Point middle = new Point(size / 2, size / 2);
+	final Map<Point, List<Point>> innerChecks = Map.of(
+			Direction.RIGHT.getP(), IntStream.range(0, size).mapToObj(y -> new Point(0, y)).toList(),
+			Direction.LEFT.getP(), IntStream.range(0, size).mapToObj(y -> new Point(size - 1, y)).toList(),
+			Direction.DOWN.getP(), IntStream.range(0, size).mapToObj(x -> new Point(x, 0)).toList(),
+			Direction.UP.getP(), IntStream.range(0, size).mapToObj(x -> new Point(x, size - 1)).toList()
+	);
+	
 	Set<Point> bugs;
 	int minutes;
 	
@@ -71,54 +77,33 @@ public class Day24 extends AdventDay {
 	@Override
 	public Object part2() {
 		Map<Integer, Set<Point>> currentLevels = new HashMap<>(Map.of(0, bugs));
-		Rect bounds = Point.bounds(bugs);
-		Point middle = new Point(size / 2, size / 2);
-		Map<Point, List<Point>> innerChecks = Map.of(
-				Direction.RIGHT.getP(), IntStream.range(0, size).mapToObj(y -> new Point(0, y)).toList(),
-				Direction.LEFT.getP(), IntStream.range(0, size).mapToObj(y -> new Point(size - 1, y)).toList(),
-				Direction.DOWN.getP(), IntStream.range(0, size).mapToObj(x -> new Point(x, 0)).toList(),
-				Direction.UP.getP(), IntStream.range(0, size).mapToObj(x -> new Point(x, size - 1)).toList()
-		);
+		int minLevel = 0;
+		int maxLevel = 0;
 		
 		for (int minute = 0; minute < minutes; minute++) {
 			Map<Integer, Set<Point>> nextLevels = new HashMap<>();
 			
 			for (Map.Entry<Integer, Set<Point>> entry : currentLevels.entrySet()) {
 				int level = entry.getKey();
-				Set<Point> current = entry.getValue();
-				
 				Set<Point> outer = currentLevels.getOrDefault(level - 1, Set.of());
 				Set<Point> inner = currentLevels.getOrDefault(level + 1, Set.of());
-				
-				Set<Point> next = nextLevelRecursive(current, outer, inner, bounds, middle, innerChecks);
-				nextLevels.put(level, next);
+				nextLevels.put(level, nextLevelRecursive(entry.getValue(), outer, inner));
 			}
 			
-			IntSummaryStatistics stats = currentLevels.keySet().stream().mapToInt(Integer::intValue).summaryStatistics();
-			
-			Set<Point> nextInner = nextLevelRecursive(Set.of(), currentLevels.get(stats.getMax()), Set.of(), bounds, middle, innerChecks);
+			Set<Point> nextInner = nextLevelRecursive(Set.of(), currentLevels.get(maxLevel), Set.of());
 			if (!nextInner.isEmpty())
-				nextLevels.put(stats.getMax() + 1, nextInner);
+				nextLevels.put(++maxLevel, nextInner);
 			
-			Set<Point> nextOuter = nextLevelRecursive(Set.of(), Set.of(), currentLevels.get(stats.getMin()), bounds, middle, innerChecks);
+			Set<Point> nextOuter = nextLevelRecursive(Set.of(), Set.of(), currentLevels.get(minLevel));
 			if (!nextOuter.isEmpty())
-				nextLevels.put(stats.getMin() - 1, nextOuter);
+				nextLevels.put(--minLevel, nextOuter);
 			
 			currentLevels = nextLevels;
 		}
-		
-//		for (int level = -minutes; level < minutes; level++) {
-//			if (!currentLevels.containsKey(level))
-//				continue;
-//			System.out.println("Level " + level);
-//			Point.printField(currentLevels.get(level), '#', '.');
-//			System.out.println();
-//		}
-		
 		return currentLevels.values().stream().mapToInt(Set::size).sum();
 	}
 	
-	Set<Point> nextLevelRecursive(Set<Point> current, Set<Point> outer, Set<Point> inner, Rect bounds, Point middle, Map<Point, List<Point>> innerChecks) {
+	Set<Point> nextLevelRecursive(Set<Point> current, Set<Point> outer, Set<Point> inner) {
 		Set<Point> next = new HashSet<>();
 		for (int y = 0; y < size; y++) {
 			for (int x = 0; x < size; x++) {
@@ -128,12 +113,10 @@ public class Day24 extends AdventDay {
 				long nearBugs = Direction.stream()
 						.map(point::shift)
 						.mapToInt(p -> {
-							if (!bounds.containsInclusive(p)) {
+							if (!bounds.containsInclusive(p))
 								return outer.contains(p.subtract(point).shift(middle)) ? 1 : 0;
-							}
-							if (p.equals(middle)) {
+							if (p.equals(middle))
 								return (int) innerChecks.get(p.subtract(point)).stream().filter(inner::contains).count();
-							}
 							return current.contains(p) ? 1 : 0;
 						})
 						.sum();
