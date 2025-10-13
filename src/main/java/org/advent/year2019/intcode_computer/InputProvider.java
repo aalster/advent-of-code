@@ -1,6 +1,10 @@
 package org.advent.year2019.intcode_computer;
 
 import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.Objects;
+import java.util.Queue;
+import java.util.Scanner;
 
 public interface InputProvider {
 	
@@ -54,6 +58,28 @@ public interface InputProvider {
 			@Override
 			public long nextInput() {
 				return copy[index++ % copy.length];
+			}
+		};
+	}
+	
+	static InputProvider console() {
+		Scanner scanner = new Scanner(System.in);
+		Queue<Integer> queue = new LinkedList<>();
+		
+		return new InputProvider() {
+			
+			@Override
+			public boolean hasNext() {
+				return true;
+			}
+			
+			@Override
+			public long nextInput() {
+				if (queue.isEmpty()) {
+					scanner.nextLine().chars().forEach(queue::add);
+					queue.add((int) '\n');
+				}
+				return Objects.requireNonNull(queue.poll());
 			}
 		};
 	}
