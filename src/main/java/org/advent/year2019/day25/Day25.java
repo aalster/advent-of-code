@@ -2,30 +2,27 @@ package org.advent.year2019.day25;
 
 import lombok.RequiredArgsConstructor;
 import org.advent.common.Direction;
-import org.advent.common.MazeUtils;
-import org.advent.common.Point;
-import org.advent.common.Rect;
+import org.advent.common.Pair;
 import org.advent.common.Utils;
 import org.advent.runner.AdventDay;
 import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
-import org.advent.runner.OutputUtils;
 import org.advent.year2019.intcode_computer.InputProvider;
 import org.advent.year2019.intcode_computer.IntcodeComputer2;
 import org.advent.year2019.intcode_computer.OutputConsumer;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Scanner;
-import java.util.SequencedSet;
 import java.util.Set;
 
 public class Day25 extends AdventDay {
@@ -38,6 +35,7 @@ public class Day25 extends AdventDay {
 	@Override
 	public List<ExpectedAnswers> expected() {
 		return List.of(
+//				new ExpectedAnswers("input2.txt", null, null)
 				new ExpectedAnswers("input.txt", null, null)
 		);
 	}
@@ -76,9 +74,11 @@ public class Day25 extends AdventDay {
 		}
 	}
 	
-	record Room(Point location, String description, List<Direction> doors, List<String> items) {
+	record Room(String name, String description, List<Direction> doors, List<String> items) {
 		
-		static Room parse(Point location, String description) {
+		static Room parse(String description) {
+			String name = description.split("==")[1].trim();
+			
 			List<Direction> doors = new ArrayList<>();
 			List<String> items = new ArrayList<>();
 			
@@ -101,13 +101,12 @@ public class Day25 extends AdventDay {
 					}
 				}
 			}
-			return new Room(location, description, doors, items);
+			return new Room(name, description, doors, items);
 		}
 		
 		@Override
 		public String toString() {
-			return "Position: " + location + "\n\n"
-					+ description.replace("Command?", "").trim() + "\n\n---------------\n";
+			return description.replace("Command?", "").trim();
 		}
 	}
 	
@@ -144,80 +143,66 @@ public class Day25 extends AdventDay {
 		final Set<String> ignoredItems = Set.of("escape pod", "infinite loop", "molten lava",
 				"giant electromagnet", "photons");
 		
-		Map<Point, Room> rooms = new LinkedHashMap<>();
-		Point position = Point.ZERO;
-		List<String> inventory = new ArrayList<>();
-		SequencedSet<Point> unexplored = new LinkedHashSet<>();
+		Map<String, Room> rooms = new LinkedHashMap<>();
+		Map<String, Room> roomsByName = new LinkedHashMap<>();
+		Set<Pair<String, Direction>> checkedDirections = new HashSet<>();
+		StringBuilder currentPath = new StringBuilder();
 		Queue<Action> actionsQueue = new LinkedList<>();
 		
-		void move(Direction d) {
-			position = position.shift(d);
-		}
 		
 		String nextCommands(String output) {
+			System.out.println("CURRENT PATH: " + currentPath);
 			if (!actionsQueue.isEmpty())
 				return actionsQueue.poll().run();
 			
-			Room room = rooms.get(position);
+			Room room = rooms.get(currentPath.toString());
 //			System.out.println(room);
 			
 			if (room == null) {
-				System.out.println("NEW ROOM: " + rooms.size());
-				room = Room.parse(position, output);
-				rooms.put(position, room);
-				unexplored.remove(position);
-				
-				room.doors.stream()
-						.map(position::shift)
-						.filter(p -> !rooms.containsKey(p))
-						.forEach(e -> {
-							if (!unexplored.add(e))
-								System.out.println("Multiple ways to " + e);
-						});
-				
-				if (room.items.stream().anyMatch(i -> !ignoredItems.contains(i))) {
-					room.items.stream()
-							.filter(i -> !ignoredItems.contains(i))
-							.map(i -> new Action("take " + i, () -> inventory.add(i)))
-							.forEach(actionsQueue::add);
-					return Objects.requireNonNull(actionsQueue.poll()).run();
+				room = Room.parse(output);
+				if (roomsByName.containsKey(room.name)) {
+					room = roomsByName.get(room.name);
+				} else {
+					System.out.println("NEW ROOM: " + rooms.size());
+					rooms.put(currentPath.toString(), room);
+					roomsByName.put(room.name, room);
+					
+					if (room.items.stream().anyMatch(i -> !ignoredItems.contains(i))) {
+						room.items.stream()
+								.filter(i -> !ignoredItems.contains(i))
+								.map(i -> new Action("take " + i, () -> {
+								}))
+								.forEach(actionsQueue::add);
+						return Objects.requireNonNull(actionsQueue.poll()).run();
+					}
 				}
 			}
-
-			if (!unexplored.isEmpty()) {
-				Point target = unexplored.getLast();
-				Map<Point, Integer> stepsMap = MazeUtils.stepsMap(position, target, (p, d) -> rooms.get(p).doors.contains(d));
-				List<Point> path = MazeUtils.findPath(stepsMap, target);
-				unexplored.remove(target);
-				MazeUtils.pathToDirections(path).stream()
-						.map(d -> new Action(d.getCompassName(), () -> move(d)))
-						.forEach(actionsQueue::add);
-				return Objects.requireNonNull(actionsQueue.poll()).run();
+			
+			Direction back = currentPath.isEmpty() ? null : Direction.parseCompassLetter(currentPath.charAt(currentPath.length() - 1)).reverse();
+			
+			Room _room = room;
+			Optional<Direction> nextDirection = room.doors.stream()
+					.filter(d -> d != back)
+					.filter(d -> !checkedDirections.contains(Pair.of(_room.name, d)))
+//					.filter(d -> !rooms.containsKey(currentPath.toString() + d.compassLetter()))
+					.findAny();
+			if (nextDirection.isPresent()) {
+				Direction direction = nextDirection.get();
+				currentPath.append(direction.compassLetter());
+				checkedDirections.add(Pair.of(_room.name, direction));
+				return direction.getCompassName();
 			}
 			
-			printMap();
+			if (back != null) {
+				currentPath.setLength(currentPath.length() - 1);
+				return back.getCompassName();
+			}
 			
 //			System.out.println("All rooms:");
 //			rooms.values().forEach(System.out::println);
-			
+
 //			throw new RuntimeException("Not implemented yet");
 			return null;
-		}
-		
-		void printMap() {
-			System.out.println();
-			Rect bounds = Point.bounds(rooms.keySet());
-			for (int y = bounds.minY(); y <= bounds.maxY(); y++) {
-				for (int x = bounds.minX(); x <= bounds.maxX(); x++) {
-					Point p = new Point(x, y);
-					Room room = rooms.get(p);
-					String name = room == null ? "." : room.description.split("==")[1].trim();
-					if (position.equals(p))
-						name += " (HERE)";
-					System.out.print(OutputUtils.leftPad(name, 35));
-				}
-				System.out.println();
-			}
 		}
 	}
 	

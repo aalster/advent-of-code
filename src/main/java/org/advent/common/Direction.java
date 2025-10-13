@@ -46,6 +46,10 @@ public enum Direction {
 		return name().substring(0, 1);
 	}
 	
+	public String compassLetter() {
+		return compassName.substring(0, 1).toUpperCase();
+	}
+	
 	public char presentationChar() {
 		return switch (this) {
 			case UP -> '^';
