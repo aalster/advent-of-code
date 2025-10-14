@@ -5,8 +5,8 @@ import org.advent.runner.AdventDay;
 import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
 import org.advent.year2019.intcode_computer.InputProvider;
-import org.advent.year2019.intcode_computer.IntcodeComputer;
-import org.advent.year2019.intcode_computer.IntcodeComputerPrintingWrapper;
+import org.advent.year2019.intcode_computer.IntcodeComputer2;
+import org.advent.year2019.intcode_computer.OutputConsumer;
 
 import java.util.List;
 import java.util.Scanner;
@@ -24,18 +24,18 @@ public class Day21 extends AdventDay {
 		);
 	}
 	
-	IntcodeComputer computer;
+	final boolean silent = true;
+	long[] program;
 	
 	@Override
 	public void prepare(String file) {
 		Scanner input = Utils.scanFileNearClass(getClass(), file);
-		computer = IntcodeComputer.parse(input.nextLine());
+		program = IntcodeComputer2.parseProgram(input.nextLine());
 	}
 	
 	@Override
 	public Object part1() {
-		IntcodeComputerPrintingWrapper wrapper = new IntcodeComputerPrintingWrapper(computer);
-		wrapper.run(InputProvider.ascii("""
+		return solve("""
 				NOT A J
 				NOT B T
 				OR T J
@@ -43,14 +43,12 @@ public class Day21 extends AdventDay {
 				OR T J
 				AND D J
 				WALK
-				"""));
-		return null;
+				""");
 	}
 	
 	@Override
 	public Object part2() {
-		IntcodeComputerPrintingWrapper wrapper = new IntcodeComputerPrintingWrapper(computer);
-		wrapper.run(InputProvider.ascii("""
+		return solve("""
 				NOT B J
 				NOT C T
 				OR T J
@@ -63,7 +61,23 @@ public class Day21 extends AdventDay {
 				NOT A T
 				OR T J
 				RUN
-				"""));
-		return null;
+				""");
+	}
+	
+	long solve(String input) {
+		HullDamageReader hullDamageReader = new HullDamageReader();
+		OutputConsumer output = OutputConsumer.combine(hullDamageReader, OutputConsumer.printer(silent));
+		new IntcodeComputer2(program, InputProvider.ascii(input), output).run();
+		return hullDamageReader.damage;
+	}
+	
+	static class HullDamageReader implements OutputConsumer {
+		long damage = 0;
+		
+		@Override
+		public void accept(long value) {
+			if (value > 255)
+				damage = value;
+		}
 	}
 }

@@ -20,6 +20,10 @@ public interface OutputConsumer {
 		};
 	}
 	
+	static OutputConsumer printer(boolean silent) {
+		return silent ? empty() : printer();
+	}
+	
 	static BufferingTextOutputConsumer bufferingText() {
 		return new BufferingTextOutputConsumer();
 	}
