@@ -62,12 +62,11 @@ public class Day9 extends AdventDay {
 		return visited.size();
 	}
 	
-	static class Rope {
-		private final Point[] knots;
+	record Rope(Point[] knots) {
 		
 		Rope(int length) {
-			knots = new Point[length];
-			Arrays.fill(knots, new Point(0, 0));
+			this(new Point[length]);
+			Arrays.fill(knots, Point.ZERO);
 		}
 		
 		void move(Direction d) {

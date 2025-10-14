@@ -230,9 +230,6 @@ public class Day20 extends AdventDay {
 	}
 	
 	enum ModuleType {
-		BUTTON,
-		BROADCASTER,
-		FLIP_FLOP,
-		CONJUNCTION;
+		BUTTON, BROADCASTER, FLIP_FLOP, CONJUNCTION
 	}
 }

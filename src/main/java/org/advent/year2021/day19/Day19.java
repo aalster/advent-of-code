@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.function.Function;
@@ -96,7 +97,7 @@ public class Day19 extends AdventDay {
 	}
 	
 	boolean matches(ScannerReport basis, ScannerReport candidate) {
-		Region3D intersection = basis.region().intersection(candidate.region());
+		Region3D intersection = Objects.requireNonNull(basis.region().intersection(candidate.region()));
 		Set<Point3D> basisCommonBeacons = basis.beacons().stream().filter(intersection::contains).collect(Collectors.toSet());
 		Set<Point3D> candidateCommonBeacons = candidate.beacons().stream().filter(intersection::contains).collect(Collectors.toSet());
 		return basisCommonBeacons.size() == candidateCommonBeacons.size()

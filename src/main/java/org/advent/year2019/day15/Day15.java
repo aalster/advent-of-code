@@ -1,6 +1,7 @@
 package org.advent.year2019.day15;
 
 import org.advent.common.Direction;
+import org.advent.common.MazeUtils;
 import org.advent.common.Point;
 import org.advent.common.Utils;
 import org.advent.runner.AdventDay;
@@ -12,7 +13,6 @@ import org.advent.year2019.intcode_computer.OutputConsumer;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -56,11 +56,11 @@ public class Day15 extends AdventDay {
 				.filter(e -> e.getValue() == Location.EMPTY)
 				.map(Map.Entry::getKey)
 				.collect(Collectors.toSet());
-		Map<Point, Integer> fieldSteps = pathMap(oxygenSystem, null, empty);
+		Map<Point, Integer> fieldSteps = MazeUtils.stepsMap(oxygenSystem, empty::contains);
 		return fieldSteps.values().stream().mapToInt(i -> i).max().orElse(0);
 	}
 	
-	private Point findOxygenSystem(Map<Point, Location> field, boolean exploreAllField) {
+	Point findOxygenSystem(Map<Point, Location> field, boolean exploreAllField) {
 		RepairDroid repairDroid = new RepairDroid(program);
 		
 		Point position = Point.ZERO;
@@ -109,7 +109,7 @@ public class Day15 extends AdventDay {
 		return oxygenSystem;
 	}
 	
-	private void printField(Map<Point, Location> field, Point position) {
+	void printField(Map<Point, Location> field, Point position) {
 		System.out.println();
 		Point.printField(field.keySet(), p -> {
 			if (position.equals(p))
@@ -136,37 +136,7 @@ public class Day15 extends AdventDay {
 				.collect(Collectors.toCollection(HashSet::new));
 		empty.add(end);
 		
-		Map<Point, Integer> visited = pathMap(start, end, empty);
-		if (visited.isEmpty())
-			return List.of();
-		int step = visited.get(end);
-		List<Point> path = new ArrayList<>(step);
-		while (step > 0) {
-			path.add(end);
-			step--;
-			int currentStep = step;
-			end = Direction.stream().map(end::shift).filter(p -> visited.getOrDefault(p, -1) == currentStep).findAny().orElseThrow();
-		}
-		return path.reversed();
-	}
-	
-	Map<Point, Integer> pathMap(Point start, Point end, Set<Point> available) {
-		Map<Point, Integer> visited = new HashMap<>();
-		Set<Point> current = Set.of(start);
-		int step = 0;
-		while (!(end != null && current.contains(end)) && !current.isEmpty()) {
-			int currentStep = step;
-			current = current.stream()
-					.peek(c -> visited.put(c, currentStep))
-					.flatMap(c -> Direction.stream().map(c::shift))
-					.filter(n -> !visited.containsKey(n))
-					.filter(available::contains)
-					.collect(Collectors.toSet());
-			step++;
-		}
-		if (end != null)
-			visited.put(end, step);
-		return visited;
+		return MazeUtils.findPath(start, end, empty::contains);
 	}
 	
 	Direction directionTo(Point from, Point to) {
@@ -178,7 +148,7 @@ public class Day15 extends AdventDay {
 	}
 	
 	enum Location {
-		UNKNOWN, EMPTY, WALL;
+		UNKNOWN, EMPTY, WALL
 	}
 	
 	static class RepairDroid {

@@ -1,6 +1,6 @@
 package org.advent.year2016.day22;
 
-import org.advent.common.Direction;
+import org.advent.common.MazeUtils;
 import org.advent.common.Point;
 import org.advent.common.Utils;
 import org.advent.runner.AdventDay;
@@ -9,10 +9,8 @@ import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Scanner;
 import java.util.Set;
@@ -61,53 +59,16 @@ public class Day22 extends AdventDay {
 		Point end = new Point(0, 0);
 		
 		int totalSteps = 0;
-		List<Point> path = new ArrayList<>(findPath(current, end, movable));
+		List<Point> path = new ArrayList<>(MazeUtils.findPath(current, end, movable::contains));
 		while (!current.equals(end)) {
 			Point next = path.removeFirst();
 			Set<Point> emptyMovable = new HashSet<>(movable);
 			emptyMovable.remove(current);
-			totalSteps += pathSteps(empty, next, emptyMovable) + 1;
+			totalSteps += MazeUtils.stepsMap(empty, next, emptyMovable::contains).get(next) + 1;
 			empty = current;
 			current = next;
 		}
 		return totalSteps;
-	}
-	
-	int pathSteps(Point start, Point end, Set<Point> available) {
-		return pathMap(start, end, available).get(end);
-	}
-	
-	List<Point> findPath(Point start, Point end, Set<Point> available) {
-		Map<Point, Integer> visited = pathMap(start, end, available);
-		if (visited.isEmpty())
-			return List.of();
-		int step = visited.get(end);
-		List<Point> path = new ArrayList<>(step);
-		while (step > 0) {
-			path.add(end);
-			step--;
-			int currentStep = step;
-			end = Direction.stream().map(end::shift).filter(p -> visited.getOrDefault(p, -1) == currentStep).findAny().orElseThrow();
-		}
-		return path.reversed();
-	}
-	
-	Map<Point, Integer> pathMap(Point start, Point end, Set<Point> available) {
-		Map<Point, Integer> visited = new HashMap<>();
-		Set<Point> current = Set.of(start);
-		int step = 0;
-		while (!current.contains(end) && !current.isEmpty()) {
-			int currentStep = step;
-			current = current.stream()
-					.peek(c -> visited.put(c, currentStep))
-					.flatMap(c -> Direction.stream().map(c::shift))
-					.filter(n -> !visited.containsKey(n))
-					.filter(available::contains)
-					.collect(Collectors.toSet());
-			step++;
-		}
-		visited.put(end, step);
-		return visited;
 	}
 	
 	record Node(Point position, int size, int used, int avail) {

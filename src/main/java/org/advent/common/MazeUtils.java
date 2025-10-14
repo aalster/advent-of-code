@@ -22,13 +22,13 @@ public class MazeUtils {
 		Set<Point> current = Set.of(start);
 		int step = 0;
 		steps.put(start, step);
-		while (!current.contains(target) && !current.isEmpty()) {
+		while (!(target != null && current.contains(target)) && !current.isEmpty()) {
 			int _step = ++step;
 			current = current.stream()
 					.flatMap(c -> Direction.stream().map(c::shift))
 					.filter(available)
 					.filter(n -> !steps.containsKey(n))
-					.peek(c -> steps.put(c, _step))
+					.peek(n -> steps.put(n, _step))
 					.collect(Collectors.toSet());
 		}
 		return steps;
@@ -50,6 +50,10 @@ public class MazeUtils {
 		return steps;
 	}
 	
+	public static List<Point> findPath(Point start, Point target, Predicate<Point> available) {
+		return findPath(stepsMap(start, target, available), target);
+	}
+	
 	public static List<Point> findPath(Map<Point, Integer> stepsMap, Point target) {
 		Integer step = stepsMap.get(target);
 		if (step == null)
@@ -65,7 +69,6 @@ public class MazeUtils {
 					.findAny()
 					.orElseThrow();
 		}
-		path.add(target);
 		return path.reversed();
 	}
 	

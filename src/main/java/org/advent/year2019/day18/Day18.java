@@ -2,6 +2,7 @@ package org.advent.year2019.day18;
 
 import org.advent.common.Direction;
 import org.advent.common.DirectionExt;
+import org.advent.common.MazeUtils;
 import org.advent.common.Pair;
 import org.advent.common.Point;
 import org.advent.common.Utils;
@@ -27,7 +28,6 @@ public class Day18 extends AdventDay {
 	
 	public static void main(String[] args) {
 		new DayRunner(new Day18()).runAll();
-//		new DayRunner(new Day18()).run("input.txt", 2);
 	}
 	
 	@Override
@@ -168,7 +168,7 @@ public class Day18 extends AdventDay {
 			
 			Map<Integer, PathInfo> startingPaths = new HashMap<>();
 			for (Point position : positions) {
-				Map<Point, Integer> pathMap = pathMap(position, walls);
+				Map<Point, Integer> pathMap = MazeUtils.stepsMap(position, p -> !walls.contains(p));
 				for (Map.Entry<Integer, Point> entry : keysByName.entrySet()) {
 					PathInfo path = pathInfo(pathMap, doors, keys, position, entry.getValue());
 					if (path != null)
@@ -181,7 +181,7 @@ public class Day18 extends AdventDay {
 			while (!keysNames.isEmpty()) {
 				Integer key = keysNames.removeLast();
 				Point position = keysByName.get(key);
-				Map<Point, Integer> pathMap = pathMap(position, walls);
+				Map<Point, Integer> pathMap = MazeUtils.stepsMap(position, p -> !walls.contains(p));
 				for (Integer other : keysNames) {
 					Point target = keysByName.get(other);
 					PathInfo path = pathInfo(pathMap, doors, keys, position, target);
@@ -199,7 +199,7 @@ public class Day18 extends AdventDay {
 			if (pathMap.get(target) == null)
 				return null;
 			
-			Set<Point> path = findPath(pathMap, target);
+			List<Point> path = MazeUtils.findPath(pathMap, target);
 			Set<Integer> doorsIndexes = path.stream()
 					.map(doors::get)
 					.filter(Objects::nonNull)
@@ -211,39 +211,6 @@ public class Day18 extends AdventDay {
 					.filter(Objects::nonNull)
 					.collect(Collectors.toSet());
 			return new PathInfo(bitSet(doorsIndexes), bitSet(keysIndexes), path.size());
-		}
-		
-		static Set<Point> findPath(Map<Point, Integer> pathMap, Point target) {
-			int step = pathMap.get(target);
-			
-			Set<Point> path = new HashSet<>(step);
-			while (step > 0) {
-				path.add(target);
-				step--;
-				int currentStep = step;
-				target = Direction.stream()
-						.map(target::shift)
-						.filter(p -> pathMap.getOrDefault(p, -1) == currentStep)
-						.findAny().orElseThrow();
-			}
-			return path;
-		}
-		
-		static Map<Point, Integer> pathMap(Point start, Set<Point> walls) {
-			Map<Point, Integer> visited = new HashMap<>();
-			Set<Point> current = Set.of(start);
-			int step = 0;
-			while (!current.isEmpty()) {
-				int currentStep = step;
-				current = current.stream()
-						.peek(c -> visited.put(c, currentStep))
-						.flatMap(c -> Direction.stream().map(c::shift))
-						.filter(n -> !visited.containsKey(n))
-						.filter(n -> !walls.contains(n))
-						.collect(Collectors.toSet());
-				step++;
-			}
-			return visited;
 		}
 	}
 	

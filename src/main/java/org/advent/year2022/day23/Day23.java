@@ -115,9 +115,8 @@ public class Day23 extends AdventDay {
 		}
 		
 		Point nextPosition(Map<Point, Elf> elves, int round, MovementCheck[] checks) {
-			if (Arrays.stream(DirectionExt.values()).map(d -> d.shift(position)).noneMatch(elves::containsKey)) {
+			if (Arrays.stream(DirectionExt.values()).map(d -> d.shift(position)).noneMatch(elves::containsKey))
 				return null;
-			}
 			
 			for (int i = 0; i < checks.length; i++) {
 				MovementCheck check = checks[(i + round) % 4];
@@ -129,11 +128,9 @@ public class Day23 extends AdventDay {
 			return nextPosition;
 		}
 		
-		boolean moveToNext() {
-			if (nextPosition == null)
-				return false;
-			position = nextPosition;
-			return true;
+		void moveToNext() {
+			if (nextPosition != null)
+				position = nextPosition;
 		}
 	}
 	
