@@ -6,7 +6,7 @@ import org.advent.runner.AdventDay;
 import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
 import org.advent.year2019.intcode_computer.InputProvider;
-import org.advent.year2019.intcode_computer.IntcodeComputer2;
+import org.advent.year2019.intcode_computer.IntcodeComputer;
 import org.advent.year2019.intcode_computer.OutputConsumer;
 
 import java.util.HashMap;
@@ -37,7 +37,7 @@ public class Day23 extends AdventDay {
 	@Override
 	public void prepare(String file) {
 		Scanner input = Utils.scanFileNearClass(getClass(), file);
-		program = IntcodeComputer2.parseProgram(input.nextLine());
+		program = IntcodeComputer.parseProgram(input.nextLine());
 	}
 	
 	@Override
@@ -137,14 +137,14 @@ public class Day23 extends AdventDay {
 		final int index;
 		final InputProvider.BufferingInputProvider input;
 		final NetworkOutputConsumer output;
-		final IntcodeComputer2 computer;
+		final IntcodeComputer computer;
 		
 		NetworkComputer(Network network, int index, long[] program) {
 			this.network = network;
 			this.index = index;
 			this.input = InputProvider.buffering().append(index);
 			this.output = new NetworkOutputConsumer(network);
-			this.computer = new IntcodeComputer2(program, input, output);
+			this.computer = new IntcodeComputer(program, input, output);
 		}
 		
 		void run() {

@@ -5,7 +5,7 @@ import org.advent.runner.AdventDay;
 import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
 import org.advent.year2019.intcode_computer.InputProvider;
-import org.advent.year2019.intcode_computer.IntcodeComputer2;
+import org.advent.year2019.intcode_computer.IntcodeComputer;
 import org.advent.year2019.intcode_computer.OutputConsumer;
 
 import java.util.List;
@@ -34,13 +34,13 @@ public class Day9 extends AdventDay {
 	@Override
 	public void prepare(String file) {
 		Scanner input = Utils.scanFileNearClass(getClass(), file);
-		program = IntcodeComputer2.parseProgram(input.nextLine());
+		program = IntcodeComputer.parseProgram(input.nextLine());
 	}
 	
 	@Override
 	public Object part1() {
 		OutputConsumer.BufferingOutputConsumer outputConsumer = OutputConsumer.buffering();
-		new IntcodeComputer2(program, InputProvider.constant(1), outputConsumer).run();
+		new IntcodeComputer(program, InputProvider.constant(1), outputConsumer).run();
 		if (outputConsumer.size() == 1)
 			return outputConsumer.readNext();
 		return LongStream.of(outputConsumer.readAll()).mapToObj(n -> "" + n).collect(Collectors.joining(","));
@@ -49,7 +49,7 @@ public class Day9 extends AdventDay {
 	@Override
 	public Object part2() {
 		OutputConsumer.BufferingOutputConsumer outputConsumer = OutputConsumer.buffering();
-		new IntcodeComputer2(program, InputProvider.constant(2), outputConsumer).run();
+		new IntcodeComputer(program, InputProvider.constant(2), outputConsumer).run();
 		return outputConsumer.readNext();
 	}
 }

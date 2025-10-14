@@ -5,7 +5,7 @@ import org.advent.runner.AdventDay;
 import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
 import org.advent.year2019.intcode_computer.InputProvider;
-import org.advent.year2019.intcode_computer.IntcodeComputer2;
+import org.advent.year2019.intcode_computer.IntcodeComputer;
 import org.advent.year2019.intcode_computer.OutputConsumer;
 
 import java.util.List;
@@ -34,7 +34,7 @@ public class Day7 extends AdventDay {
 	@Override
 	public void prepare(String file) {
 		Scanner input = Utils.scanFileNearClass(getClass(), file);
-		program = IntcodeComputer2.parseProgram(String.join("", Utils.readLines(input)));
+		program = IntcodeComputer.parseProgram(String.join("", Utils.readLines(input)));
 	}
 	
 	@Override
@@ -75,10 +75,10 @@ public class Day7 extends AdventDay {
 	
 	static class Amplifier implements OutputConsumer {
 		final InputProvider.BufferingInputProvider inputProvider = InputProvider.buffering();
-		final IntcodeComputer2 computer;
+		final IntcodeComputer computer;
 		
 		Amplifier(long[] program, int phase, OutputConsumer outputConsumer) {
-			this.computer = new IntcodeComputer2(program, inputProvider, outputConsumer);
+			this.computer = new IntcodeComputer(program, inputProvider, outputConsumer);
 			accept(phase);
 		}
 		

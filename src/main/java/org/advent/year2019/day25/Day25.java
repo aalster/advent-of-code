@@ -8,7 +8,7 @@ import org.advent.runner.AdventDay;
 import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
 import org.advent.year2019.intcode_computer.InputProvider;
-import org.advent.year2019.intcode_computer.IntcodeComputer2;
+import org.advent.year2019.intcode_computer.IntcodeComputer;
 import org.advent.year2019.intcode_computer.OutputConsumer;
 import org.apache.commons.lang3.StringUtils;
 
@@ -52,7 +52,7 @@ public class Day25 extends AdventDay {
 	@Override
 	public void prepare(String file) {
 		Scanner input = Utils.scanFileNearClass(getClass(), file);
-		program = IntcodeComputer2.parseProgram(input.nextLine());
+		program = IntcodeComputer.parseProgram(input.nextLine());
 	}
 	
 	@Override
@@ -63,7 +63,7 @@ public class Day25 extends AdventDay {
 		InputProvider input = InputProvider.console();
 		input = new MacroInputProvider(InputProvider.combine(InputProvider.buffering(script), input), outputBuffer, silent);
 		
-		IntcodeComputer2 computer = new IntcodeComputer2(program, input, output);
+		IntcodeComputer computer = new IntcodeComputer(program, input, output);
 		computer.run();
 		String finalOutput = outputBuffer.read();
 		

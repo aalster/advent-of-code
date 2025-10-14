@@ -7,7 +7,7 @@ import org.advent.runner.AdventDay;
 import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
 import org.advent.year2019.intcode_computer.InputProvider;
-import org.advent.year2019.intcode_computer.IntcodeComputer2;
+import org.advent.year2019.intcode_computer.IntcodeComputer;
 import org.advent.year2019.intcode_computer.OutputConsumer;
 
 import java.util.ArrayList;
@@ -42,7 +42,7 @@ public class Day17 extends AdventDay {
 	@Override
 	public void prepare(String file) {
 		Scanner input = Utils.scanFileNearClass(getClass(), file);
-		program = IntcodeComputer2.parseProgram(input.nextLine());
+		program = IntcodeComputer.parseProgram(input.nextLine());
 	}
 	
 	@Override
@@ -60,7 +60,7 @@ public class Day17 extends AdventDay {
 	Field readField() {
 		OutputConsumer.BufferingTextOutputConsumer output = OutputConsumer.bufferingText();
 		OutputConsumer outputConsumer = OutputConsumer.combine(output, OutputConsumer.asciiPrinter(silent));
-		new IntcodeComputer2(program, InputProvider.empty(), outputConsumer).run();
+		new IntcodeComputer(program, InputProvider.empty(), outputConsumer).run();
 		Map<Character, List<Point>> field = Point.readField(List.of(output.read().split("\n")));
 		Character robotSymbol = Stream.of('<', '>', '^', 'v').filter(field::containsKey).findAny().orElseThrow();
 		return new Field(field.get(robotSymbol).getFirst(), Direction.parseSymbol(robotSymbol), new HashSet<>(field.get('#')));
@@ -70,7 +70,7 @@ public class Day17 extends AdventDay {
 		VacuumRobotReader vacuumRobotReader = new VacuumRobotReader();
 		OutputConsumer outputConsumer = OutputConsumer.combine(vacuumRobotReader, OutputConsumer.asciiPrinter(silent));
 		program[0] = 2;
-		new IntcodeComputer2(program, InputProvider.ascii(instructions), outputConsumer).run();
+		new IntcodeComputer(program, InputProvider.ascii(instructions), outputConsumer).run();
 		return vacuumRobotReader.dustCollected;
 	}
 	
