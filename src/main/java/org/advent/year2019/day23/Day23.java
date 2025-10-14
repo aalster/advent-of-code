@@ -1,13 +1,13 @@
 package org.advent.year2019.day23;
 
 import lombok.RequiredArgsConstructor;
-import org.advent.common.Pair;
 import org.advent.common.Utils;
 import org.advent.runner.AdventDay;
 import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
 import org.advent.year2019.intcode_computer.InputProvider;
-import org.advent.year2019.intcode_computer.IntcodeComputer;
+import org.advent.year2019.intcode_computer.IntcodeComputer2;
+import org.advent.year2019.intcode_computer.OutputConsumer;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,124 +32,124 @@ public class Day23 extends AdventDay {
 		);
 	}
 	
-	IntcodeComputer computer;
+	long[] program;
 	
 	@Override
 	public void prepare(String file) {
 		Scanner input = Utils.scanFileNearClass(getClass(), file);
-		computer = IntcodeComputer.parse(input.nextLine());
+		program = IntcodeComputer2.parseProgram(input.nextLine());
 	}
 	
 	@Override
 	public Object part1() {
-		Map<Integer, Queue<Long>> queues = new HashMap<>();
-		
+		Network network = new Network();
 		List<NetworkComputer> computers = IntStream.range(0, 50)
-				.mapToObj(i -> new NetworkComputer(i, computer.copy()))
+				.mapToObj(i -> new NetworkComputer(network, i, program))
 				.toList();
 		
-		computers.forEach(c -> queues.computeIfAbsent(c.index, k -> new LinkedList<>()).add((long) c.index));
-		
-		while (true) {
-			for (NetworkComputer networkComputer : computers) {
-				Queue<Long> queue = queues.get(networkComputer.index);
-				InputProvider provider = queue.isEmpty() ? InputProvider.constant(-1) : new QueueInputProvider(queue);
-				Pair<Integer, Message> message = networkComputer.run2(provider);
-				if (message == null)
-					continue;
-				if (message.left() == 255)
-					return message.right().y;
-				Queue<Long> targetQueue = queues.computeIfAbsent(message.left(), k -> new LinkedList<>());
-				targetQueue.add(message.right().x);
-				targetQueue.add(message.right().y);
-			}
-		}
+		while (network.natMessage == null)
+			for (NetworkComputer networkComputer : computers)
+				networkComputer.run();
+		return network.natMessage.y;
 	}
 	
 	@Override
 	public Object part2() {
-		Map<Integer, Queue<Long>> queues = new HashMap<>();
-
+		int emptyCyclesCount = 2;
+		Network network = new Network();
 		List<NetworkComputer> computers = IntStream.range(0, 50)
-				.mapToObj(i -> new NetworkComputer(i, computer.copy()))
+				.mapToObj(i -> new NetworkComputer(network, i, program))
 				.toList();
-
-		computers.forEach(c -> queues.computeIfAbsent(c.index, k -> new LinkedList<>()).add((long) c.index));
 		
-		Message natMessage = null;
-		Set<Long> natYs = new HashSet<>();
-		
-		int emptyCycles = 0;
-		
-		while (true) {
-			boolean messageSent = false;
-			for (NetworkComputer networkComputer : computers) {
-				Queue<Long> queue = queues.get(networkComputer.index);
-				InputProvider provider = queue.isEmpty() ? InputProvider.constant(-1) : new QueueInputProvider(queue);
-				Pair<Integer, Message> message = networkComputer.run2(provider);
-				if (message == null)
-					continue;
-				if (message.left() == 255) {
-					natMessage = message.right();
-					continue;
-				}
-				Queue<Long> targetQueue = queues.computeIfAbsent(message.left(), k -> new LinkedList<>());
-				targetQueue.add(message.right().x);
-				targetQueue.add(message.right().y);
-				messageSent = true;
-			}
-			
-			emptyCycles = messageSent ? 0 : emptyCycles + 1;
-			
-			if (emptyCycles > 10 && natMessage != null) {
-				Queue<Long> targetQueue = queues.computeIfAbsent(0, k -> new LinkedList<>());
-				targetQueue.add(natMessage.x);
-				targetQueue.add(natMessage.y);
-				if (!natYs.add(natMessage.y)) {
-					return natMessage.y;
-				}
-				emptyCycles = 0;
-				natMessage = null;
-			}
+		while (network.firstDuplicatedNatY == null) {
+			for (NetworkComputer networkComputer : computers)
+				networkComputer.run();
+			network.onCycle(emptyCyclesCount);
 		}
-	}
-	
-	@RequiredArgsConstructor
-	static class QueueInputProvider implements InputProvider {
-		private final Queue<Long> queue;
-		
-		@Override
-		public boolean hasNext() {
-			return !queue.isEmpty();
-		}
-		
-		@Override
-		public long nextInput() {
-			if (queue.isEmpty())
-				throw new IllegalStateException("No more input");
-			return queue.poll();
-		}
+		return network.firstDuplicatedNatY;
 	}
 	
 	record Message(long x, long y) {
 	}
 	
-	record NetworkComputer(int index, IntcodeComputer computer, Queue<Long> outputQueue) {
+	static class Network {
+		final Map<Integer, Queue<Long>> queues = new HashMap<>();
+		Message natMessage;
+		Set<Long> natYs = new HashSet<>();
+		Long firstDuplicatedNatY;
+		int messagesSent = 0;
+		int emptyCycles = 0;
 		
-		NetworkComputer(int index, IntcodeComputer computer) {
-			this(index, computer, new LinkedList<>());
+		Queue<Long> queue(int address) {
+			return queues.computeIfAbsent(address, k -> new LinkedList<>());
 		}
 		
-		Pair<Integer, Message> run2(InputProvider provider) {
-			Long output = computer.runUntilOutput(provider);
-			while (output != null) {
-				outputQueue.add(output);
-				output = computer.runUntilOutput(provider);
+		void send(int address, Message message) {
+			if (address == 255) {
+				natMessage = message;
+				return;
 			}
-			if (outputQueue.size() >= 3) {
-				return Pair.of(outputQueue.poll().intValue(), new Message(outputQueue.poll(), outputQueue.poll()));
+			Queue<Long> queue = queue(address);
+			queue.add(message.x);
+			queue.add(message.y);
+			messagesSent++;
+		}
+		
+		long[] readAllMessages(int address) {
+			Queue<Long> queue = queue(address);
+			if (queue.isEmpty())
+				return new long[] {-1};
+			long[] messages = queue.stream().mapToLong(Long::longValue).toArray();
+			queue.clear();
+			return messages;
+		}
+		
+		void onCycle(int emptyCyclesCount) {
+			if (messagesSent == 0) {
+				emptyCycles++;
+				if (emptyCycles >= emptyCyclesCount && natMessage != null) {
+					send(0, natMessage);
+					if (!natYs.add(natMessage.y))
+						firstDuplicatedNatY = natMessage.y;
+					
+					natMessage = null;
+					emptyCycles = 0;
+				}
 			}
-			return null;
+			messagesSent = 0;
+		}
+	}
+	
+	@RequiredArgsConstructor
+	static class NetworkOutputConsumer extends OutputConsumer.BufferingOutputConsumer {
+		final Network network;
+		
+		@Override
+		public void accept(long output) {
+			super.accept(output);
+			if (buffer.size() >= 3)
+				network.send((int) readNext(), new Message(readNext(), readNext()));
+		}
+	}
+	
+	static class NetworkComputer {
+		final Network network;
+		final int index;
+		final InputProvider.BufferingInputProvider input;
+		final NetworkOutputConsumer output;
+		final IntcodeComputer2 computer;
+		
+		NetworkComputer(Network network, int index, long[] program) {
+			this.network = network;
+			this.index = index;
+			this.input = InputProvider.buffering().append(index);
+			this.output = new NetworkOutputConsumer(network);
+			this.computer = new IntcodeComputer2(program, input, output);
+		}
+		
+		void run() {
+			input.append(network.readAllMessages(index));
+			computer.run();
 		}
 	}
 }

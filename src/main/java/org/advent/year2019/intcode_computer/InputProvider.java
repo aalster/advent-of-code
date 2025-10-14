@@ -127,10 +127,21 @@ public interface InputProvider {
 	}
 	
 	class BufferingInputProvider implements InputProvider {
-		private final Queue<Integer> queue = new LinkedList<>();
+		private final Queue<Long> queue = new LinkedList<>();
+		
+		public BufferingInputProvider append(long[] input) {
+			for (long i : input)
+				queue.add(i);
+			return this;
+		}
+		
+		public BufferingInputProvider append(long input) {
+			queue.add(input);
+			return this;
+		}
 		
 		public BufferingInputProvider append(String content) {
-			content.chars().forEach(queue::add);
+			content.chars().forEach(c -> queue.add((long) c));
 			return this;
 		}
 		

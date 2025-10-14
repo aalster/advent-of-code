@@ -26,7 +26,7 @@ public class IntcodeComputer2 {
 	
 	
 	public IntcodeComputer2(long[] program, InputProvider inputProvider, OutputConsumer outputConsumer) {
-		this.program = program;
+		this.program = Arrays.copyOf(program, program.length);
 		this.inputProvider = inputProvider;
 		this.outputConsumer = outputConsumer;
 	}

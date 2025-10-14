@@ -1,5 +1,6 @@
 package org.advent.year2019.intcode_computer;
 
+import java.util.LinkedList;
 import java.util.List;
 
 public interface OutputConsumer {
@@ -43,6 +44,25 @@ public interface OutputConsumer {
 			String result = buffer.toString();
 			buffer.setLength(0);
 			return result;
+		}
+	}
+	
+	class BufferingOutputConsumer implements OutputConsumer {
+		protected final List<Long> buffer = new LinkedList<>();
+		
+		@Override
+		public void accept(long output) {
+			buffer.add(output);
+		}
+		
+		public long readNext() {
+			return buffer.removeFirst();
+		}
+		
+		public long[] readAll() {
+			long[] output = buffer.stream().mapToLong(Long::longValue).toArray();
+			buffer.clear();
+			return output;
 		}
 	}
 }
