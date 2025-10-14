@@ -1,13 +1,15 @@
 package org.advent.year2019.day13;
 
-import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.advent.common.Point;
 import org.advent.common.Utils;
 import org.advent.runner.AdventDay;
 import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
 import org.advent.year2019.intcode_computer.InputProvider;
-import org.advent.year2019.intcode_computer.IntcodeComputer;
+import org.advent.year2019.intcode_computer.IntcodeComputer2;
+import org.advent.year2019.intcode_computer.OutputConsumer;
 
 import java.util.HashMap;
 import java.util.List;
@@ -27,57 +29,53 @@ public class Day13 extends AdventDay {
 		);
 	}
 	
-	IntcodeComputer computer;
+	static final boolean silent = true;
+	long[] program;
 	
 	@Override
 	public void prepare(String file) {
 		Scanner input = Utils.scanFileNearClass(getClass(), file);
-		computer = IntcodeComputer.parse(input.nextLine());
+		program = IntcodeComputer2.parseProgram(input.nextLine());
 	}
 	
 	@Override
 	public Object part1() {
-		return play().objects().values().stream().filter(v -> v == 2).count();
+		return play().objects.values().stream().filter(v -> v == 2).count();
 	}
 	
 	@Override
 	public Object part2() {
-		computer.set(0, 0, 2);
-		return play().score();
+		program[0] = 2;
+		return play().score;
 	}
 	
-	private GameState play() {
-		Map<Point, Integer> objects = new HashMap<>();
-		int paddleX = 0;
-		int ballX = 0;
+	GameState play() {
+		GameState gameState = new GameState();
+		PaddleInput inputProvider = new PaddleInput(gameState);
+		GameOutputConsumer outputConsumer = new GameOutputConsumer(gameState);
+		new IntcodeComputer2(program, inputProvider, outputConsumer).run();
+		return gameState;
+	}
+	
+	static final class GameState {
+		final Map<Point, Integer> objects = new HashMap<>();
+		Point ball = Point.ZERO;
+		Point paddle = Point.ZERO;
 		int score = 0;
 		
-		PaddleInput inputProvider = new PaddleInput();
-		while (computer.getState() != IntcodeComputer.State.HALTED) {
-			Long x = computer.runUntilOutput(inputProvider);
-			Long y = computer.runUntilOutput(inputProvider);
-			Long type = computer.runUntilOutput(inputProvider);
-			if (x == null || y == null || type == null)
-				break;
-			Point position = new Point(Math.toIntExact(x), Math.toIntExact(y));
+		void update(Point position, int type) {
 			if (position.equals(new Point(-1, 0))) {
-				score = Math.toIntExact(type);
-			} else {
-				objects.put(position, Math.toIntExact(type));
-				if (type == 3 || type == 4) {
-					if (type == 3)
-						paddleX = position.x();
-					if (type == 4)
-						ballX = position.x();
-					inputProvider.setDirection(Integer.compare(ballX, paddleX));
-//					new GameState(objects, score).print();
-				}
+				score = type;
+				return;
 			}
+			objects.put(position, type);
+			if (type == 3)
+				paddle = position;
+			if (type == 4)
+				ball = position;
 		}
-		return new GameState(objects, score);
-	}
-	
-	record GameState(Map<Point, Integer> objects, int score) {
+		
+		@SneakyThrows
 		void print() {
 			System.out.println("\nScore: " + score);
 			Point.printField(objects.keySet(), p -> switch (objects.getOrDefault(p, -1)) {
@@ -87,17 +85,28 @@ public class Day13 extends AdventDay {
 				case 4 -> 'O';
 				default -> '.';
 			});
-			try {
-				Thread.sleep(200);
-			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
+			Thread.sleep(200);
+		}
+	}
+	
+	@RequiredArgsConstructor
+	static class GameOutputConsumer extends OutputConsumer.BufferingOutputConsumer {
+		final GameState gameState;
+		
+		@Override
+		public void accept(long output) {
+			super.accept(output);
+			if (buffer.size() >= 3) {
+				Point position = new Point(Math.toIntExact(readNext()), Math.toIntExact(readNext()));
+				int type = Math.toIntExact(readNext());
+				gameState.update(position, type);
 			}
 		}
 	}
 	
-	@Data
+	@RequiredArgsConstructor
 	static class PaddleInput implements InputProvider {
-		int direction;
+		final GameState gameState;
 		
 		@Override
 		public boolean hasNext() {
@@ -106,7 +115,9 @@ public class Day13 extends AdventDay {
 		
 		@Override
 		public long nextInput() {
-			return direction;
+			if (!silent)
+				gameState.print();
+			return Integer.compare(gameState.ball.x(), gameState.paddle.x());
 		}
 	}
 }

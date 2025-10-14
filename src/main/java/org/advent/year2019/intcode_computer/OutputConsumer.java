@@ -24,6 +24,10 @@ public interface OutputConsumer {
 		return silent ? empty() : printer();
 	}
 	
+	static BufferingOutputConsumer buffering() {
+		return new BufferingOutputConsumer();
+	}
+	
 	static BufferingTextOutputConsumer bufferingText() {
 		return new BufferingTextOutputConsumer();
 	}
@@ -57,6 +61,10 @@ public interface OutputConsumer {
 		@Override
 		public void accept(long output) {
 			buffer.add(output);
+		}
+		
+		public long size() {
+			return buffer.size();
 		}
 		
 		public long readNext() {
