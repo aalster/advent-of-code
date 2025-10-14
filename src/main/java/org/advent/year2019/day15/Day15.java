@@ -1,6 +1,5 @@
 package org.advent.year2019.day15;
 
-import lombok.Data;
 import org.advent.common.Direction;
 import org.advent.common.Point;
 import org.advent.common.Utils;
@@ -8,7 +7,8 @@ import org.advent.runner.AdventDay;
 import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
 import org.advent.year2019.intcode_computer.InputProvider;
-import org.advent.year2019.intcode_computer.IntcodeComputer;
+import org.advent.year2019.intcode_computer.IntcodeComputer2;
+import org.advent.year2019.intcode_computer.OutputConsumer;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -34,12 +34,12 @@ public class Day15 extends AdventDay {
 		);
 	}
 	
-	IntcodeComputer computer;
+	long[] program;
 	
 	@Override
 	public void prepare(String file) {
 		Scanner input = Utils.scanFileNearClass(getClass(), file);
-		computer = IntcodeComputer.parse(input.nextLine());
+		program = IntcodeComputer2.parseProgram(input.nextLine());
 	}
 	
 	@Override
@@ -61,6 +61,8 @@ public class Day15 extends AdventDay {
 	}
 	
 	private Point findOxygenSystem(Map<Point, Location> field, boolean exploreAllField) {
+		RepairDroid repairDroid = new RepairDroid(program);
+		
 		Point position = Point.ZERO;
 		field.put(position, Location.EMPTY);
 		Direction.stream().map(position::shift).forEach(p -> field.put(p, Location.UNKNOWN));
@@ -86,7 +88,7 @@ public class Day15 extends AdventDay {
 			
 			while (!directions.isEmpty()) {
 				Direction direction = directions.removeFirst();
-				long type = computer.runUntilOutput(new DirectionInputProvider(direction));
+				long type = repairDroid.step(direction);
 				
 				if (type == 0) {
 					field.put(position.shift(direction), Location.WALL);
@@ -101,7 +103,6 @@ public class Day15 extends AdventDay {
 					if (type == 1)
 						Direction.stream().map(position::shift).forEach(p -> field.putIfAbsent(p, Location.UNKNOWN));
 				}
-				
 //				printField(field, position);
 			}
 		}
@@ -180,23 +181,24 @@ public class Day15 extends AdventDay {
 		UNKNOWN, EMPTY, WALL;
 	}
 	
-	@Data
-	static class DirectionInputProvider implements InputProvider {
-		final Direction direction;
+	static class RepairDroid {
+		final InputProvider.BufferingInputProvider inputProvider = InputProvider.buffering();
+		final OutputConsumer.BufferingOutputConsumer output = OutputConsumer.buffering();
+		final IntcodeComputer2 computer;
 		
-		@Override
-		public boolean hasNext() {
-			return true;
+		RepairDroid(long[] program) {
+			this.computer = new IntcodeComputer2(program, inputProvider, output);
 		}
 		
-		@Override
-		public long nextInput() {
-			return switch (direction) {
+		long step(Direction direction) {
+			inputProvider.append(switch (direction) {
 				case UP -> 1;
 				case DOWN -> 2;
 				case LEFT -> 3;
 				case RIGHT -> 4;
-			};
+			});
+			computer.run();
+			return output.readNext();
 		}
 	}
 }
