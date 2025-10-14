@@ -28,7 +28,7 @@ public record PuzzleResultStats(Set<String> days, int total, int failed, int err
 	
 	public String dayResult() {
 		return total == 0 ? "➖" : failed + errors > 0 ? "❌" :
-				totalTime / total < 500 ? "✅" : totalTime / total < 5000 ? "🟧" : "🟥";
+				totalTime / total < 500 ? "✅" : totalTime / total < 5000 ? "☑️" : "⚠️";
 	}
 	
 	public String summary() {
