@@ -57,6 +57,8 @@ public class Day19 extends AdventDay {
 	}
 	
 	long check(int x, int y) {
-		return new IntcodeComputer(program, InputProvider.constant(x, y), OutputConsumer.empty()).runUntilOutput();
+		OutputConsumer.BufferingOutputConsumer output = OutputConsumer.buffering();
+		new IntcodeComputer(program, InputProvider.constant(x, y), output).run();
+		return output.readNext();
 	}
 }

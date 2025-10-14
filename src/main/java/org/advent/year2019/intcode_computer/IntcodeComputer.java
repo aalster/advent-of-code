@@ -1,29 +1,19 @@
 package org.advent.year2019.intcode_computer;
 
-import lombok.Data;
-
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@Data
 public class IntcodeComputer {
-	private static final boolean debug = false;
-	public enum State {
-		RUNNING, HALTED, WAITING_INPUT
-	}
+	private static final boolean inspectOperations = false;
 	
 	private long[] program;
 	private final InputProvider inputProvider;
 	private final OutputConsumer outputConsumer;
 	
 	private int index = 0;
-	private long relativeBase = 0;
-	private State state = State.RUNNING;
-	
+	private int relativeBase = 0;
 	
 	public IntcodeComputer(long[] program, InputProvider inputProvider, OutputConsumer outputConsumer) {
 		this.program = Arrays.copyOf(program, program.length);
@@ -31,13 +21,15 @@ public class IntcodeComputer {
 		this.outputConsumer = outputConsumer;
 	}
 	
-	public void set(long index, int mode, long value) {
+	private void set(int index, int mode, long value) {
+		index = (int) program[index];
 		index += mode == 2 ? relativeBase : 0;
-		expand((int) index);
-		program[(int) index] = value;
+		expand(index);
+		program[index] = value;
 	}
 	
-	public long get(long parameter, int mode) {
+	private long get(int index, int mode) {
+		long parameter = program[index];
 		return switch (mode) {
 			case 0 -> {
 				expand((int) parameter);
@@ -57,93 +49,69 @@ public class IntcodeComputer {
 			program = Arrays.copyOf(program, index + 1);
 	}
 	
-	public Long runUntilOutput() {
-		if (state == State.HALTED)
-			return null;
-		if (state == State.WAITING_INPUT && !inputProvider.hasNext())
-			return null;
-		
-		loop: while (0 <= index && index < program.length) {
+	public void run() {
+		while (0 <= index && index < program.length) {
 			long operation = program[index];
 			int opcode = (int) (operation % 100);
-			operation = operation / 100;
+			operation /= 100;
 			int modeLeft = (int) (operation % 10);
-			operation = operation / 10;
+			operation /= 10;
 			int modeRight = (int) (operation % 10);
-			operation = operation / 10;
+			operation /= 10;
 			int modeResult = (int) (operation % 10);
 			
-			if (debug) {
-				IntcodeOperation operationDescription = operations.get(opcode);
-				System.out.println(operationDescription.name + ": "
-						+ Arrays.toString(Arrays.copyOfRange(program, index, index + operationDescription.length)));
-			}
+			if (inspectOperations)
+				System.out.println(operations.get(opcode).inspect(program, index));
 			
 			switch (opcode) {
 				case 1 -> {
-					set(program[index + 3], modeResult, get(program[index + 1], modeLeft) + get(program[index + 2], modeRight));
+					set(index + 3, modeResult, get(index + 1, modeLeft) + get(index + 2, modeRight));
 					index += 4;
 				}
 				case 2 -> {
-					set(program[index + 3], modeResult, get(program[index + 1], modeLeft) * get(program[index + 2], modeRight));
+					set(index + 3, modeResult, get(index + 1, modeLeft) * get(index + 2, modeRight));
 					index += 4;
 				}
 				case 3 -> {
-					if (!inputProvider.hasNext()) {
-						state = State.WAITING_INPUT;
-						return null;
-					}
-					set(program[index + 1], modeLeft, inputProvider.nextInput());
+					if (!inputProvider.hasNext())
+						return;
+					set(index + 1, modeLeft, inputProvider.nextInput());
 					index += 2;
 				}
 				case 4 -> {
-					long output = get(program[index + 1], modeLeft);
+					long output = get(index + 1, modeLeft);
 					outputConsumer.accept(output);
 					index += 2;
-					return output;
 				}
 				case 5 -> {
-					if (get(program[index + 1], modeLeft) != 0)
-						index = (int) get(program[index + 2], modeRight);
+					if (get(index + 1, modeLeft) != 0)
+						index = (int) get(index + 2, modeRight);
 					else
 						index += 3;
 				}
 				case 6 -> {
-					if (get(program[index + 1], modeLeft) == 0)
-						index = (int) get(program[index + 2], modeRight);
+					if (get(index + 1, modeLeft) == 0)
+						index = (int) get(index + 2, modeRight);
 					else
 						index += 3;
 				}
 				case 7 -> {
-					set(program[index + 3], modeResult, get(program[index + 1], modeLeft) < get(program[index + 2], modeRight) ? 1 : 0);
+					set(index + 3, modeResult, get(index + 1, modeLeft) < get(index + 2, modeRight) ? 1 : 0);
 					index += 4;
 				}
 				case 8 -> {
-					set(program[index + 3], modeResult, get(program[index + 1], modeLeft) == get(program[index + 2], modeRight) ? 1 : 0);
+					set(index + 3, modeResult, get(index + 1, modeLeft) == get(index + 2, modeRight) ? 1 : 0);
 					index += 4;
 				}
 				case 9 -> {
-					relativeBase += get(program[index + 1], modeLeft);
+					relativeBase += (int) get(index + 1, modeLeft);
 					index += 2;
 				}
 				case 99 -> {
-					break loop;
+					return;
 				}
 			}
 		}
-		state = State.HALTED;
-		return null;
-	}
-	
-	public List<Long> run() {
-		List<Long> output = new ArrayList<>();
-		while (true) {
-			Long value = runUntilOutput();
-			if (value == null)
-				break;
-			output.add(value);
-		}
-		return output;
 	}
 	
 	public String toString() {
@@ -155,6 +123,9 @@ public class IntcodeComputer {
 	}
 	
 	record IntcodeOperation(int opcode, int length, String name, String description) {
+		String inspect(long[] program, int index) {
+			return name + ": " + Arrays.toString(Arrays.copyOfRange(program, index, index + length));
+		}
 	}
 	
 	private static final Map<Integer, IntcodeOperation> operations = Stream.of(
