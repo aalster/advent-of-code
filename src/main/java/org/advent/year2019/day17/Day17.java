@@ -7,7 +7,8 @@ import org.advent.runner.AdventDay;
 import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
 import org.advent.year2019.intcode_computer.InputProvider;
-import org.advent.year2019.intcode_computer.IntcodeComputer;
+import org.advent.year2019.intcode_computer.IntcodeComputer2;
+import org.advent.year2019.intcode_computer.OutputConsumer;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,54 +36,42 @@ public class Day17 extends AdventDay {
 		);
 	}
 	
-	IntcodeComputer computer;
+	final boolean silent = true;
+	long[] program;
 	
 	@Override
 	public void prepare(String file) {
 		Scanner input = Utils.scanFileNearClass(getClass(), file);
-		computer = IntcodeComputer.parse(input.nextLine());
+		program = IntcodeComputer2.parseProgram(input.nextLine());
 	}
 	
 	@Override
 	public Object part1() {
-		return findIntersections(readField(computer)).stream().mapToInt(p -> p.x() * p.y()).sum();
+		return findIntersections(readField()).stream().mapToInt(p -> p.x() * p.y()).sum();
 	}
 	
 	@Override
 	public Object part2() {
-		List<PathInstruction> pathInstructions = pathInstructions(readField(computer.copy()));
+		List<PathInstruction> pathInstructions = pathInstructions(readField());
 		List<String> functions = PathInstruction.extractFunctions(pathInstructions).stream().map(PathInstruction::toString).toList();
-		String input = PathInstruction.toString(pathInstructions) + "\n" + String.join("\n", functions) + "\nn\n";
-		return walk(computer, input);
+		return walk(PathInstruction.toString(pathInstructions) + "\n" + String.join("\n", functions) + "\nn\n");
 	}
 	
-	Field readField(IntcodeComputer computer) {
-		StringBuilder output = new StringBuilder(1000);
-		while (computer.getState() != IntcodeComputer.State.HALTED) {
-			Long type = computer.runUntilOutput(InputProvider.constant(0));
-			if (type == null)
-				break;
-			output.append((char) (long) type);
-		}
-//		System.out.println(output);
-		Map<Character, List<Point>> field = Point.readField(List.of(output.toString().split("\n")));
+	Field readField() {
+		OutputConsumer.BufferingTextOutputConsumer output = OutputConsumer.bufferingText();
+		OutputConsumer outputConsumer = OutputConsumer.combine(output, OutputConsumer.printer(silent));
+		new IntcodeComputer2(program, InputProvider.empty(), outputConsumer).run();
+		Map<Character, List<Point>> field = Point.readField(List.of(output.read().split("\n")));
 		Character robotSymbol = Stream.of('<', '>', '^', 'v').filter(field::containsKey).findAny().orElseThrow();
 		return new Field(field.get(robotSymbol).getFirst(), Direction.parseSymbol(robotSymbol), new HashSet<>(field.get('#')));
 	}
 	
-	long walk(IntcodeComputer computer, String logic) {
-		computer.set(0, 0, 2);
-		InputProvider input = new StringInputProvider(logic);
-		long lastOutput = 0;
-		while (computer.getState() != IntcodeComputer.State.HALTED) {
-			Long output = computer.runUntilOutput(input);
-			if (output == null)
-				break;
-			lastOutput = output;
-//			if (output < 256)
-//				System.out.print((char) (long) output);
-		}
-		return lastOutput;
+	long walk(String instructions) {
+		VacuumRobotReader vacuumRobotReader = new VacuumRobotReader();
+		OutputConsumer outputConsumer = OutputConsumer.combine(vacuumRobotReader, OutputConsumer.printer(silent));
+		program[0] = 2;
+		new IntcodeComputer2(program, InputProvider.ascii(instructions), outputConsumer).run();
+		return vacuumRobotReader.dustCollected;
 	}
 	
 	Set<Point> findIntersections(Field field) {
@@ -219,22 +208,13 @@ public class Day17 extends AdventDay {
 	record Range(int from, int to) {
 	}
 	
-	static class StringInputProvider implements InputProvider {
-		final char[] input;
-		int index = 0;
-		
-		StringInputProvider(String input) {
-			this.input = input.toCharArray();
-		}
+	static class VacuumRobotReader implements OutputConsumer {
+		long dustCollected = 0;
 		
 		@Override
-		public boolean hasNext() {
-			return index < input.length;
-		}
-		
-		@Override
-		public long nextInput() {
-			return input[index++];
+		public void accept(long value) {
+			if (value > 255)
+				dustCollected = value;
 		}
 	}
 }
