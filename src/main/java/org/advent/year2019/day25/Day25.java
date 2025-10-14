@@ -13,14 +13,12 @@ import org.advent.year2019.intcode_computer.OutputConsumer;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Scanner;
@@ -41,6 +39,14 @@ public class Day25 extends AdventDay {
 		);
 	}
 	
+	static final boolean silent = true;
+//	static final String script = "";
+	static final String script = """
+				macro explore collect
+				macro goto Security Checkpoint
+				macro break
+				""";
+	
 	long[] program;
 	
 	@Override
@@ -52,10 +58,10 @@ public class Day25 extends AdventDay {
 	@Override
 	public Object part1() {
 		OutputConsumer.BufferingTextOutputConsumer outputBuffer = OutputConsumer.bufferingText();
-		OutputConsumer output = OutputConsumer.combine(OutputConsumer.printer(), outputBuffer);
+		OutputConsumer output = silent ? outputBuffer : OutputConsumer.combine(OutputConsumer.printer(), outputBuffer);
 		
-//		InputProvider input = InputProvider.console();
-		InputProvider input = new WalkerInputProvider(outputBuffer);
+		InputProvider input = InputProvider.console();
+		input = new MacroInputProvider(InputProvider.combine(InputProvider.buffering(script), input), outputBuffer, silent);
 		
 		IntcodeComputer2 computer = new IntcodeComputer2(program, input, output);
 		computer.run();
@@ -73,17 +79,10 @@ public class Day25 extends AdventDay {
 		return null;
 	}
 	
-	record Action(String command, Runnable action) {
-		String run() {
-			action.run();
-			return command;
-		}
-	}
-	
-	record Room(String name, String description, List<Direction> doors, List<String> items) {
+	record Room(String name, String description, List<Direction> doors, List<String> items, List<Direction> path) {
 		
-		static Room parse(String description) {
-			String name = description.split("==")[1].trim();
+		static Room parse(String description, List<Direction> path) {
+			String name = parseName(description);
 			
 			List<Direction> doors = new ArrayList<>();
 			List<String> items = new ArrayList<>();
@@ -92,22 +91,28 @@ public class Day25 extends AdventDay {
 			while (iterator.hasNext()) {
 				String line = iterator.next();
 				if (line.equals("Doors here lead:")) {
-					String door = iterator.next();
-					while (iterator.hasNext() && !door.isEmpty()) {
+					while (iterator.hasNext()) {
+						String door = iterator.next();
+						if (!door.startsWith("- "))
+							break;
 						char directionChar = StringUtils.removeStart(door, "- ").charAt(0);
 						doors.add(Direction.parseCompassLetter(Character.toUpperCase(directionChar)));
-						door = iterator.next();
 					}
 				}
 				if (line.equals("Items here:")) {
-					String item = iterator.next();
-					while (iterator.hasNext() && !item.isEmpty()) {
+					while (iterator.hasNext()) {
+						String item = iterator.next();
+						if (!item.startsWith("- "))
+							break;
 						items.add(StringUtils.removeStart(item, "- "));
-						item = iterator.next();
 					}
 				}
 			}
-			return new Room(name, description, doors, items);
+			return new Room(name, description, doors, items, new ArrayList<>(path));
+		}
+		
+		static String parseName(String description) {
+			return description.split("==")[1].trim();
 		}
 		
 		@Override
@@ -116,10 +121,31 @@ public class Day25 extends AdventDay {
 		}
 	}
 	
+	static class Ship {
+		Map<String, Room> roomsByName = new LinkedHashMap<>();
+		String currentRoomDescription;
+		String currentRoomName;
+		Set<String> currentItems = new HashSet<>();
+		
+		void onOutput(String output) {
+			if (output.startsWith("==")) {
+				currentRoomDescription = output;
+				currentRoomName = Room.parseName(output);
+			} else if (output.startsWith("You take the ")) {
+				currentItems.add(StringUtils.removeStart(StringUtils.removeEnd(output, "."), "You take the "));
+			} else if (output.startsWith("You drop the ")) {
+				currentItems.remove(StringUtils.removeStart(StringUtils.removeEnd(output, "."), "You drop the "));
+			}
+		}
+	}
+	
 	@RequiredArgsConstructor
-	private static class WalkerInputProvider implements InputProvider {
+	static class MacroInputProvider implements InputProvider {
+		final InputProvider userInputProvider;
+		final BufferingInputProvider inputBuffer = InputProvider.buffering();
 		final OutputConsumer.BufferingTextOutputConsumer outputBuffer;
-		InputProvider delegate = InputProvider.empty();
+		final boolean silent;
+		final Ship ship = new Ship();
 		Macro macro;
 		
 		@Override
@@ -129,219 +155,232 @@ public class Day25 extends AdventDay {
 		
 		@Override
 		public long nextInput() {
-			if (!delegate.hasNext()) {
-				String nextInput = nextInput(outputBuffer.read());
-				System.out.println("<< " + nextInput);
-				delegate = InputProvider.ascii(nextInput + "\n");
+			if (!inputBuffer.hasNext()) {
+				String output = outputBuffer.read().replace("Command?", "").trim();
+				inputBuffer.append(nextInput(output) + "\n");
 			}
-			return delegate.nextInput();
+			return inputBuffer.nextInput();
 		}
 		
 		public String nextInput(String output) {
+			ship.onOutput(output);
+			
 			while (true) {
 				if (macro != null) {
-					String nextCommand = macro.nextCommands(output);
-					if (nextCommand != null)
-						return nextCommand;
-					
-					System.out.println("MACRO FINISHED");
-					macro = null;
-					continue;
-				}
-				
-				String manualInput = new Scanner(System.in).nextLine();
-				
-				if (manualInput.startsWith("macro ")) {
-					String[] split = manualInput.split(" ");
-					macro = switch (split[1]) {
-						case "inspect" -> new InspectMacro();
-						case "goto" -> new GotoMacro(StringUtils.removeStart(manualInput, "macro goto").trim());
-						case "break" -> new BruteForceMacro();
-						default -> throw new RuntimeException("Unknown macro: " + manualInput);
-					};
-					continue;
-				}
-				
-				if (manualInput.equals("exit"))
-					throw new RuntimeException("Exit");
-				return manualInput;
-			}
-		}
-		
-		final Set<String> ignoredItems = Set.of("escape pod", "infinite loop", "molten lava",
-				"giant electromagnet", "photons");
-		
-		Map<String, Room> rooms = new LinkedHashMap<>();
-		Map<String, Room> roomsByName = new LinkedHashMap<>();
-		Set<Pair<String, Direction>> checkedDirections = new HashSet<>();
-		StringBuilder currentPath = new StringBuilder();
-		Queue<Action> actionsQueue = new LinkedList<>();
-		
-		interface Macro {
-			String nextCommands(String output);
-		}
-		
-		class InspectMacro implements Macro {
-			
-			@Override
-			public String nextCommands(String output) {
-				System.out.println("CURRENT PATH: " + currentPath);
-				if (!actionsQueue.isEmpty())
-					return actionsQueue.poll().run();
-				
-				Room room = rooms.get(currentPath.toString());
-//			    System.out.println(room);
-				
-				if (room == null) {
-					room = Room.parse(output);
-					if (roomsByName.containsKey(room.name)) {
-						room = roomsByName.get(room.name);
-					} else {
-						System.out.println("NEW ROOM: " + rooms.size());
-						rooms.put(currentPath.toString(), room);
-						roomsByName.put(room.name, room);
-						
-						if (room.items.stream().anyMatch(i -> !ignoredItems.contains(i))) {
-							room.items.stream()
-									.filter(i -> !ignoredItems.contains(i))
-									.map(i -> new Action("take " + i, () -> {
-									}))
-									.forEach(actionsQueue::add);
-							return Objects.requireNonNull(actionsQueue.poll()).run();
+					try {
+						String nextCommand = macro.nextCommands(ship, output);
+						if (nextCommand == null) {
+							macro = null;
+							continue;
 						}
+						if (!silent)
+							System.out.println("<< " + nextCommand);
+						return nextCommand;
+					} catch (MacroException e) {
+						macro = null;
+						if (!silent)
+							System.out.println("Error: " + e.getMessage());
+						continue;
 					}
 				}
 				
-				Direction back = currentPath.isEmpty() ? null : Direction.parseCompassLetter(currentPath.charAt(currentPath.length() - 1)).reverse();
+				String userInput = userInputProvider.nextLine();
 				
-				Room _room = room;
-				Optional<Direction> nextDirection = room.doors.stream()
-						.filter(d -> d != back)
-						.filter(d -> !checkedDirections.contains(Pair.of(_room.name, d)))
-//				    	.filter(d -> !rooms.containsKey(currentPath.toString() + d.compassLetter()))
+				if (userInput.startsWith("macro ")) {
+					macro = Macro.parse(StringUtils.removeStart(userInput, "macro "));
+					continue;
+				}
+				if (userInput.equals("exit"))
+					throw new RuntimeException("Exit");
+				return userInput;
+			}
+		}
+	}
+	
+	static class MacroException extends RuntimeException {
+		public MacroException(String message) {
+			super(message);
+		}
+	}
+	
+	interface Macro {
+		String nextCommands(Ship ship, String output);
+		
+		static Macro parse(String command) {
+			String[] split = command.split(" ", 2);
+			String params = split.length > 1 ? split[1] : "";
+			return switch (split[0]) {
+				case "explore" -> new ExploreMacro(params);
+				case "goto" -> new GotoMacro(params);
+				case "break" -> new BreakMacro();
+				default -> throw new RuntimeException("Unknown macro: " + command);
+			};
+		}
+	}
+	
+	static class ExploreMacro implements Macro {
+		static final Set<String> ignoredItems = Set.of("escape pod", "infinite loop",
+				"molten lava", "giant electromagnet", "photons");
+		static final Set<String> ignoredRooms = Set.of("Security Checkpoint");
+		final boolean collect;
+		Set<Pair<String, Direction>> checkedDirections = new HashSet<>();
+		List<Direction> currentPath;
+		
+		ExploreMacro(String params) {
+			collect = "collect".equals(params);
+		}
+		
+		@Override
+		public String nextCommands(Ship ship, String output) {
+			if (currentPath == null) {
+				if (ignoredItems.contains(ship.currentRoomName))
+					throw new MacroException("Can't explore from " + ship.currentRoomName);
+				currentPath = new ArrayList<>();
+			}
+			
+			Room currentRoom = ship.roomsByName.computeIfAbsent(ship.currentRoomName,
+					k -> Room.parse(ship.currentRoomDescription, currentPath));
+			
+			if (collect) {
+				Optional<String> item = currentRoom.items.stream()
+						.filter(i -> !ignoredItems.contains(i))
+						.filter(i -> !ship.currentItems.contains(i))
 						.findAny();
-				if (nextDirection.isPresent() && !room.name.equals("Security Checkpoint")) {
+				if (item.isPresent())
+					return "take " + item.get();
+			}
+			
+			Direction back = currentPath.isEmpty() ? null : currentPath.getLast().reverse();
+			
+			if (!ignoredRooms.contains(currentRoom.name)) {
+				Optional<Direction> nextDirection = currentRoom.doors.stream()
+						.filter(d -> d != back)
+						.filter(d -> !checkedDirections.contains(Pair.of(currentRoom.name, d)))
+						.findAny();
+				
+				if (nextDirection.isPresent()) {
 					Direction direction = nextDirection.get();
-					currentPath.append(direction.compassLetter());
-					checkedDirections.add(Pair.of(_room.name, direction));
+					currentPath.add(direction);
+					checkedDirections.add(Pair.of(currentRoom.name, direction));
 					return direction.getCompassName();
 				}
-				
-				if (back != null) {
-					currentPath.setLength(currentPath.length() - 1);
-					return back.getCompassName();
-				}
-
-//		    	System.out.println("All rooms:");
-//		    	rooms.values().forEach(System.out::println);
-
-//			    throw new RuntimeException("Not implemented yet");
+			}
+			if (back != null) {
+				currentPath.removeLast();
+				return back.getCompassName();
+			}
+			return null;
+		}
+	}
+	
+	@RequiredArgsConstructor
+	static class GotoMacro implements Macro {
+		final String targetRoomName;
+		Queue<Direction> directions;
+		
+		@Override
+		public String nextCommands(Ship ship, String output) {
+			if (directions == null) {
+				Room currentRoom = ship.roomsByName.get(ship.currentRoomName);
+				Room targetRoom = ship.roomsByName.get(targetRoomName);
+				if (currentRoom == null || targetRoom == null)
+					throw new MacroException("Ship not explored");
+				directions = relativePath(currentRoom.path, targetRoom.path);
+			}
+			
+			if (directions.isEmpty())
 				return null;
-			}
+			
+			return directions.poll().getCompassName();
 		}
 		
-		class GotoMacro implements Macro {
-			Queue<Integer> directions = new LinkedList<>();
-			
-			// TODO идет только с начала
-			public GotoMacro(String targetRoom) {
-				if (targetRoom.isEmpty())
-					targetRoom = "Security Checkpoint";
-				String finalTargetRoom = targetRoom;
-				rooms.entrySet().stream()
-						.filter(e -> e.getValue().name.equals(finalTargetRoom))
-						.map(Map.Entry::getKey)
-						.flatMapToInt(String::chars)
-						.forEach(directions::add);
+		Queue<Direction> relativePath(List<Direction> c, List<Direction> t) {
+			List<Direction> current = new LinkedList<>(c);
+			LinkedList<Direction> target = new LinkedList<>(t);
+			while (!current.isEmpty() && !target.isEmpty() && current.getFirst() == target.getFirst()) {
+				current.removeFirst();
+				target.removeFirst();
 			}
-			
-			@Override
-			public String nextCommands(String output) {
-				if (directions.isEmpty())
-					return null;
-				Direction direction = Direction.parseCompassLetter((char) (int) directions.poll());
-				currentPath.append(direction.compassLetter());
-				return direction.getCompassName();
-			}
+			while (!current.isEmpty())
+				target.addFirst(current.removeFirst().reverse());
+			return target;
 		}
+	}
+	
+	static class BreakMacro implements Macro {
+		static final int STATE_NONE = 0;
+		static final int STATE_PICKING = 1;
+		static final int STATE_WALKING = 2;
+		int state = STATE_NONE;
 		
-		class BruteForceMacro implements Macro {
-			static final int STATE_NONE = 0;
-			static final int STATE_PICKING = 1;
-			static final int STATE_WALKING = 2;
-			int state = STATE_NONE;
+		Direction targetDirection;
+		List<String> availableItems;
+		
+		int variant = 0;
+		Set<String> currentVariantItems;
+		
+		@Override
+		public String nextCommands(Ship ship, String output) {
+			if (targetDirection == null) {
+				if (!"Security Checkpoint".equals(ship.currentRoomName))
+					throw new MacroException("Not a Security Checkpoint");
+				
+				Room currentRoom = ship.roomsByName.get(ship.currentRoomName);
+				if (currentRoom == null)
+					throw new MacroException("Ship not explored");
+				
+				Direction back = currentRoom.path.getLast().reverse();
+				targetDirection = currentRoom.doors.stream()
+						.filter(d -> d != back)
+						.findAny()
+						.orElseThrow();
+			}
+			if (availableItems == null) {
+				if (ship.currentItems.isEmpty())
+					throw new MacroException("No items in inventory");
+				availableItems = new ArrayList<>(ship.currentItems);
+			}
 			
-			Direction targetDirection;
-			List<String> allItems;
-			Set<String> currentItems;
-			
-			int variant = 0;
-			Set<String> currentAttemptItems;
-			
-			// TODO нужно проверять где сейчас находится
-			
-			@Override
-			public String nextCommands(String output) {
-				if (targetDirection == null) {
-					Direction back = Direction.parseCompassLetter(currentPath.charAt(currentPath.length() - 1)).reverse();
-					targetDirection = rooms.get(currentPath.toString()).doors.stream()
-							.filter(d -> d != back)
-							.findAny()
-							.orElseThrow();
-				}
-				if (allItems == null) {
-					if (!output.contains("Items in your inventory"))
-						return "inv";
-					allItems = Arrays.stream(output.split("\n"))
-							.filter(s -> s.startsWith("- "))
-							.map(s -> s.substring(2))
-							.toList();
-					currentItems = new HashSet<>(allItems);
+			while (true) {
+				if (state == STATE_PICKING) {
+					for (String item : availableItems) {
+						boolean haveItem = ship.currentItems.contains(item);
+						boolean shouldHaveItem = currentVariantItems.contains(item);
+						if (haveItem != shouldHaveItem)
+							return (shouldHaveItem ? "take " : "drop ") + item;
+					}
+					currentVariantItems = null;
+					state = STATE_WALKING;
 				}
 				
-				while (true) {
-					if (state == STATE_PICKING) {
-						for (String item : allItems) {
-							if (currentItems.contains(item) && !currentAttemptItems.contains(item)) {
-								currentItems.remove(item);
-								return "drop " + item;
-							}
-							if (!currentItems.contains(item) && currentAttemptItems.contains(item)) {
-								currentItems.add(item);
-								return "take " + item;
-							}
-						}
-						currentAttemptItems = null;
-						state = STATE_WALKING;
-					}
-					
-					if (state == STATE_WALKING) {
-						if (!output.contains("you are ejected back to the checkpoint"))
-							return targetDirection.getCompassName();
-						state = STATE_NONE;
-					}
-					
-					if (currentAttemptItems == null) {
-						variant++;
-						if (variant > 1 << allItems.size())
-							return null;
-						
-						currentAttemptItems = itemsVariant(variant);
-						state = STATE_PICKING;
-					}
+				if (state == STATE_WALKING) {
+					if (!output.contains("you are ejected back to the checkpoint"))
+						return targetDirection.getCompassName();
+					state = STATE_NONE;
+				}
+				
+				if (currentVariantItems == null) {
+					currentVariantItems = nextItemsVariant();
+					if (currentVariantItems == null)
+						throw new MacroException("Combination not found");
+					state = STATE_PICKING;
 				}
 			}
+		}
+		
+		Set<String> nextItemsVariant() {
+			variant++;
+			if (variant > 1 << availableItems.size())
+				return null;
 			
-			Set<String> itemsVariant(int variant) {
-				Set<String> itemsVariant = new HashSet<>();
-				int index = 0;
-				for (String item : allItems) {
-					if ((variant & 1 << index) > 0)
-						itemsVariant.add(item);
-					index++;
-				}
-				return itemsVariant;
+			Set<String> itemsVariant = new HashSet<>();
+			int index = 0;
+			for (String item : availableItems) {
+				if ((variant & 1 << index) > 0)
+					itemsVariant.add(item);
+				index++;
 			}
+			return itemsVariant;
 		}
 	}
 }
