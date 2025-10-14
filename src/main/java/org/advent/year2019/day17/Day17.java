@@ -59,7 +59,7 @@ public class Day17 extends AdventDay {
 	
 	Field readField() {
 		OutputConsumer.BufferingTextOutputConsumer output = OutputConsumer.bufferingText();
-		OutputConsumer outputConsumer = OutputConsumer.combine(output, OutputConsumer.printer(silent));
+		OutputConsumer outputConsumer = OutputConsumer.combine(output, OutputConsumer.asciiPrinter(silent));
 		new IntcodeComputer2(program, InputProvider.empty(), outputConsumer).run();
 		Map<Character, List<Point>> field = Point.readField(List.of(output.read().split("\n")));
 		Character robotSymbol = Stream.of('<', '>', '^', 'v').filter(field::containsKey).findAny().orElseThrow();
@@ -68,7 +68,7 @@ public class Day17 extends AdventDay {
 	
 	long walk(String instructions) {
 		VacuumRobotReader vacuumRobotReader = new VacuumRobotReader();
-		OutputConsumer outputConsumer = OutputConsumer.combine(vacuumRobotReader, OutputConsumer.printer(silent));
+		OutputConsumer outputConsumer = OutputConsumer.combine(vacuumRobotReader, OutputConsumer.asciiPrinter(silent));
 		program[0] = 2;
 		new IntcodeComputer2(program, InputProvider.ascii(instructions), outputConsumer).run();
 		return vacuumRobotReader.dustCollected;

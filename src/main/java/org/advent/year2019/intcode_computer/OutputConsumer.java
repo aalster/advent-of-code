@@ -11,7 +11,11 @@ public interface OutputConsumer {
 		return o -> {};
 	}
 	
-	static OutputConsumer printer() {
+	static OutputConsumer numberPrinter() {
+		return System.out::println;
+	}
+	
+	static OutputConsumer asciiPrinter() {
 		return o -> {
 			if (o < 256)
 				System.out.print((char) o);
@@ -20,8 +24,8 @@ public interface OutputConsumer {
 		};
 	}
 	
-	static OutputConsumer printer(boolean silent) {
-		return silent ? empty() : printer();
+	static OutputConsumer asciiPrinter(boolean silent) {
+		return silent ? empty() : asciiPrinter();
 	}
 	
 	static BufferingOutputConsumer buffering() {
@@ -61,6 +65,10 @@ public interface OutputConsumer {
 		@Override
 		public void accept(long output) {
 			buffer.add(output);
+		}
+		
+		public boolean hasNext() {
+			return !buffer.isEmpty();
 		}
 		
 		public long size() {

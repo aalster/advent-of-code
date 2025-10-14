@@ -8,7 +8,8 @@ import org.advent.runner.AdventDay;
 import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
 import org.advent.year2019.intcode_computer.InputProvider;
-import org.advent.year2019.intcode_computer.IntcodeComputer;
+import org.advent.year2019.intcode_computer.IntcodeComputer2;
+import org.advent.year2019.intcode_computer.OutputConsumer;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -29,12 +30,12 @@ public class Day11 extends AdventDay {
 		);
 	}
 	
-	IntcodeComputer computer;
+	long[] program;
 	
 	@Override
 	public void prepare(String file) {
 		Scanner input = Utils.scanFileNearClass(getClass(), file);
-		computer = IntcodeComputer.parse(input.nextLine());
+		program = IntcodeComputer2.parseProgram(input.nextLine());
 	}
 	
 	@Override
@@ -50,21 +51,12 @@ public class Day11 extends AdventDay {
 	private Grid draw(boolean initialColorWhite) {
 		Grid grid = new Grid();
 		grid.draw(initialColorWhite);
-		
-		while (true) {
-			Long color = computer.runUntilOutput(grid);
-			Long turn = computer.runUntilOutput(grid);
-			if (computer.getState() == IntcodeComputer.State.HALTED)
-				break;
-			
-			grid.draw(color == 1);
-			grid.turn(turn == 0 ? Direction.LEFT : Direction.RIGHT);
-		}
+		new IntcodeComputer2(program, grid, grid).run();
 		return grid;
 	}
 	
 	
-	static class Grid implements InputProvider {
+	static class Grid extends OutputConsumer.BufferingOutputConsumer implements InputProvider {
 		Map<Point, Boolean> panels = new HashMap<>();
 		Point position = Point.ZERO;
 		Direction direction = Direction.UP;
@@ -80,6 +72,15 @@ public class Day11 extends AdventDay {
 		
 		Collection<Point> whitePanels() {
 			return panels.entrySet().stream().filter(Map.Entry::getValue).map(Map.Entry::getKey).toList();
+		}
+		
+		@Override
+		public void accept(long output) {
+			super.accept(output);
+			if (buffer.size() >= 2) {
+				draw(readNext() == 1);
+				turn(readNext() == 0 ? Direction.LEFT : Direction.RIGHT);
+			}
 		}
 		
 		@Override

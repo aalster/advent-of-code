@@ -58,7 +58,7 @@ public class Day25 extends AdventDay {
 	@Override
 	public Object part1() {
 		OutputConsumer.BufferingTextOutputConsumer outputBuffer = OutputConsumer.bufferingText();
-		OutputConsumer output = OutputConsumer.combine(outputBuffer, OutputConsumer.printer(silent));
+		OutputConsumer output = OutputConsumer.combine(outputBuffer, OutputConsumer.asciiPrinter(silent));
 		
 		InputProvider input = InputProvider.console();
 		input = new MacroInputProvider(InputProvider.combine(InputProvider.buffering(script), input), outputBuffer, silent);

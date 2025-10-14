@@ -5,11 +5,11 @@ import org.advent.runner.AdventDay;
 import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
 import org.advent.year2019.intcode_computer.InputProvider;
-import org.advent.year2019.intcode_computer.IntcodeComputer;
+import org.advent.year2019.intcode_computer.IntcodeComputer2;
+import org.advent.year2019.intcode_computer.OutputConsumer;
 
 import java.util.List;
 import java.util.Scanner;
-import java.util.stream.IntStream;
 
 public class Day7 extends AdventDay {
 	
@@ -29,22 +29,21 @@ public class Day7 extends AdventDay {
 		);
 	}
 	
-	IntcodeComputer computer;
+	long[] program;
 	
 	@Override
 	public void prepare(String file) {
 		Scanner input = Utils.scanFileNearClass(getClass(), file);
-		computer = IntcodeComputer.parse(String.join("", Utils.readLines(input)));
+		program = IntcodeComputer2.parseProgram(String.join("", Utils.readLines(input)));
 	}
 	
 	@Override
 	public Object part1() {
 		long maxOutput = Long.MIN_VALUE;
 		for (int[] phases : Utils.intPermutations(0, 1, 2, 3, 4)) {
-			long input = 0;
-			for (int phase : phases)
-				input = computer.copy().runUntilOutput(InputProvider.constant(phase, input));
-			maxOutput = Math.max(maxOutput, input);
+			OutputConsumer.BufferingOutputConsumer outputConsumer = OutputConsumer.buffering();
+			createAmplifier(program, phases, outputConsumer).accept(0);
+			maxOutput = Math.max(maxOutput, outputConsumer.readNext());
 		}
 		return maxOutput;
 	}
@@ -53,21 +52,40 @@ public class Day7 extends AdventDay {
 	public Object part2() {
 		long maxOutput = Long.MIN_VALUE;
 		for (int[] phases : Utils.intPermutations(5, 6, 7, 8, 9)) {
-			long input = 0;
-			IntcodeComputer[] computers = IntStream.range(0, 5).mapToObj(i -> computer.copy()).toArray(IntcodeComputer[]::new);
-			for (int i = 0; i < 5; i++)
-				input = computers[i].runUntilOutput(InputProvider.constant(phases[i], input));
-			int index = 0;
-			while (true) {
-				IntcodeComputer current = computers[index % computers.length];
-				Long result = current.runUntilOutput(InputProvider.constant(input));
-				if (current.getState() == IntcodeComputer.State.HALTED)
-					break;
-				input = result;
-				index++;
+			OutputConsumer.BufferingOutputConsumer outputConsumer = OutputConsumer.buffering();
+			Amplifier amplifier = createAmplifier(program, phases, outputConsumer);
+			
+			outputConsumer.accept(0);
+			long output = 0;
+			while (outputConsumer.hasNext()) {
+				output = outputConsumer.readNext();
+				amplifier.accept(output);
 			}
-			maxOutput = Math.max(maxOutput, input);
+			maxOutput = Math.max(maxOutput, output);
 		}
 		return maxOutput;
+	}
+	
+	Amplifier createAmplifier(long[] program, int[] phases, OutputConsumer lastOutputConsumer) {
+		Amplifier amplifier = null;
+		for (int phase : phases)
+			amplifier = new Amplifier(program, phase, amplifier == null ? lastOutputConsumer : amplifier);
+		return amplifier;
+	}
+	
+	static class Amplifier implements OutputConsumer {
+		final InputProvider.BufferingInputProvider inputProvider = InputProvider.buffering();
+		final IntcodeComputer2 computer;
+		
+		Amplifier(long[] program, int phase, OutputConsumer outputConsumer) {
+			this.computer = new IntcodeComputer2(program, inputProvider, outputConsumer);
+			accept(phase);
+		}
+		
+		@Override
+		public void accept(long output) {
+			inputProvider.append(output);
+			computer.run();
+		}
 	}
 }

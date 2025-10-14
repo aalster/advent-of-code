@@ -66,7 +66,7 @@ public class Day21 extends AdventDay {
 	
 	long solve(String input) {
 		HullDamageReader hullDamageReader = new HullDamageReader();
-		OutputConsumer output = OutputConsumer.combine(hullDamageReader, OutputConsumer.printer(silent));
+		OutputConsumer output = OutputConsumer.combine(hullDamageReader, OutputConsumer.asciiPrinter(silent));
 		new IntcodeComputer2(program, InputProvider.ascii(input), output).run();
 		return hullDamageReader.damage;
 	}
