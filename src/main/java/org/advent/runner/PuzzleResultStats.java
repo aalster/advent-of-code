@@ -6,11 +6,11 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Stream;
 
-public record PuzzleResultStats(Set<String> days, int total, int failed, int errors, long totalTime) {
-	public static final PuzzleResultStats EMPTY = new PuzzleResultStats(Set.of(), 0, 0, 0, 0);
+public record PuzzleResultStats(Set<String> days, int total, int failed, int errors, long totalTime, long maxTime) {
+	public static final PuzzleResultStats EMPTY = new PuzzleResultStats(Set.of(), 0, 0, 0, 0, 0);
 	
 	public PuzzleResultStats(String day, boolean passed, boolean error, long time) {
-		this(Set.of(day), 1, passed ? 0 : 1, error ? 1 : 0, time);
+		this(Set.of(day), 1, passed ? 0 : 1, error ? 1 : 0, time, time);
 	}
 	
 	int passed() {
@@ -23,12 +23,13 @@ public record PuzzleResultStats(Set<String> days, int total, int failed, int err
 				total + other.total,
 				failed + other.failed,
 				errors + other.errors,
-				totalTime + other.totalTime);
+				totalTime + other.totalTime,
+				Math.max(maxTime, other.maxTime));
 	}
 	
 	public String dayResult() {
 		return total == 0 ? "➖" : failed + errors > 0 ? "❌" :
-				totalTime / total < 500 ? "✅" : totalTime / total < 5000 ? "☑️" : "⚠️";
+				maxTime < Timer.TIME_WARNING ? "✅" : maxTime < Timer.TIME_ERROR ? "☑️" : "⚠️";
 	}
 	
 	public String summary() {

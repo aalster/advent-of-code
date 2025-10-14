@@ -1,6 +1,9 @@
 package org.advent.runner;
 
 public class Timer {
+	public static final long TIME_WARNING = 500;
+	public static final long TIME_ERROR = 2000;
+	
 	private long start = System.currentTimeMillis();
 	
 	public long time() {
@@ -24,9 +27,9 @@ public class Timer {
 	}
 	
 	private static String colored(long time, String text) {
-		if (time < 500)
+		if (time < TIME_WARNING)
 			return text;
-		if (time < 2000)
+		if (time < TIME_ERROR)
 			return OutputUtils.yellow(text);
 		return OutputUtils.red(text);
 	}
