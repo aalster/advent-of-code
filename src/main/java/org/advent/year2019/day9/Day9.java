@@ -5,17 +5,18 @@ import org.advent.runner.AdventDay;
 import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
 import org.advent.year2019.intcode_computer.InputProvider;
-import org.advent.year2019.intcode_computer.IntcodeComputer;
+import org.advent.year2019.intcode_computer.IntcodeComputer2;
+import org.advent.year2019.intcode_computer.OutputConsumer;
 
 import java.util.List;
 import java.util.Scanner;
 import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 
 public class Day9 extends AdventDay {
 	
 	public static void main(String[] args) {
 		new DayRunner(new Day9()).runAll();
-//		new DayRunner(new Day9()).run("input.txt", 1);
 	}
 	
 	@Override
@@ -28,24 +29,27 @@ public class Day9 extends AdventDay {
 		);
 	}
 	
-	IntcodeComputer computer;
+	long[] program;
 	
 	@Override
 	public void prepare(String file) {
 		Scanner input = Utils.scanFileNearClass(getClass(), file);
-		computer = IntcodeComputer.parse(input.nextLine());
+		program = IntcodeComputer2.parseProgram(input.nextLine());
 	}
 	
 	@Override
 	public Object part1() {
-		List<Long> output = computer.run(InputProvider.constant(1));
-		if (output.size() == 1)
-			return output.getFirst();
-		return output.stream().map(n -> "" + n).collect(Collectors.joining(","));
+		OutputConsumer.BufferingOutputConsumer outputConsumer = OutputConsumer.buffering();
+		new IntcodeComputer2(program, InputProvider.constant(1), outputConsumer).run();
+		if (outputConsumer.size() == 1)
+			return outputConsumer.readNext();
+		return LongStream.of(outputConsumer.readAll()).mapToObj(n -> "" + n).collect(Collectors.joining(","));
 	}
 	
 	@Override
 	public Object part2() {
-		return computer.run(InputProvider.constant(2)).getFirst();
+		OutputConsumer.BufferingOutputConsumer outputConsumer = OutputConsumer.buffering();
+		new IntcodeComputer2(program, InputProvider.constant(2), outputConsumer).run();
+		return outputConsumer.readNext();
 	}
 }
