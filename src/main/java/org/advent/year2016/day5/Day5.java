@@ -11,6 +11,7 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Queue;
 import java.util.Scanner;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -35,10 +36,9 @@ public class Day5 extends AdventDay {
 	@Override
 	public void prepare(String file) {
 		Scanner input = Utils.scanFileNearClass(getClass(), file);
-		line = Utils.readLines(input).getFirst();
+		line = input.nextLine();
 	}
 	
-	@SneakyThrows
 	@Override
 	public Object part1() {
 		return processGoodHashes(line, goodHashes -> {
@@ -49,7 +49,6 @@ public class Day5 extends AdventDay {
 		});
 	}
 	
-	@SneakyThrows
 	@Override
 	public Object part2() {
 		return processGoodHashes(line, goodHashes -> {
@@ -71,7 +70,7 @@ public class Day5 extends AdventDay {
 		int threads = Runtime.getRuntime().availableProcessors();
 		try (ExecutorService executor = Executors.newFixedThreadPool(threads)) {
 			AtomicInteger index = new AtomicInteger(0);
-			LinkedBlockingQueue<String> goodHashes = new LinkedBlockingQueue<>();
+			BlockingQueue<String> goodHashes = new LinkedBlockingQueue<>();
 			for (int i = 0; i < threads; i++)
 				executor.submit(GoodHashesProducer.create(goodHashes, line, index));
 			
@@ -85,9 +84,8 @@ public class Day5 extends AdventDay {
 		}
 	}
 	
-	@FunctionalInterface
 	interface HashesConsumer {
-		String apply(LinkedBlockingQueue<String> goodHashes) throws InterruptedException;
+		String apply(BlockingQueue<String> goodHashes) throws InterruptedException;
 	}
 
 	record GoodHashesProducer(MessageDigest digest, HexFormat hex, Queue<String> goodHashes, String line, AtomicInteger index) implements Runnable {
@@ -100,9 +98,9 @@ public class Day5 extends AdventDay {
 		@Override
 		public void run() {
 			while (!Thread.currentThread().isInterrupted()) {
-				String hash = hex.formatHex(digest.digest((line + index.incrementAndGet()).getBytes()));
-				if (hash.startsWith("00000"))
-					goodHashes.add(hash);
+				byte[] hash = digest.digest((line + index.incrementAndGet()).getBytes());
+				if (hash[0] == 0 && hash[1] == 0 && (hash[2] & 0b11110000) == 0)
+					goodHashes.add(hex.formatHex(hash));
 			}
 		}
 	}

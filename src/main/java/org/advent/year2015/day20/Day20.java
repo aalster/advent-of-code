@@ -32,39 +32,45 @@ public class Day20 extends AdventDay {
 	
 	@Override
 	public Object part1() {
-		for (int i = 1; i < 1000000; i++)
-			if (countPresents1(i) >= targetPresents)
-				return i;
+		// У числа будет большое кол-во делителей, поэтому идем только по четным
+		for (int house = 2; house < 1000000; house += 2)
+			if (countPresents1(house) >= targetPresents)
+				return house;
 		return 0;
 	}
 	
 	@Override
 	public Object part2() {
-		for (int i = 1; i < 1000000; i++)
-			if (countPresents2(i) >= targetPresents)
-				return i;
+		for (int house = 2; house < 1000000; house += 2)
+			if (countPresents2(house) >= targetPresents)
+				return house;
 		return 0;
 	}
 	
 	int countPresents1(int house) {
 		int presents = 0;
-		double sqrt = Math.sqrt(house);
-		for (int i = 1; i <= sqrt; i++)
-			if (house % i == 0)
-				presents += i + house / i;
+		int sqrt = (int) Math.sqrt(house);
+		for (int i = 1; i <= sqrt; i++) {
+			if (house % i == 0) {
+				int opposite = house / i;
+				presents += i;
+				if (i != opposite)
+					presents += opposite;
+			}
+		}
 		return presents * 10;
 	}
 	
 	int countPresents2(int house) {
 		int presents = 0;
-		double sqrt = Math.sqrt(house);
+		int sqrt = (int) Math.sqrt(house);
 		for (int i = 1; i <= sqrt; i++) {
 			if (house % i == 0) {
-				int divided = house / i;
-				if (divided < 50)
+				int opposite = house / i;
+				if (opposite < 50)
 					presents += i;
-				if (i < 50)
-					presents += divided;
+				if (i < 50 && i != opposite)
+					presents += opposite;
 			}
 		}
 		return presents * 11;
