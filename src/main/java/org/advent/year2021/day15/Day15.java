@@ -7,12 +7,14 @@ import org.advent.runner.AdventDay;
 import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
+import java.util.Queue;
 import java.util.Scanner;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class Day15 extends AdventDay {
 	
@@ -68,28 +70,34 @@ public class Day15 extends AdventDay {
 		return sum <= 9 ? sum : sum - 9;
 	}
 	
-	long solve(Map<Point, Integer> field) {
-		List<Path> paths = List.of(new Path(new Point(0, 0), 0));
-		Map<Point, Long> shortestPaths = new HashMap<>();
+	long solve(Map<Point, Integer> dangerField) {
+		Map<Point, Long> minTotalDanger = new HashMap<>();
 		
-		while (!paths.isEmpty())
-			paths = paths.stream().flatMap(p -> p.nextPaths(field, shortestPaths)).toList();
+		Queue<Path> paths = new PriorityQueue<>(Comparator.comparing(Path::danger));
+		paths.add(new Path(Point.ZERO, 0));
 		
-		Point end = Point.maxBound(field.keySet());
-		return shortestPaths.getOrDefault(end, -1L);
+		while (!paths.isEmpty()) {
+			Path path = paths.poll();
+			for (Direction d : Direction.values()) {
+				Point nextPosition = d.shift(path.position);
+				Integer danger = dangerField.get(nextPosition);
+				if (danger == null)
+					continue;
+				
+				long nextDanger = path.danger + danger;
+				Long minDanger = minTotalDanger.get(nextPosition);
+				if (minDanger != null && minDanger <= nextDanger)
+					continue;
+				
+				minTotalDanger.put(nextPosition, nextDanger);
+				paths.add(new Path(nextPosition, nextDanger));
+			}
+		}
+		
+		Point end = Point.maxBound(dangerField.keySet());
+		return minTotalDanger.getOrDefault(end, -1L);
 	}
 	
-	record Path(Point currentPosition, long weight) {
-		
-		Stream<Path> nextPaths(Map<Point, Integer> field, Map<Point, Long> shortestPaths) {
-			if (shortestPaths.getOrDefault(currentPosition(), Long.MAX_VALUE) < weight)
-				return Stream.of();
-			return Direction.stream()
-					.map(d -> d.shift(currentPosition()))
-					.filter(field::containsKey)
-					.map(p -> new Path(p, weight + field.get(p)))
-					.filter(p -> p.weight() < shortestPaths.getOrDefault(p.currentPosition(), Long.MAX_VALUE))
-					.peek(p -> shortestPaths.put(p.currentPosition(), p.weight()));
-		}
+	record Path(Point position, long danger) {
 	}
 }

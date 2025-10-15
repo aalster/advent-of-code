@@ -1,5 +1,6 @@
 package org.advent.year2021.day19;
 
+import org.advent.common.Axis3D;
 import org.advent.common.Point3D;
 import org.advent.common.Region3D;
 import org.advent.common.Utils;
@@ -8,6 +9,7 @@ import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -56,6 +58,7 @@ public class Day19 extends AdventDay {
 			for (ScannerReport right : merged) {
 				if (left == right)
 					continue;
+				
 				int distance = left.scanner().distanceTo(right.scanner());
 				if (maxDistance < distance)
 					maxDistance = distance;
@@ -75,7 +78,11 @@ public class Day19 extends AdventDay {
 		while (!notMerged.isEmpty()) {
 			ScannerReport basis = merged.removeFirst();
 			candidatesLoop: for (ScannerReport candidate : new ArrayList<>(notMerged)) {
-				List<ScannerReport> alignments = cachedAlignments.computeIfAbsent(candidate.number(), k1 -> candidate.allAlignments());
+				if (basis.fingerprint().maxPossibleCommonBeacons(candidate.fingerprint) < commonBeacons - 1)
+					continue;
+				
+				List<ScannerReport> alignments = cachedAlignments.computeIfAbsent(candidate.number(),
+						k -> candidate.allAlignments());
 				for (ScannerReport aligned : alignments) {
 					for (Point3D basisBeacon : skip(basis.beacons(), commonBeacons - 1)) {
 						for (Point3D candidateBeacon : skip(aligned.beacons(), commonBeacons - 1)) {
@@ -109,31 +116,57 @@ public class Day19 extends AdventDay {
 		return items.stream().skip(skip).toList();
 	}
 	
-	record ScannerReport(int number, Point3D scanner, Set<Point3D> beacons) {
+	// Наборы отрезков между каждым beacon
+	record BeaconsFingerprint(Map<Set<Integer>, Integer> paths) {
+		int maxPossibleCommonBeacons(BeaconsFingerprint other) {
+			return paths.entrySet().stream()
+					.mapToInt(e -> Math.min(e.getValue(), other.paths.getOrDefault(e.getKey(), 0)))
+					.sum();
+		}
+	}
+	
+	record ScannerReport(int number, Point3D scanner, Set<Point3D> beacons, BeaconsFingerprint fingerprint) {
 		
 		Region3D region() {
 			return Region3D.fromCenter(scanner, scannerRange);
 		}
 		
 		ScannerReport shift(Point3D delta) {
-			return new ScannerReport(number, delta, beacons.stream().map(delta::shift).collect(Collectors.toSet()));
+			Set<Point3D> nextBeacons = beacons.stream().map(delta::shift).collect(Collectors.toSet());
+			return new ScannerReport(number, delta, nextBeacons, fingerprint);
 		}
 		
 		List<ScannerReport> allAlignments() {
 			Set<Point3D> zRotation = rotate(beacons, Point3D::rotateRightAlongZ);
-			Set<Point3D> zNegativeRotation = rotate(rotate(zRotation, Point3D::rotateRightAlongZ), Point3D::rotateRightAlongZ);
+			Set<Point3D> zNegativeRotation = rotate(rotate(zRotation, Point3D::rotateRightAlongZ), org.advent.common.Point3D::rotateRightAlongZ);
 			return Stream.concat(
 							allRotations(beacons, Point3D::rotateRightAlongX),
 							Stream.of(zRotation, zNegativeRotation))
 					.flatMap(p -> allRotations(p, Point3D::rotateRightAlongY))
-					.map(beacons -> new ScannerReport(number, scanner, beacons))
+					.map(beacons -> new ScannerReport(number, scanner, beacons, fingerprint))
 					.toList();
 		}
 		
 		static ScannerReport parse(List<String> lines) {
 			int number = Integer.parseInt(lines.getFirst().replace("--- scanner ", "").replace(" ---", ""));
-			Set<Point3D> beacons = lines.stream().skip(1).map(Point3D::parse).collect(Collectors.toSet());
-			return new ScannerReport(number, new Point3D(0, 0, 0), beacons);
+			Set<Point3D> beacons = lines.stream().skip(1).map(org.advent.common.Point3D::parse).collect(Collectors.toSet());
+			return new ScannerReport(number, new Point3D(0, 0, 0), beacons, beaconsFingerprint(beacons));
+		}
+		
+		static BeaconsFingerprint beaconsFingerprint(Set<Point3D> beacons) {
+			Map<Set<Integer>, Integer> fingerprints = new HashMap<>();
+			List<Point3D> remaining = new ArrayList<>(beacons);
+			while (!remaining.isEmpty()) {
+				Point3D left = remaining.removeFirst();
+				for (Point3D right : remaining) {
+					Point3D diff = left.subtract(right);
+					Set<Integer> set = Arrays.stream(Axis3D.values())
+							.map(a -> Math.abs(a.ofPoint(diff)))
+							.collect(Collectors.toSet());
+					fingerprints.merge(set, 1, Integer::sum);
+				}
+			}
+			return new BeaconsFingerprint(fingerprints);
 		}
 	}
 	
