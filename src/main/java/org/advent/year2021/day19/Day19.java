@@ -68,6 +68,7 @@ public class Day19 extends AdventDay {
 	}
 	
 	List<ScannerReport> mergeScanners(List<ScannerReport> reports) {
+		int fingerprintsMatches = (commonBeacons - 1) * (commonBeacons - 2) / 2; // между 12 beacons 66 связей
 		List<ScannerReport> notMerged = new ArrayList<>(reports);
 		List<ScannerReport> merged = new ArrayList<>();
 		merged.add(notMerged.removeFirst());
@@ -78,7 +79,7 @@ public class Day19 extends AdventDay {
 		while (!notMerged.isEmpty()) {
 			ScannerReport basis = merged.removeFirst();
 			candidatesLoop: for (ScannerReport candidate : new ArrayList<>(notMerged)) {
-				if (basis.fingerprint().maxPossibleCommonBeacons(candidate.fingerprint) < commonBeacons - 1)
+				if (basis.fingerprint().matchesCount(candidate.fingerprint) < fingerprintsMatches)
 					continue;
 				
 				List<ScannerReport> alignments = cachedAlignments.computeIfAbsent(candidate.number(),
@@ -88,7 +89,7 @@ public class Day19 extends AdventDay {
 						for (Point3D candidateBeacon : skip(aligned.beacons(), commonBeacons - 1)) {
 							Point3D delta = basisBeacon.subtract(candidateBeacon);
 							ScannerReport shifted = aligned.shift(delta);
-							if (matches(basis, shifted)) {
+							if (basis.matches(shifted)) {
 								merged.add(shifted);
 								notMerged.remove(candidate);
 								continue candidatesLoop;
@@ -103,22 +104,13 @@ public class Day19 extends AdventDay {
 		return checked;
 	}
 	
-	boolean matches(ScannerReport basis, ScannerReport candidate) {
-		Region3D intersection = Objects.requireNonNull(basis.region().intersection(candidate.region()));
-		Set<Point3D> basisCommonBeacons = basis.beacons().stream().filter(intersection::contains).collect(Collectors.toSet());
-		Set<Point3D> candidateCommonBeacons = candidate.beacons().stream().filter(intersection::contains).collect(Collectors.toSet());
-		return basisCommonBeacons.size() == candidateCommonBeacons.size()
-				&& basisCommonBeacons.size() >= commonBeacons
-				&& basisCommonBeacons.containsAll(candidateCommonBeacons);
-	}
-	
 	<T> Collection<T> skip(Collection<T> items, int skip) {
 		return items.stream().skip(skip).toList();
 	}
 	
 	// Наборы отрезков между каждым beacon
 	record BeaconsFingerprint(Map<Set<Integer>, Integer> paths) {
-		int maxPossibleCommonBeacons(BeaconsFingerprint other) {
+		int matchesCount(BeaconsFingerprint other) {
 			return paths.entrySet().stream()
 					.mapToInt(e -> Math.min(e.getValue(), other.paths.getOrDefault(e.getKey(), 0)))
 					.sum();
@@ -134,6 +126,16 @@ public class Day19 extends AdventDay {
 		ScannerReport shift(Point3D delta) {
 			Set<Point3D> nextBeacons = beacons.stream().map(delta::shift).collect(Collectors.toSet());
 			return new ScannerReport(number, delta, nextBeacons, fingerprint);
+		}
+		
+		boolean matches(ScannerReport candidate) {
+			Region3D intersection = Objects.requireNonNull(region().intersection(candidate.region()));
+			Set<Point3D> basisCommonBeacons = beacons().stream().filter(intersection::contains).collect(Collectors.toSet());
+			Set<Point3D> candidateCommonBeacons = candidate.beacons().stream().filter(intersection::contains).collect(Collectors.toSet());
+			return candidateCommonBeacons.size() >= commonBeacons
+					&& basisCommonBeacons.equals(candidateCommonBeacons);
+			// работает быстрее, но логика не будет учитывать несовпадающие beacons
+//			return beacons.stream().filter(candidate.beacons::contains).count() >= commonBeacons;
 		}
 		
 		List<ScannerReport> allAlignments() {
