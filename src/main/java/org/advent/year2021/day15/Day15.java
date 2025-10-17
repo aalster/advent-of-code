@@ -8,7 +8,6 @@ import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
 
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
@@ -71,7 +70,7 @@ public class Day15 extends AdventDay {
 	
 	int solve(int[][] dangerField) {
 		Point end = new Point(dangerField.length - 1, dangerField[0].length - 1);
-		Map<Point, Integer> minTotalDanger = new HashMap<>(dangerField.length * dangerField[0].length * 2);
+		int[][] minTotalDanger = new int[dangerField.length][dangerField[0].length];
 		
 		Queue<Path> paths = new PriorityQueue<>(1000, Comparator.comparing(Path::danger));
 		paths.add(new Path(Point.ZERO, 0));
@@ -86,15 +85,15 @@ public class Day15 extends AdventDay {
 				int danger = dangerField[nextPosition.x()][nextPosition.y()];
 				
 				int nextDanger = path.danger + danger;
-				Integer minDanger = minTotalDanger.get(nextPosition);
-				if (minDanger != null && minDanger <= nextDanger)
+				int minDanger = minTotalDanger[nextPosition.y()][nextPosition.x()];
+				if (minDanger > 0 && minDanger <= nextDanger)
 					continue;
 				
-				minTotalDanger.put(nextPosition, nextDanger);
+				minTotalDanger[nextPosition.y()][nextPosition.x()] = nextDanger;
 				paths.add(new Path(nextPosition, nextDanger));
 			}
 		}
-		return minTotalDanger.getOrDefault(end, 0);
+		return minTotalDanger[end.y()][end.x()];
 	}
 	
 	record Path(Point position, int danger) {
