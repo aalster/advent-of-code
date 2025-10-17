@@ -2,6 +2,7 @@ package org.advent.year2021.day15;
 
 import org.advent.common.Direction;
 import org.advent.common.Point;
+import org.advent.common.Rect;
 import org.advent.common.Utils;
 import org.advent.runner.AdventDay;
 import org.advent.runner.DayRunner;
@@ -9,11 +10,9 @@ import org.advent.runner.ExpectedAnswers;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Scanner;
-import java.util.stream.Collectors;
 
 public class Day15 extends AdventDay {
 	
@@ -34,11 +33,9 @@ public class Day15 extends AdventDay {
 	@Override
 	public void prepare(String file) {
 		Scanner input = Utils.scanFileNearClass(getClass(), file);
-		Map<Point, Integer> field = Point.readFieldMap(Utils.readLines(input)).entrySet().stream()
-				.collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue() - '0'));
-		Point end = Point.maxBound(field.keySet());
-		dangerField = new int[end.x() + 1][end.y() + 1];
-		field.forEach((p, d) -> dangerField[p.y()][p.x()] = d);
+		dangerField = Utils.readLines(input).stream()
+				.map(line -> line.chars().map(c -> c - '0').toArray())
+				.toArray(int[][]::new);
 	}
 	
 	@Override
@@ -70,6 +67,7 @@ public class Day15 extends AdventDay {
 	
 	int solve(int[][] dangerField) {
 		Point end = new Point(dangerField.length - 1, dangerField[0].length - 1);
+		Rect bounds = new Rect(Point.ZERO, end);
 		int[][] minTotalDanger = new int[dangerField.length][dangerField[0].length];
 		
 		Queue<Path> paths = new PriorityQueue<>(1000, Comparator.comparing(Path::danger));
@@ -79,12 +77,10 @@ public class Day15 extends AdventDay {
 			Path path = paths.poll();
 			for (Direction d : Direction.VALUES) {
 				Point nextPosition = d.shift(path.position);
-				if (nextPosition.x() < 0 || nextPosition.y() < 0
-						|| nextPosition.y() >= dangerField.length || nextPosition.x() >= dangerField[0].length)
+				if (!bounds.containsInclusive(nextPosition))
 					continue;
-				int danger = dangerField[nextPosition.x()][nextPosition.y()];
 				
-				int nextDanger = path.danger + danger;
+				int nextDanger = path.danger + dangerField[nextPosition.x()][nextPosition.y()];
 				int minDanger = minTotalDanger[nextPosition.y()][nextPosition.x()];
 				if (minDanger > 0 && minDanger <= nextDanger)
 					continue;
