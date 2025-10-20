@@ -128,11 +128,11 @@ public class Day24 extends AdventDay {
 			Value leftValue = left.substituteVars(state);
 			Value rightValue = Value.of(split[2]).substituteVars(state);
 			Value nextValue = switch (split[0]) {
-				case "add" -> new AddOperationValue(leftValue, rightValue);
-				case "mul" -> new MulOperationValue(leftValue, rightValue);
-				case "div" -> new DivOperationValue(leftValue, rightValue);
-				case "mod" -> new ModOperationValue(leftValue, rightValue);
-				case "eql" -> new EqlOperationValue(leftValue, rightValue);
+				case "add" -> OperationValue.add(leftValue, rightValue);
+				case "mul" -> OperationValue.mul(leftValue, rightValue);
+				case "div" -> OperationValue.div(leftValue, rightValue);
+				case "mod" -> OperationValue.mod(leftValue, rightValue);
+				case "eql" -> OperationValue.eql(leftValue, rightValue);
 				default -> throw new IllegalStateException("Unexpected operation: " + split[0]);
 			};
 			left.set(state, nextValue.simplify());
@@ -298,7 +298,7 @@ public class Day24 extends AdventDay {
 	@Data
 	static abstract class OperationValue implements Value {
 		final String name;
-		final BiFunction<Value, Value, OperationValue> constructor;
+		final BiFunction<Value, Value, Value> constructor;
 		final Value left;
 		final Value right;
 		ValuesRange possibleValues;
@@ -309,14 +309,17 @@ public class Day24 extends AdventDay {
 		}
 		
 		@Override
-		public Value simplify() {
+		public final Value simplify() {
 			if (left instanceof ConstantValue && right instanceof ConstantValue)
 				return new ConstantValue(compute());
 			ValuesRange range = possibleValues();
 			if (range.singleValue())
+				// TODO compute / doCompute
 				return new ConstantValue(range.min);
-			return this;
+			return doSimplify();
 		}
+		
+		abstract Value doSimplify();
 		
 		@Override
 		public Value input(InputProvider input) {
@@ -340,32 +343,60 @@ public class Day24 extends AdventDay {
 		public String toString() {
 			return "(" + left + " " + name + " " + right + ")";
 		}
+		
+		static Value add(Value left, Value right) {
+			if (left instanceof ConstantValue) {
+				if (right instanceof ConstantValue)
+					return new ConstantValue(left.compute() + right.compute());
+				return new AddOperationValue(right, left);
+			}
+			return new AddOperationValue(left, right);
+		}
+		
+		static Value mul(Value left, Value right) {
+			if (left instanceof ConstantValue) {
+				if (right instanceof ConstantValue)
+					return new ConstantValue(left.compute() * right.compute());
+				return new MulOperationValue(right, left);
+			}
+			return new MulOperationValue(left, right);
+		}
+		
+		static OperationValue div(Value left, Value right) {
+			return new DivOperationValue(left, right);
+		}
+		
+		static OperationValue mod(Value left, Value right) {
+			return new ModOperationValue(left, right);
+		}
+		
+		static OperationValue eql(Value left, Value right) {
+			return new EqlOperationValue(left, right);
+		}
 	}
 	
 	static class AddOperationValue extends OperationValue {
 		
 		public AddOperationValue(Value left, Value right) {
-			super("+", AddOperationValue::new, left, right);
+			super("+", OperationValue::add, left, right);
 		}
 		
 		@Override
-		public Value simplify() {
-			if (ConstantValue.ZERO.equals(left))
-				return right;
-			if (ConstantValue.ZERO.equals(right))
-				return left;
-			if (left instanceof ConstantValue && !(right instanceof ConstantValue))
-				return new AddOperationValue(right, left).simplify();
-			if (right instanceof ConstantValue && left instanceof AddOperationValue add && add.right instanceof ConstantValue)
-				return new AddOperationValue(add.left, new AddOperationValue(right, add.right).simplify()).simplify();
-			return super.simplify();
+		public Value doSimplify() {
+			if (right instanceof ConstantValue) {
+				if (ConstantValue.ZERO.equals(right))
+					return left;
+				if (left instanceof AddOperationValue add && add.right instanceof ConstantValue)
+					return OperationValue.add(add.left, OperationValue.add(right, add.right)).simplify();
+			}
+			return this;
 		}
 		
 		@Override
 		public Value simplifyForZeroResult() {
-			if (possibleValues.min != 0)
+			if (possibleValues().min != 0)
 				return this;
-			return new AddOperationValue(left.simplifyForZeroResult(), right.simplifyForZeroResult()).simplify();
+			return OperationValue.add(left.simplifyForZeroResult(), right.simplifyForZeroResult()).simplify();
 		}
 		
 		@Override
@@ -384,35 +415,31 @@ public class Day24 extends AdventDay {
 	static class MulOperationValue extends OperationValue {
 		
 		public MulOperationValue(Value left, Value right) {
-			super("*", MulOperationValue::new, left, right);
+			super("*", OperationValue::mul, left, right);
 		}
 		
 		@Override
-		public Value simplify() {
-			if (ConstantValue.ZERO.equals(left) || ConstantValue.ZERO.equals(right))
-				return ConstantValue.ZERO;
-			if (ConstantValue.ONE.equals(left))
-				return right;
-			if (ConstantValue.ONE.equals(right))
-				return left;
-			if (left instanceof ConstantValue && !(right instanceof ConstantValue))
-				return new MulOperationValue(right, left);
-			if (right instanceof ConstantValue && left instanceof MulOperationValue mul && mul.right instanceof ConstantValue)
-				return new MulOperationValue(mul.left, new MulOperationValue(right, mul.right).simplify()).simplify();
-			
+		public Value doSimplify() {
 			if (right instanceof ConstantValue) {
+				if (ConstantValue.ZERO.equals(right))
+					return ConstantValue.ZERO;
+				if (ConstantValue.ONE.equals(right))
+					return left;
+				if (left instanceof MulOperationValue mul && mul.right instanceof ConstantValue)
+					return OperationValue.mul(mul.left, OperationValue.mul(right, mul.right)).simplify();
+				
 				// можно сократить дробь вместо проверки на равенство
 				// нельзя, т. к. деление округляет
-//				if (left instanceof DivOperationValue div && right.equals(div.right))
-//					return div.left;
+//			    if (left instanceof DivOperationValue div && right.equals(div.right))
+//			    	return div.left;
 				if (left instanceof AddOperationValue add) {
 					if (add.left instanceof DivOperationValue div && div.right.equals(right))
-						return new AddOperationValue(div.left, new MulOperationValue(add.right, right).simplify()).simplify();
+						return OperationValue.add(div.left, OperationValue.mul(add.right, right)).simplify();
 					if (add.right instanceof DivOperationValue div && div.right.equals(right))
-						return new AddOperationValue(new MulOperationValue(add.left, right).simplify(), div.left).simplify();
+						return OperationValue.add(OperationValue.mul(add.left, right), div.left).simplify();
 				}
 			}
-			return super.simplify();
+			return this;
 		}
 		
 		@Override
@@ -445,29 +472,29 @@ public class Day24 extends AdventDay {
 	static class DivOperationValue extends OperationValue {
 		
 		public DivOperationValue(Value left, Value right) {
-			super("/", DivOperationValue::new, left, right);
+			super("/", OperationValue::div, left, right);
 		}
 		
 		@Override
-		public Value simplify() {
+		public Value doSimplify() {
 			if (ConstantValue.ZERO.equals(left))
 				return ConstantValue.ZERO;
-			if (ConstantValue.ONE.equals(right))
-				return left;
 			
 			if (right instanceof ConstantValue) {
+				if (ConstantValue.ONE.equals(right))
+					return left;
+				
 				// можно сократить дробь вместо проверки на равенство
 				if (left instanceof MulOperationValue mul && right.equals(mul.right))
 					return mul.left;
 				if (left instanceof AddOperationValue add) {
 					if (add.left instanceof MulOperationValue mul && mul.right.equals(right))
-						return new AddOperationValue(mul.left, new DivOperationValue(add.right, right).simplify()).simplify();
+						return OperationValue.add(mul.left, OperationValue.div(add.right, right).simplify()).simplify();
 					if (add.right instanceof MulOperationValue mul && mul.right.equals(right))
-						return new AddOperationValue(new DivOperationValue(add.left, right).simplify(), mul.left).simplify();
+						return OperationValue.add(OperationValue.div(add.left, right), mul.left).simplify();
 				}
 			}
-			
-			return super.simplify();
+			return this;
 		}
 		
 		@Override
@@ -488,7 +515,7 @@ public class Day24 extends AdventDay {
 			
 			if (maxL < minR)
 				return ValuesRange.ZERO;
-			
+
 			if (0 < r.min)
 				return new ValuesRange(l.min / minR, l.max / minR);
 			if (r.max < 0)
@@ -500,33 +527,32 @@ public class Day24 extends AdventDay {
 	static class ModOperationValue extends OperationValue {
 		
 		public ModOperationValue(Value left, Value right) {
-			super("%", ModOperationValue::new, left, right);
+			super("%", OperationValue::mod, left, right);
 		}
 		
 		@Override
-		public Value simplify() {
+		public Value doSimplify() {
 			if (ConstantValue.ZERO.equals(left))
 				return ConstantValue.ZERO;
 			if (ConstantValue.ONE.equals(left))
 				return ConstantValue.ONE;
 			
 			if (right instanceof ConstantValue) {
-				if (left.possibleValues() instanceof ValuesRange lr && 0 < lr.min && lr.max < right.compute()) {
+				if (left.possibleValues() instanceof ValuesRange lr && 0 < lr.min && lr.max < right.compute())
 					return left;
-				}
-				if (left instanceof MulOperationValue mul) {
-					if (right.equals(mul.left) || right.equals(mul.right))
-						return new ConstantValue(0);
-				}
+				
+//				if (left instanceof MulOperationValue mul)
+//					if (right.equals(mul.right))
+//						return new ConstantValue(0);
+				
 				if (left instanceof AddOperationValue add) {
 					if (add.left instanceof MulOperationValue mul && mul.right.equals(right))
-						return new ModOperationValue(add.right, right).simplify();
+						return OperationValue.mod(add.right, right).simplify();
 					if (add.right instanceof MulOperationValue mul && mul.right.equals(right))
-						return new ModOperationValue(add.left, right).simplify();
+						return OperationValue.mod(add.left, right).simplify();
 				}
 			}
-			
-			return super.simplify();
+			return this;
 		}
 		
 		@Override
@@ -547,27 +573,11 @@ public class Day24 extends AdventDay {
 	static class EqlOperationValue extends OperationValue {
 		
 		public EqlOperationValue(Value left, Value right) {
-			super("==", EqlOperationValue::new, left, right);
+			super("==", OperationValue::eql, left, right);
 		}
 		
 		@Override
-		public Value simplify() {
-			ValuesRange range = possibleValues();
-			if (range.singleValue())
-				return new ConstantValue(range.min);
-			if (left instanceof InputValue)
-				return simplifyForInput(right);
-			if (right instanceof InputValue)
-				return simplifyForInput(left);
-			return super.simplify();
-		}
-		
-		private Value simplifyForInput(Value other) {
-			if (other instanceof ConstantValue constant) {
-				long c = constant.compute();
-				if (c < 1 || 9 < c)
-					return ConstantValue.ZERO;
-			}
+		public Value doSimplify() {
 			return this;
 		}
 		
@@ -582,8 +592,8 @@ public class Day24 extends AdventDay {
 			ValuesRange r = right.possibleValues();
 			if (l.max < r.min || r.max < l.min)
 				return ValuesRange.ZERO;
-			if (l.singleValue() && r.singleValue() && l.min == r.min)
-				return ValuesRange.ONE;
+//			if (l.singleValue() && r.singleValue() && l.min == r.min)
+//				return ValuesRange.ONE;
 			return new ValuesRange(0, 1);
 		}
 	}
