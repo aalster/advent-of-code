@@ -75,17 +75,16 @@ public class Day24 extends AdventDay {
 		for (int index = 0; index < 14; index++) {
 			if (singlePossibleDigits.containsKey(index))
 				continue;
+			
 			List<Integer> digits = new ArrayList<>();
-			for (int digit = 9; digit > 0; digit--) {
-				Map<Integer, Integer> inputDigits = new HashMap<>(singlePossibleDigits);
-				inputDigits.put(index, digit);
-				Value simplified = z.input(new PartialInputProvider(inputDigits));
-				if (simplified.possibleValues().contains(0))
+			for (int digit = 9; digit > 0; digit--)
+				if (z.input(new PartialInputProvider(Map.of(index, digit))).possibleValues().contains(0))
 					digits.add(digit);
-			}
+			
 			possibleDigits[index] = digits.stream().mapToInt(i -> i).toArray();
 			if (digits.size() == 1) {
 				singlePossibleDigits.put(index, digits.getFirst());
+				z = z.input(new PartialInputProvider(Map.of(index, digits.getFirst())));
 				index = -1;
 			}
 		}
@@ -101,9 +100,16 @@ public class Day24 extends AdventDay {
 			}
 			return null;
 		}
+		
+		if (possibleDigits[index].length == 1) {
+			String next = searchModelNumberRecursive(possibleDigits, index + 1, z);
+			if (next == null)
+				return null;
+			return possibleDigits[index][0] + next;
+		}
+		
 		for (int digit : possibleDigits[index]) {
-			PartialInputProvider input = new PartialInputProvider(Map.of(index, digit));
-			Value simplifiedZ = z.input(input);
+			Value simplifiedZ = z.input(new PartialInputProvider(Map.of(index, digit)));
 			if (!simplifiedZ.possibleValues().contains(0))
 				continue;
 			String result = searchModelNumberRecursive(possibleDigits, index + 1, simplifiedZ);
@@ -314,7 +320,6 @@ public class Day24 extends AdventDay {
 				return new ConstantValue(compute());
 			ValuesRange range = possibleValues();
 			if (range.singleValue())
-				// TODO compute / doCompute
 				return new ConstantValue(range.min);
 			return doSimplify();
 		}
@@ -600,7 +605,7 @@ public class Day24 extends AdventDay {
 	
 	record ValuesRange(long min, long max) {
 		static ValuesRange ZERO = new ValuesRange(0, 0);
-		static ValuesRange ONE = new ValuesRange(1, 1);
+//		static ValuesRange ONE = new ValuesRange(1, 1);
 		static ValuesRange MODEL_NUMBER_DIGIT = new ValuesRange(1, 9);
 		
 		ValuesRange {
