@@ -51,7 +51,7 @@ public class Day24 extends AdventDay {
 	
 	String solve(boolean min) {
 		State state = process(lines);
-		Value z = state.z;
+		Value z = state.z.simplifyForZeroResult();
 		
 		int[][] possibleDigitsDesc = filterDigits(z);
 		int[][] possibleDigitsAsc = Arrays.stream(possibleDigitsDesc)
@@ -63,11 +63,12 @@ public class Day24 extends AdventDay {
 			if (digits.length == 1)
 				z = z.input(new PartialInputProvider(Map.of(index, digits[0])));
 		}
+		z = z.simplifyForZeroResult();
 		
 		return searchModelNumberRecursive(min ? possibleDigitsAsc : possibleDigitsDesc, 0, z);
 	}
 	
-	private static int[][] filterDigits(Value z) {
+	static int[][] filterDigits(Value z) {
 		Map<Integer, Integer> singlePossibleDigits = new HashMap<>();
 		
 		int[][] possibleDigits = new int[14][];
@@ -112,7 +113,7 @@ public class Day24 extends AdventDay {
 		return null;
 	}
 	
-	private static State process(List<String> operations) {
+	static State process(List<String> operations) {
 		State state = new State();
 		int inputIndex = 0;
 		for (String operation : operations) {
@@ -161,6 +162,10 @@ public class Day24 extends AdventDay {
 		Value substituteVars(State state);
 		
 		Value simplify();
+		
+		default Value simplifyForZeroResult() {
+			return this;
+		}
 		
 		long compute();
 		
@@ -315,7 +320,11 @@ public class Day24 extends AdventDay {
 		
 		@Override
 		public Value input(InputProvider input) {
-			return constructor.apply(left.input(input), right.input(input)).simplify();
+			Value nextLeft = left.input(input);
+			Value nextRight = right.input(input);
+			if (left == nextLeft && right == nextRight)
+				return this;
+			return constructor.apply(nextLeft, nextRight).simplify();
 		}
 		
 		@Override
@@ -350,6 +359,13 @@ public class Day24 extends AdventDay {
 			if (right instanceof ConstantValue && left instanceof AddOperationValue add && add.right instanceof ConstantValue)
 				return new AddOperationValue(add.left, new AddOperationValue(right, add.right).simplify()).simplify();
 			return super.simplify();
+		}
+		
+		@Override
+		public Value simplifyForZeroResult() {
+			if (possibleValues.min != 0)
+				return this;
+			return new AddOperationValue(left.simplifyForZeroResult(), right.simplifyForZeroResult()).simplify();
 		}
 		
 		@Override
@@ -400,6 +416,15 @@ public class Day24 extends AdventDay {
 		}
 		
 		@Override
+		public Value simplifyForZeroResult() {
+			if (!left.possibleValues().contains(0))
+				return right.simplifyForZeroResult();
+			if (!right.possibleValues().contains(0))
+				return left.simplifyForZeroResult();
+			return this;
+		}
+		
+		@Override
 		public long compute() {
 			return left.compute() * right.compute();
 		}
@@ -408,10 +433,12 @@ public class Day24 extends AdventDay {
 		public ValuesRange initPossibleValues() {
 			ValuesRange l = left.possibleValues();
 			ValuesRange r = right.possibleValues();
+			
+			if (l.min >= 0 && r.min >= 0)
+				return new ValuesRange(l.min * r.min, l.max * r.max);
+			
 			long max = Math.max(Math.abs(l.min), Math.abs(l.max)) * Math.max(Math.abs(r.min), Math.abs(r.max));
-			if (l.min < 0 || r.min < 0)
-				return new ValuesRange(-max, max);
-			return new ValuesRange(l.min * r.min, max);
+			return new ValuesRange(-max, max);
 		}
 	}
 	
@@ -452,6 +479,9 @@ public class Day24 extends AdventDay {
 		public ValuesRange initPossibleValues() {
 			ValuesRange l = left.possibleValues();
 			ValuesRange r = right.possibleValues();
+			
+			if (r.singleValue() && r.min != 0)
+				return new ValuesRange(l.min / r.min, l.max / r.min);
 			
 			long maxL = Math.max(Math.abs(l.min), Math.abs(l.max));
 			long minR = Math.min(Math.abs(r.min), Math.abs(r.max));
