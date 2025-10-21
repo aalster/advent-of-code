@@ -69,6 +69,18 @@ public class Utils {
 		return result;
 	}
 	
+	public static <T> Set<T> combineToSet(Collection<T> collection, T other) {
+		Set<T> result = new HashSet<>(collection);
+		result.add(other);
+		return result;
+	}
+	
+	public static <T> Set<T> removeFromSet(Collection<T> collection, T other) {
+		Set<T> result = new HashSet<>(collection);
+		result.remove(other);
+		return result;
+	}
+	
 	public static String replaceEach(String text, String[] targets, String replacement) {
 		for (String t : targets)
 			text = text.replace(t, replacement);

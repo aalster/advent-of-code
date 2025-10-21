@@ -1,7 +1,6 @@
 package org.advent.year2022.day16;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import org.advent.common.Utils;
 import org.advent.runner.AdventDay;
 import org.advent.runner.DayRunner;
@@ -12,10 +11,9 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -43,26 +41,20 @@ public class Day16 extends AdventDay {
 	@Override
 	public void prepare(String file) {
 		Scanner input = Utils.scanFileNearClass(getClass(), file);
-		Pattern pattern = Pattern.compile("Valve (.+) has flow rate=(.+); tunnels? leads? to valves? (.+)");
-		Map<String, Valve> valves = new LinkedHashMap<>();
-		while (input.hasNext()) {
-			Matcher matcher = pattern.matcher(input.nextLine());
-			if (matcher.find()) {
-				Valve valve = Valve.parse(matcher);
-				valves.put(valve.name(), valve);
-			}
-		}
+		Map<String, Valve> valves = Utils.readLines(input).stream()
+				.map(Valve::parse)
+				.collect(Collectors.toMap(Valve::name, v -> v));
 		gameEngine = new GameEngine(valves, PathService.computeAllPaths(valves));
 	}
 	
 	@Override
 	public Object part1() {
-		return gameEngine.maxPressure(gameEngine.allValves.get("AA"), 1, 30);
+		return gameEngine.maxPressure(1, 30);
 	}
 	
 	@Override
 	public Object part2() {
-		return gameEngine.maxPressure(gameEngine.allValves.get("AA"), 2, 26);
+		return gameEngine.maxPressure(2, 26);
 	}
 	
 	record Valve(String name, int rate, List<String> availableValves) {
@@ -71,7 +63,13 @@ public class Day16 extends AdventDay {
 			return availableValves.stream().map(allValves::get).toList();
 		}
 		
-		static Valve parse(Matcher matcher) {
+		static final Pattern pattern = Pattern.compile("Valve (.+) has flow rate=(.+); tunnels? leads? to valves? (.+)");
+		
+		static Valve parse(String line) {
+			Matcher matcher = pattern.matcher(line);
+			if (!matcher.find())
+				throw new IllegalArgumentException("Invalid line: " + line);
+			
 			String name = matcher.group(1);
 			int rate = Integer.parseInt(matcher.group(2));
 			List<String> availableValves = List.of(matcher.group(3).split(", "));
@@ -79,28 +77,19 @@ public class Day16 extends AdventDay {
 		}
 	}
 	
-	record PathService(Map<String, Integer> paths) {
+	record PathService(Map<String, Map<String, Integer>> paths) {
 		
-		int path(Valve from, Valve to) {
-			try {
-				return paths.get(key(from, to));
-			} catch (Exception e) {
-				throw new RuntimeException("No path for " + from + " - " + to);
-			}
-		}
-		
-		static String key(Valve left, Valve right) {
-			return key(left.name(), right.name());
-		}
-		
-		static String key(String left, String right) {
-			return left + "-" + right;
+		int path(String from, String to) {
+			return paths.get(from).get(to);
 		}
 		
 		static PathService computeAllPaths(Map<String, Valve> valves) {
-			Map<String, Integer> paths = new HashMap<>();
-			for (Valve valve : valves.values())
-				putPathsRecursive(paths, valves, valve, valve.availableValves(valves), 1);
+			Map<String, Map<String, Integer>> paths = new HashMap<>();
+			for (Valve valve : valves.values()) {
+				Map<String, Integer> currentPaths = new HashMap<>();
+				putPathsRecursive(currentPaths, valves, valve, valve.availableValves(valves), 1);
+				paths.put(valve.name(), currentPaths);
+			}
 			return new PathService(paths);
 		}
 		
@@ -110,10 +99,9 @@ public class Day16 extends AdventDay {
 			for (Valve valve : inspectingValves) {
 				if (valve.equals(start))
 					continue;
-				String key = key(start, valve);
-				if (paths.containsKey(key))
+				String key = valve.name;
+				if (paths.putIfAbsent(key, time) != null)
 					continue;
-				paths.put(key, time);
 				next.addAll(valve.availableValves(valves));
 			}
 			if (!next.isEmpty())
@@ -121,125 +109,108 @@ public class Day16 extends AdventDay {
 		}
 	}
 	
-	@Data
 	@AllArgsConstructor
 	static class Worker {
-		private final int id;
-		private Valve position;
-		private Valve target;
-		private int remainingDistance;
+		String position;
+		String target;
+		int remainingDistance;
 		
 		Worker copy() {
-			return new Worker(id, position, target, remainingDistance);
+			return new Worker(position, target, remainingDistance);
 		}
 	}
 	
-	@Data
 	@AllArgsConstructor
 	static class GameState {
-		private final Set<Valve> openValves;
-		private final Map<Integer, Worker> workers;
-		private int releasedPressure;
+		final Set<String> valvesLeft;
+		final List<Worker> workers;
+		int releasedPressure;
+		int pressureRate;
 		
 		void incPressure() {
-			releasedPressure += openValves.stream().mapToInt(Valve::rate).sum();
+			releasedPressure += pressureRate;
 		}
 		
 		void openValve(Valve valve) {
-			openValves.add(valve);
+			pressureRate += valve.rate();
 		}
 	}
 	
 	
 	record GameEngine(Map<String, Valve> allValves, PathService pathService) {
 		
-		int maxPressure(Valve start, int workersCount, int time) {
-			Map<Integer, Worker> workers = IntStream.range(0, workersCount)
-					.mapToObj(id -> new Worker(id, start, null, 0))
-					.collect(Collectors.toMap(Worker::getId, w -> w));
-			List<GameState> states = List.of(new GameState(new HashSet<>(), workers, 0));
+		int maxPressure(int workersCount, int time) {
+			List<Worker> workers = IntStream.range(0, workersCount)
+					.mapToObj(id -> new Worker("AA", null, 0))
+					.toList();
+			
+			Set<String> valvesLeft = allValves.values().stream()
+					.filter(v -> v.rate > 0)
+					.map(Valve::name)
+					.collect(Collectors.toSet());
+			List<GameState> states = List.of(new GameState(valvesLeft, workers, 0, 0));
 			
 			while (time > 0) {
-				int timeRemaining = time;
 				states = states.stream()
-						.flatMap(state -> step(state, timeRemaining))
-						.sorted(Comparator.comparing(GameState::getReleasedPressure).reversed())
+						.flatMap(this::step)
+						.sorted(Comparator.comparing((GameState g) -> g.releasedPressure).reversed())
 						.limit(50_000)
 						.toList();
 				time--;
 			}
-			
-			GameState result = states.stream().max(Comparator.comparing(GameState::getReleasedPressure)).orElse(null);
-			if (result == null)
-				return 0;
-			return result.getReleasedPressure();
+			return states.stream().mapToInt(g -> g.releasedPressure).max().orElse(0);
 		}
 		
-		Stream<GameState> step(GameState state, int remainingTime) {
-			if (state.getWorkers().isEmpty()) {
+		Stream<GameState> step(GameState state) {
+			if (state.workers.isEmpty()) {
 				state.incPressure();
 				return Stream.of(state);
 			}
 			
-			Worker workerWithNoTarget = state.getWorkers().values().stream().filter(w -> w.getTarget() == null).findAny().orElse(null);
-			if (workerWithNoTarget != null)
-				return nextStates(workerWithNoTarget, state, remainingTime).stream().flatMap(s -> step(s, remainingTime));
+			Optional<Worker> workerWithNoTarget = state.workers.stream()
+					.filter(w -> w.target == null).findAny();
+			if (workerWithNoTarget.isPresent())
+				return nextStates(workerWithNoTarget.get(), state).stream().flatMap(this::step);
 			
 			state.incPressure();
-			for (Worker worker : state.getWorkers().values()) {
-				if (worker.getRemainingDistance() > 0) {
-					worker.setRemainingDistance(worker.getRemainingDistance() - 1);
+			for (Worker worker : state.workers) {
+				if (worker.remainingDistance > 0) {
+					worker.remainingDistance = worker.remainingDistance - 1;
 					continue;
 				}
-				state.openValve(worker.getTarget());
-				worker.setPosition(worker.getTarget());
-				worker.setTarget(null);
+				state.openValve(allValves.get(worker.target));
+				worker.position = worker.target;
+				worker.target = null;
 			}
 			return Stream.of(state);
 		}
 		
-		List<GameState> nextStates(Worker worker, GameState state, int remainingTime) {
-			List<Valve> possibleTargets = nextTargets(state, worker.getPosition(), remainingTime);
+		List<GameState> nextStates(Worker worker, GameState state) {
+			Set<String> possibleTargets = state.valvesLeft;
 			if (possibleTargets.isEmpty()) {
-				Map<Integer, Worker> workers;
-				if (state.getWorkers().size() == 1) {
-					workers = Map.of();
+				List<Worker> workers;
+				if (state.workers.size() == 1) {
+					workers = List.of();
 				} else {
-					workers = new HashMap<>(state.getWorkers());
-					workers.remove(worker.getId());
+					workers = state.workers.stream().filter(w -> w != worker).map(Worker::copy).toList();
 				}
-				return List.of(new GameState(new HashSet<>(state.getOpenValves()), workers, state.getReleasedPressure()));
+				return List.of(new GameState(new HashSet<>(state.valvesLeft), workers, state.releasedPressure, state.pressureRate));
 			}
 			List<GameState> nextStates = new ArrayList<>();
-			for (Valve target : possibleTargets) {
-				int remainingDistance = pathService.path(worker.getPosition(), target);
-				Worker nextWorker = new Worker(worker.getId(), worker.getPosition(), target, remainingDistance);
-				Map<Integer, Worker> workers;
-				if (state.getWorkers().size() == 1) {
-					workers = Map.of(nextWorker.getId(), nextWorker);
+			for (String target : possibleTargets) {
+				int remainingDistance = pathService.path(worker.position, target);
+				Worker nextWorker = new Worker(worker.position, target, remainingDistance);
+				List<Worker> workers;
+				if (state.workers.size() == 1) {
+					workers = List.of(nextWorker);
 				} else {
-					workers = new HashMap<>(state.getWorkers().values().stream().map(Worker::copy)
-							.collect(Collectors.toMap(Worker::getId, w -> w)));
-					workers.put(nextWorker.getId(), nextWorker);
+					workers = state.workers.stream().map(w -> w == worker ? nextWorker : w.copy()).toList();
 				}
-				GameState nextState = new GameState(new HashSet<>(state.getOpenValves()), workers, state.getReleasedPressure());
-				nextStates.add(nextState);
+				Set<String> nextValvesLeft = new HashSet<>(state.valvesLeft);
+				nextValvesLeft.remove(target);
+				nextStates.add(new GameState(nextValvesLeft, workers, state.releasedPressure, state.pressureRate));
 			}
 			return nextStates;
-		}
-		
-		List<Valve> nextTargets(GameState state, Valve from, int remainingTime) {
-			Set<Valve> currentTargets = state.getWorkers().values().stream()
-					.map(Worker::getTarget)
-					.filter(Objects::nonNull)
-					.collect(Collectors.toSet());
-			
-			return allValves.values().stream()
-					.filter(v -> v.rate() > 0)
-					.filter(v -> !state.getOpenValves().contains(v))
-					.filter(v -> !currentTargets.contains(v))
-					.filter(v -> pathService.path(from, v) <= remainingTime)
-					.toList();
 		}
 	}
 }
