@@ -125,14 +125,9 @@ public class Day16 extends AdventDay {
 		final Set<String> valvesLeft;
 		final List<Worker> workers;
 		int releasedPressure;
-		int pressureRate;
 		
-		void incPressure() {
-			releasedPressure += pressureRate;
-		}
-		
-		void openValve(Valve valve) {
-			pressureRate += valve.rate();
+		void openValve(Valve valve, int timeLeft) {
+			releasedPressure += valve.rate() * timeLeft;
 		}
 	}
 	
@@ -148,37 +143,35 @@ public class Day16 extends AdventDay {
 					.filter(v -> v.rate > 0)
 					.map(Valve::name)
 					.collect(Collectors.toSet());
-			List<GameState> states = List.of(new GameState(valvesLeft, workers, 0, 0));
+			List<GameState> states = List.of(new GameState(valvesLeft, workers, 0));
 			
 			while (time > 0) {
+				time--;
+				int _time = time;
 				states = states.stream()
-						.flatMap(this::step)
+						.flatMap(state -> step(state, _time))
 						.sorted(Comparator.comparing((GameState g) -> g.releasedPressure).reversed())
 						.limit(50_000)
 						.toList();
-				time--;
 			}
 			return states.stream().mapToInt(g -> g.releasedPressure).max().orElse(0);
 		}
 		
-		Stream<GameState> step(GameState state) {
-			if (state.workers.isEmpty()) {
-				state.incPressure();
+		Stream<GameState> step(GameState state, int timeLeft) {
+			if (state.workers.isEmpty())
 				return Stream.of(state);
-			}
 			
 			Optional<Worker> workerWithNoTarget = state.workers.stream()
 					.filter(w -> w.target == null).findAny();
 			if (workerWithNoTarget.isPresent())
-				return nextStates(workerWithNoTarget.get(), state).stream().flatMap(this::step);
+				return nextStates(workerWithNoTarget.get(), state).stream().flatMap(s -> step(s, timeLeft));
 			
-			state.incPressure();
 			for (Worker worker : state.workers) {
 				if (worker.remainingDistance > 0) {
 					worker.remainingDistance = worker.remainingDistance - 1;
 					continue;
 				}
-				state.openValve(allValves.get(worker.target));
+				state.openValve(allValves.get(worker.target), timeLeft);
 				worker.position = worker.target;
 				worker.target = null;
 			}
@@ -194,7 +187,7 @@ public class Day16 extends AdventDay {
 				} else {
 					workers = state.workers.stream().filter(w -> w != worker).map(Worker::copy).toList();
 				}
-				return List.of(new GameState(new HashSet<>(state.valvesLeft), workers, state.releasedPressure, state.pressureRate));
+				return List.of(new GameState(new HashSet<>(state.valvesLeft), workers, state.releasedPressure));
 			}
 			List<GameState> nextStates = new ArrayList<>();
 			for (String target : possibleTargets) {
@@ -208,7 +201,7 @@ public class Day16 extends AdventDay {
 				}
 				Set<String> nextValvesLeft = new HashSet<>(state.valvesLeft);
 				nextValvesLeft.remove(target);
-				nextStates.add(new GameState(nextValvesLeft, workers, state.releasedPressure, state.pressureRate));
+				nextStates.add(new GameState(nextValvesLeft, workers, state.releasedPressure));
 			}
 			return nextStates;
 		}
