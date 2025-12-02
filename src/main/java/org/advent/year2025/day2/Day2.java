@@ -61,17 +61,8 @@ public class Day2 extends AdventDay {
 		return result;
 	}
 	
-	static int digitsCount(long value) {
-		int digits = 0;
-		while (value > 0) {
-			value /= 10;
-			digits++;
-		}
-		return digits;
-	}
-	
-	static long repeatNumber(long value, int times) {
-		long mask = tenPow(digitsCount(value));
+	static long repeatNumber(long value, int times, int digitsCount) {
+		long mask = tenPow(digitsCount);
 		long result = 0;
 		while (times-- > 0)
 			result = result * mask + value;
@@ -91,7 +82,7 @@ public class Day2 extends AdventDay {
 				long mask = tenPow(digitsCount - repeatSize);
 				
 				LongStream.rangeClosed(min / mask, max / mask)
-						.map(part -> repeatNumber(part, repeats))
+						.map(part -> repeatNumber(part, repeats, repeatSize))
 						.filter(part -> min <= part && part <= max)
 						.forEach(invalidIds::add);
 			}
