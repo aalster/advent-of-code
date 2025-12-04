@@ -7,11 +7,12 @@ import org.advent.runner.AdventDay;
 import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
 
-import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.SequencedSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -50,21 +51,20 @@ public class Day4 extends AdventDay {
 				.collect(Collectors.toMap(r -> r,
 						r -> (int) DirectionExt.stream().map(d -> d.shift(r)).filter(rolls::contains).count()));
 		
+		SequencedSet<Point> queue = new LinkedHashSet<>(rolls);
 		int removedTotal = 0;
-		while (!rollsNeighbors.isEmpty()) {
-			int removed = 0;
-			for (Map.Entry<Point, Integer> entry : new ArrayList<>(rollsNeighbors.entrySet())) {
-				if (entry.getValue() < 4) {
-					Point current = entry.getKey();
-					for (DirectionExt direction : DirectionExt.values())
-						rollsNeighbors.computeIfPresent(direction.shift(current), (k, v) -> v - 1);
-					rollsNeighbors.remove(current);
-					removed++;
+		while (!queue.isEmpty()) {
+			Point current = queue.removeFirst();
+			
+			if (rollsNeighbors.get(current) < 4) {
+				rollsNeighbors.remove(current);
+				removedTotal++;
+				for (DirectionExt direction : DirectionExt.values()) {
+					Point neighbor = direction.shift(current);
+					if (rollsNeighbors.computeIfPresent(neighbor, (k, v) -> v - 1) != null)
+						queue.add(neighbor);
 				}
 			}
-			if (removed == 0)
-				break;
-			removedTotal += removed;
 		}
 		return removedTotal;
 	}
