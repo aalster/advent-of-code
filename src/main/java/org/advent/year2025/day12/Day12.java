@@ -1,28 +1,22 @@
 package org.advent.year2025.day12;
 
-import org.advent.common.Point;
-import org.advent.common.Rect;
 import org.advent.common.Utils;
 import org.advent.runner.AdventDay;
 import org.advent.runner.DayRunner;
 import org.advent.runner.ExpectedAnswers;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class Day12 extends AdventDay {
 	
 	public static void main(String[] args) {
-//		new DayRunner(new Day12()).runAll();
-		new DayRunner(new Day12()).run("example.txt", 1);
+		new DayRunner(new Day12()).runAll();
 	}
 	
 	@Override
@@ -32,7 +26,7 @@ public class Day12 extends AdventDay {
 				new ExpectedAnswers("input.txt", 569, ExpectedAnswers.IGNORE)
 		);
 	}
-	
+	static final boolean silent = true;
 	Shape[] shapes;
 	List<Region> regions;
 	
@@ -53,17 +47,9 @@ public class Day12 extends AdventDay {
 	
 	@Override
 	public Object part1() {
-//		for (Shape shape : shapes) {
-//			shape.print();
-//			System.out.println("variations:");
-//			shape.variations().forEach(Shape::print);
-//			System.out.println("-----------------------");
-//		}
-		Map<Integer, List<Shape>> variationsCache = new HashMap<>();
-		return regions.stream()
-//				.limit(1)
-				.filter(r -> r.fits(shapes, variationsCache))
-				.count();
+		int maxPresentWidth = Arrays.stream(shapes).mapToInt(s -> s.actualWidth).max().orElseThrow();
+		int maxPresentHeight = Arrays.stream(shapes).mapToInt(s -> s.actualHeight).max().orElseThrow();
+		return regions.stream().filter(r -> r.fits(shapes, maxPresentWidth, maxPresentHeight)).count();
 	}
 	
 	@Override
@@ -71,110 +57,175 @@ public class Day12 extends AdventDay {
 		return null;
 	}
 	
-	record Shape(Set<Point> points, Rect bounds, char repr, Map<Point, Character> shapesRepr) {
+	static class Shape {
+		final char[][] cells;
+		int cellsCount;
+		int actualWidth;
+		int actualHeight;
+		char nextSymbol = 'A';
+		Collection<Shape> variationsCache;
 		
-		Shape(Set<Point> points) {
-			this(points, 'A', new HashMap<>());
+		Shape(char[][] cells, int cellsCount, int actualWidth, int actualHeight) {
+			this.cells = cells;
+			this.cellsCount = cellsCount;
+			this.actualWidth = actualWidth;
+			this.actualHeight = actualHeight;
 		}
 		
-		Shape(Set<Point> points, char repr, Map<Point, Character> shapesRepr) {
-			this(points, points.isEmpty() ? null : Point.bounds(points), repr, shapesRepr);
-		}
-		
-		boolean intersects(Shape other) {
-			return bounds != null && other.bounds != null && bounds.intersectsInclusive(other.bounds)
-					&& other.points.stream().anyMatch(points::contains);
-		}
-		
-		Shape add(Shape other) {
-			Map<Point, Character> nextShapesRepr = new HashMap<>(shapesRepr);
-			other.points.forEach(p -> nextShapesRepr.put(p, repr));
-			return new Shape(Utils.combineToSet(points, other.points), (char) (repr + 1), nextShapesRepr);
-		}
-		
-		Shape move(Point delta) {
-			return new Shape(points.stream().map(delta::shift).collect(Collectors.toSet()));
-		}
-		
-		Shape moveToZero() {
-			Point min = bounds.topLeft();
-			return min.equals(Point.ZERO) ? this : move(min.scale(-1));
-		}
-		
-		List<Shape> variations() {
-			List<Set<Point>> temp = List.of(
-					points,
-					points.stream().map(p -> new Point(bounds.maxX() - p.x(), p.y())).collect(Collectors.toSet()));
-			
-			List<Set<Point>> variations = new ArrayList<>(temp);
-			for (int i = 0; i < 3; i++) {
-				temp = temp.stream()
-						.map(points -> points.stream().map(p -> new Point(p.y(), -p.x())).collect(Collectors.toSet()))
-						.toList();
-				variations.addAll(temp);
+		boolean intersects(Shape other, int dx, int dy) {
+			for (int y = 0; y < other.cells.length; y++) {
+				char[] otherRow = other.cells[y];
+				for (int x = 0; x < otherRow.length; x++)
+					if (otherRow[x] != '.' && cells[y + dy][x + dx] != '.')
+						return true;
 			}
-			
-			return variations.stream().map(Shape::new).map(Shape::moveToZero).distinct().toList();
+			return false;
 		}
 		
-		void print() {
-			if (shapesRepr.isEmpty())
-				Point.printField(points, '#', '.');
-			else
-				Point.printField(points, p -> shapesRepr.getOrDefault(p, '.'));
-			System.out.println();
+		void set(Shape other, int dx, int dy, char value) {
+			for (int y = 0; y < other.cells.length; y++) {
+				char[] otherRow = other.cells[y];
+				for (int x = 0; x < otherRow.length; x++)
+					if (otherRow[x] != '.')
+						cells[y + dy][x + dx] = value;
+			}
+		}
+		
+		void add(Shape other, int dx, int dy) {
+			set(other, dx, dy, nextSymbol);
+			nextSymbol++;
+			cellsCount += other.cellsCount;
+			
+			actualWidth = Math.max(actualWidth, dx + other.actualWidth);
+			actualHeight = Math.max(actualHeight, dy + other.actualHeight);
+		}
+		
+		void remove(Shape other, int dx, int dy) {
+			set(other, dx, dy, '.');
+			nextSymbol--;
+			cellsCount -= other.cellsCount;
+			
+			rows: while (actualHeight > 0) {
+				for (char c : cells[actualHeight - 1])
+					if (c != '.')
+						break rows;
+				actualHeight--;
+			}
+			cols: while (actualWidth > 0) {
+				for (char[] row : cells)
+					if (row[actualWidth - 1] != '.')
+						break cols;
+				actualWidth--;
+			}
+		}
+		
+		Shape mirrored() {
+			char[][] mirroredCells = new char[cells.length][cells[0].length];
+			for (int y = 0; y < cells.length; y++) {
+				char[] row = cells[y];
+				char[] mirroredRow = mirroredCells[y];
+				for (int x = 0; x < row.length; x++)
+					mirroredRow[x] = row[row.length - x - 1];
+			}
+			return new Shape(mirroredCells, cellsCount, actualWidth, actualHeight);
+		}
+		
+		Shape rotated() {
+			char[][] rotatedCells = new char[cells[0].length][cells.length];
+			for (int y = 0; y < rotatedCells.length; y++) {
+				char[] rotatedRow = rotatedCells[y];
+				for (int x = 0; x < rotatedRow.length; x++)
+					rotatedRow[x] = cells[x][y];
+			}
+			//noinspection SuspiciousNameCombination
+			return new Shape(rotatedCells, cellsCount, actualHeight, actualWidth);
+		}
+		
+		Collection<Shape> variations() {
+			if (variationsCache == null) {
+				variationsCache = new HashSet<>();
+				
+				List<Shape> temp = List.of(this, mirrored());
+				for (int i = 0; i < 3; i++) {
+					temp = temp.stream().map(Shape::rotated).toList();
+					variationsCache.addAll(temp);
+				}
+			}
+			return variationsCache;
+		}
+		
+		@Override
+		public int hashCode() {
+			return Arrays.deepHashCode(cells);
+		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			return obj instanceof Shape other && Arrays.deepEquals(cells, other.cells);
+		}
+		
+		@Override
+		public String toString() {
+			return Arrays.stream(cells).map(String::new).collect(Collectors.joining("\n"));
+		}
+		
+		static Shape empty(int width, int height) {
+			char[][] cells = new char[height][width];
+			for (int y = 0; y < height; y++)
+				Arrays.fill(cells[y], '.');
+			return new Shape(cells, 0, 0, 0);
 		}
 		
 		static Shape parse(List<String> lines) {
-			return new Shape(new HashSet<>(Point.readField(lines).get('#'))).moveToZero();
+			char[][] cells = new char[lines.size()][];
+			int row = 0;
+			for (String line : lines)
+				cells[row++] = line.toCharArray();
+			int cellsCount = (int) lines.stream().mapToLong(line -> line.chars().filter(c -> c == '#').count()).sum();
+			return new Shape(cells, cellsCount, cells[0].length, cells.length);
 		}
 	}
 	
 	record Region(int width, int height, int[] presents) {
 		
-		public boolean fits(Shape[] shapes, Map<Integer, List<Shape>> variationsCache) {
-			if ((width / 3) * (height / 3) >= Arrays.stream(presents).sum())
+		public boolean fits(Shape[] shapes, int maxPresentWidth, int maxPresentHeight) {
+			if ((width / maxPresentWidth) * (height / maxPresentHeight) >= Arrays.stream(presents).sum())
 				return true;
-			if (width * height < IntStream.range(0, presents.length).map(p -> presents[p] * shapes[p].points.size()).sum())
+			if (width * height < IntStream.range(0, presents.length).map(p -> presents[p] * shapes[p].cellsCount).sum())
 				return false;
 			
-			return fitRecursive(new Shape(Set.of()), shapes, 0, presents, variationsCache);
+			return fitRecursive(Shape.empty(width, height), shapes, 0, presents);
 		}
 		
-		boolean fitRecursive(Shape field, Shape[] shapes, int index, int[] target, Map<Integer, List<Shape>> variationsCache) {
-//			field.print();
-//			try {
-//				Thread.sleep(100);
-//			} catch (InterruptedException e) {
-//				throw new RuntimeException(e);
-//			}
-//			System.out.println("\n\n\n");
-			
-			if (field.bounds != null && (field.bounds.maxX() >= width || field.bounds.maxY() >= height))
-				return false;
-			if (index >= shapes.length) {
-				field.print();
-				return true;
+		boolean fitRecursive(Shape field, Shape[] shapes, int index, int[] target) {
+			if (!silent) {
+				System.out.println(field);
+				System.out.println();
+				Utils.sleep(100);
 			}
+			
+			if (index >= shapes.length)
+				return true;
 			if (target[index] == 0)
-				return fitRecursive(field, shapes, index + 1, target, variationsCache);
+				return fitRecursive(field, shapes, index + 1, target);
 			
 			Shape shape = shapes[index];
 			int[] nextTarget = Arrays.copyOf(target, target.length);
 			nextTarget[index]--;
 			
-			for (int x = 0; x < width - 2; x++) {
-				for (int y = 0; y < height - 2; y++) {
-					Point delta = new Point(x, y);
-					
-					List<Shape> variations = variationsCache.computeIfAbsent(index, k -> shape.variations());
-					for (Shape variation : variations) {
-						Shape current = variation.move(delta);
-						if (field.intersects(current))
+			for (Shape variation : shape.variations()) {
+				int maxDx = Math.min(width - variation.actualWidth, field.actualWidth);
+				int maxDy = Math.min(height - variation.actualHeight, field.actualHeight);
+				
+				for (int dx = 0; dx <= maxDx; dx++) {
+					for (int dy = 0; dy <= maxDy; dy++) {
+						if (field.intersects(variation, dx, dy))
 							continue;
 						
-						if (fitRecursive(field.add(current), shapes, index, nextTarget, variationsCache))
+						field.add(variation, dx, dy);
+						if (fitRecursive(field, shapes, index, nextTarget))
 							return true;
+						field.remove(variation, dx, dy);
 					}
 				}
 			}

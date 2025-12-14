@@ -57,6 +57,14 @@ public class Utils {
 		return result;
 	}
 	
+	public static void sleep(long delay) {
+		try {
+			Thread.sleep(delay);
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
 	public static <T> Set<T> combineToSet(Collection<T> collection, Collection<T> other) {
 		Set<T> result = new HashSet<>(collection);
 		result.addAll(other);

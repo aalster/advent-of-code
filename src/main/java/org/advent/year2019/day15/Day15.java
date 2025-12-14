@@ -34,6 +34,7 @@ public class Day15 extends AdventDay {
 		);
 	}
 	
+	static final boolean silent = true;
 	long[] program;
 	
 	@Override
@@ -103,14 +104,17 @@ public class Day15 extends AdventDay {
 					if (type == 1)
 						Direction.stream().map(position::shift).forEach(p -> field.putIfAbsent(p, Location.UNKNOWN));
 				}
-//				printField(field, position);
+				if (!silent) {
+					System.out.println();
+					printField(field, position);
+					Utils.sleep(200);
+				}
 			}
 		}
 		return oxygenSystem;
 	}
 	
 	void printField(Map<Point, Location> field, Point position) {
-		System.out.println();
 		Point.printField(field.keySet(), p -> {
 			if (position.equals(p))
 				return 'D';
@@ -122,11 +126,6 @@ public class Day15 extends AdventDay {
 				case null -> ' ';
 			};
 		});
-		try {
-			Thread.sleep(200);
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		}
 	}
 	
 	List<Point> findPath(Map<Point, Location> field, Point start, Point end) {

@@ -1,7 +1,6 @@
 package org.advent.year2019.day13;
 
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import org.advent.common.Point;
 import org.advent.common.Utils;
 import org.advent.runner.AdventDay;
@@ -75,7 +74,6 @@ public class Day13 extends AdventDay {
 				ball = position;
 		}
 		
-		@SneakyThrows
 		void print() {
 			System.out.println("\nScore: " + score);
 			Point.printField(objects.keySet(), p -> switch (objects.getOrDefault(p, -1)) {
@@ -85,7 +83,6 @@ public class Day13 extends AdventDay {
 				case 4 -> 'O';
 				default -> '.';
 			});
-			Thread.sleep(200);
 		}
 	}
 	
@@ -115,8 +112,10 @@ public class Day13 extends AdventDay {
 		
 		@Override
 		public long nextInput() {
-			if (!silent)
+			if (!silent) {
 				gameState.print();
+				Utils.sleep(200);
+			}
 			return Integer.compare(gameState.ball.x(), gameState.paddle.x());
 		}
 	}
