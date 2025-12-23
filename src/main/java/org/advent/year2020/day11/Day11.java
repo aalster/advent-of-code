@@ -1,5 +1,6 @@
 package org.advent.year2020.day11;
 
+import org.advent.common.DirectionExt;
 import org.advent.common.Utils;
 import org.advent.runner.AdventDay;
 import org.advent.runner.DayRunner;
@@ -8,90 +9,99 @@ import org.advent.runner.ExpectedAnswers;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
-import java.util.stream.Collectors;
 
 public class Day11 extends AdventDay {
 	
 	public static void main(String[] args) {
 		new DayRunner(new Day11()).runAll();
-//		new DayRunner(new Day11()).run("example.txt", 1);
 	}
 	
 	@Override
 	public List<ExpectedAnswers> expected() {
 		return List.of(
-				new ExpectedAnswers("example.txt", 37, null),
-				new ExpectedAnswers("input.txt", 2481, null)
+				new ExpectedAnswers("example.txt", 37, 26),
+				new ExpectedAnswers("input.txt", 2481, 2227)
 		);
 	}
 	
-	char[][] field;
+	Field field;
 	
 	@Override
 	public void prepare(String file) {
 		Scanner input = Utils.scanFileNearClass(getClass(), file);
-		field = Utils.readLines(input).stream().map(String::toCharArray).toArray(char[][]::new);
+		field = Field.parse(Utils.readLines(input));
 	}
 	
 	@Override
 	public Object part1() {
-		State current = new State(field);
-		State prev;
-		int steps = 0;
-		while (true) {
-//			System.out.println(current);
-//			System.out.println();
-			steps++;
+		Field current = field;
+		Field prev = null;
+		while (!current.equals(prev)) {
 			prev = current;
-			current = current.next();
-			if (prev.equals(current))
-				break;
+			current = current.next(current::neighbor1, 4);
 		}
 		return current.occupied();
 	}
 	
 	@Override
 	public Object part2() {
-		return null;
+		Field current = field;
+		Field prev = null;
+		while (!current.equals(prev)) {
+			prev = current;
+			current = current.next(current::neighbor2, 5);
+		}
+		return current.occupied();
 	}
 	
-	record State(char[][] field) {
+	interface NeighborFunction {
+		char apply(int x, int y, DirectionExt direction);
+	}
+	
+	record Field(char[][] field) {
 		
-		State next() {
+		Field next(NeighborFunction neighbor, int maxOccupied) {
 			char[][] next = new char[field.length][field[0].length];
-			for (int y = 0; y < field.length; y++) {
-				char[] row = field[y];
-				cell: for (int x = 0; x < row.length; x++) {
-					char c = row[x];
-					if (c == 'L') {
-						for (int dy = Math.max(y - 1, 0); dy < Math.min(y + 2, field.length); dy++) {
-							for (int dx = Math.max(x - 1, 0); dx < Math.min(x + 2, row.length); dx++) {
-								if (x == dx && y == dy)
-									continue;
-								if (field[dy][dx] == '#') {
-									next[y][x] = c;
-									continue cell;
-								}
-							}
-						}
-						next[y][x] = '#';
-					} else if (c == '#') {
-						int occupied = 0;
-						for (int dy = Math.max(y - 1, 0); dy < Math.min(y + 2, field.length); dy++) {
-							for (int dx = Math.max(x - 1, 0); dx < Math.min(x + 2, row.length); dx++) {
-								if (x == dx && y == dy)
-									continue;
-								if (field[dy][dx] == '#')
-									occupied++;
-							}
-						}
-						next[y][x] = occupied >= 4 ? 'L' : c;
-					} else {
-						next[y][x] = c;
+			for (int y = 0; y < field.length; y++)
+				for (int x = 0; x < field[y].length; x++)
+					next[y][x] = next(x, y, field[y][x], neighbor, maxOccupied);
+			return new Field(next);
+		}
+		
+		char next(int x, int y, char current, NeighborFunction neighbor, int maxOccupied) {
+			if (current == 'L') {
+				for (DirectionExt direction : DirectionExt.values())
+					if (neighbor.apply(x, y, direction) == '#')
+						return current;
+				return '#';
+			}
+			if (current == '#') {
+				int occupied = 0;
+				for (DirectionExt direction : DirectionExt.values()) {
+					if (neighbor.apply(x, y, direction) == '#') {
+						occupied++;
+						if (occupied >= maxOccupied)
+							return 'L';
 					}
 				}
 			}
-			return new State(next);
+			return current;
+		}
+		
+		char neighbor1(int x, int y, DirectionExt direction) {
+			x += direction.getPoint().x();
+			y += direction.getPoint().y();
+			return field[y][x];
+		}
+		
+		char neighbor2(int x, int y, DirectionExt direction) {
+			while (true) {
+				x += direction.getPoint().x();
+				y += direction.getPoint().y();
+				char neighbor = field[y][x];
+				if (neighbor != '.')
+					return neighbor;
+			}
 		}
 		
 		long occupied() {
@@ -105,14 +115,28 @@ public class Day11 extends AdventDay {
 		
 		@Override
 		public boolean equals(Object obj) {
+			if (obj == null)
+				return false;
 			if (this == obj)
 				return true;
-			return obj instanceof State other && Arrays.deepEquals(field, other.field);
+			return obj instanceof Field(char[][] otherField) && Arrays.deepEquals(field, otherField);
 		}
 		
-		@Override
-		public String toString() {
-			return Arrays.stream(field).map(String::new).collect(Collectors.joining("\n"));
+		static Field parse(List<String> lines) {
+			return new Field(extend(lines.stream().map(String::toCharArray).toArray(char[][]::new)));
+		}
+		
+		static char[][] extend(char[][] field) {
+			int realWidth = field[0].length;
+			char[][] result = new char[field.length + 2][realWidth + 2];
+			Arrays.fill(result[0], ' ');
+			for (int y = 0; y < field.length; y++) {
+				result[y + 1][0] = ' ';
+				System.arraycopy(field[y], 0, result[y + 1], 1, realWidth);
+				result[y + 1][realWidth + 1] = ' ';
+			}
+			Arrays.fill(result[result.length - 1], ' ');
+			return result;
 		}
 	}
 }
