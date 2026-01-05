@@ -1,6 +1,6 @@
 package org.advent.year2018.day9;
 
-import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import org.advent.common.Utils;
 import org.advent.runner.AdventDay;
 import org.advent.runner.DayRunner;
@@ -52,7 +52,7 @@ public class Day9 extends AdventDay {
 	
 	long maxScore(int playersCount, int lastMarbleScore) {
 		long[] scores = new long[playersCount];
-		Circle<Integer> marbles = new Circle<>(0);
+		IntCircle marbles = new IntCircle(0);
 		for (int marble = 1; marble <= lastMarbleScore; marble++) {
 			if (marble % 23 == 0) {
 				marbles.rotate(-7);
@@ -65,12 +65,12 @@ public class Day9 extends AdventDay {
 		return Arrays.stream(scores).max().orElse(0);
 	}
 	
-	static class Circle<T> {
-		Node<T> current;
+	static class IntCircle {
+		IntNode current;
 		
-		public Circle(T element) {
-			current = new Node<>(element);
-			Node.chain(current, current);
+		IntCircle(int element) {
+			current = new IntNode(element);
+			IntNode.chain(current, current);
 		}
 		
 		void rotate(int len) {
@@ -84,30 +84,30 @@ public class Day9 extends AdventDay {
 			}
 		}
 		
-		void add(T element) {
-			Node<T> prev = current;
-			Node<T> next = current.next;
-			current = new Node<>(element);
-			Node.chain(prev, current);
-			Node.chain(current, next);
+		void add(int element) {
+			IntNode prev = current;
+			IntNode next = current.next;
+			current = new IntNode(element);
+			IntNode.chain(prev, current);
+			IntNode.chain(current, next);
 		}
 		
-		T remove() {
-			T result = current.element;
-			Node<T> prev = current.prev;
+		int remove() {
+			int result = current.element;
+			IntNode prev = current.prev;
 			current = current.next;
-			Node.chain(prev, current);
+			IntNode.chain(prev, current);
 			return result;
 		}
 	}
 	
-	@Data
-	static class Node<T> {
-		final T element;
-		Node<T> next;
-		Node<T> prev;
+	@RequiredArgsConstructor
+	static class IntNode {
+		final int element;
+		IntNode next;
+		IntNode prev;
 		
-		static <T> void chain(Node<T> prev, Node<T> next) {
+		static void chain(IntNode prev, IntNode next) {
 			prev.next = next;
 			next.prev = prev;
 		}
