@@ -53,7 +53,7 @@ public class Day2 extends AdventDay {
 	}
 	
 	static long tenPow(int exponent) {
-		int result = 1;
+		long result = 1;
 		while (exponent > 0) {
 			result *= 10;
 			exponent--;
